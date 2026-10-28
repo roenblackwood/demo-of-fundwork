@@ -1,18 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { SectorTile, TrustBadges } from "@/components/parts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FundingPills, OwnershipStrip, TrustBadges } from "@/components/parts";
-import { projectNote } from "@/lib/ai";
 import { sectorTitle } from "@/lib/catalog";
-import { CAPITAL_LINE } from "@/lib/copy";
 import { useDemo } from "@/lib/demo-store";
-import { money, moneyShort, placeLine } from "@/lib/format";
-import { fundingLabels, moneyStillOpen, projectCommitted } from "@/lib/ownership";
+import { moneyShort, placeLine } from "@/lib/format";
+import { moneyStillOpen, projectCommitted } from "@/lib/ownership";
 import { currencyOf, projectPlace } from "@/lib/seed";
 import type { Project } from "@/lib/types";
 
-// Nice to have: a photo above the title, the way YouTube leads with a thumbnail.
+// Nice to have: a photo in place of the sector tile, the way YouTube leads with a thumbnail.
 
 export function ProjectCard({ project }: { project: Project }) {
   const { addedCommitments } = useDemo();
@@ -24,7 +22,8 @@ export function ProjectCard({ project }: { project: Project }) {
     project.id,
   );
   const stillOpen = moneyStillOpen(project.goalJmd, committed);
-  const note = projectNote(project);
+  const percent =
+    project.goalJmd <= 0 ? 0 : Math.min(100, (committed / project.goalJmd) * 100);
   const place = where ? placeLine(where.town, where.parish) : "Jamaica";
 
   return (
@@ -34,9 +33,8 @@ export function ProjectCard({ project }: { project: Project }) {
     >
       <Card className="h-full shadow-sm">
         <CardHeader>
-          <p className="text-sm font-semibold tracking-wide text-primary uppercase">
-            {sectorTitle(project.sector)}
-          </p>
+          <SectorTile sector={project.sector} />
+          <p className="text-base font-semibold text-primary">{sectorTitle(project.sector)}</p>
           <CardTitle>{project.name}</CardTitle>
           <p className="text-base text-muted-foreground">{place}</p>
         </CardHeader>
@@ -46,18 +44,17 @@ export function ProjectCard({ project }: { project: Project }) {
               ? `${moneyShort(stillOpen, currency)} still needed`
               : "The money they asked for is in"}
           </p>
-          <FundingPills
-            labels={fundingLabels(committed, project.goalJmd, project.workStarted)}
-          />
-          <p className="line-clamp-2 text-base leading-relaxed">{note.body}</p>
-          <p className="text-base leading-relaxed text-muted-foreground">{CAPITAL_LINE}</p>
-          <p className="text-base leading-relaxed">
-            {project.workersMatched} of {project.workersNeeded} workers matched. A week of work
-            pays about {money(project.weeklyPayout, currency)} in the stable unit.
-          </p>
-          <TrustBadges checks={project.checks} limit={2} />
-          <OwnershipStrip />
-          <p className="text-base leading-relaxed">Your work turns into ownership units.</p>
+          <div
+            className="h-1.5 overflow-hidden rounded-full bg-muted"
+            role="progressbar"
+            aria-label="Money committed"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(percent)}
+          >
+            <div className="h-full rounded-full bg-primary" style={{ width: `${percent}%` }} />
+          </div>
+          <TrustBadges checks={project.checks} limit={1} />
         </CardContent>
       </Card>
     </Link>

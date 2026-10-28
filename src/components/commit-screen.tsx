@@ -5,19 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 import { PageBusy } from "@/components/busy";
-import { ActionBar, LearnMore, NextSteps, OwnershipSplit, SavedMark, StepHeader } from "@/components/parts";
+import { ActionBar, NextSteps, SavedMark, StepHeader } from "@/components/parts";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { canStillCommit, commitChoices } from "@/lib/catalog";
 import { COMMIT_LINE } from "@/lib/copy";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
-import { money, moneyShort } from "@/lib/format";
-import {
-  INVESTOR_UNITS,
-  investorUnits,
-  moneyStillOpen,
-  projectCommitted,
-} from "@/lib/ownership";
+import { money } from "@/lib/format";
+import { investorUnits, moneyStillOpen, projectCommitted } from "@/lib/ownership";
 import { currencyOf, getProject } from "@/lib/seed";
 
 export function CommitScreen({ id }: { id: string }) {
@@ -102,27 +97,6 @@ export function CommitScreen({ id }: { id: string }) {
           {money(amount, currency)} becomes about {units} ownership units, once the organizer accepts it.
         </p>
       ) : null}
-      <NextSteps
-        items={[
-          "Your commitment is saved on this phone.",
-          "The organizer reviews it.",
-          "If they accept it, it becomes ownership units.",
-        ]}
-      />
-      <p className="text-base text-muted-foreground">This is a demo. No money moves.</p>
-      <LearnMore title="How the money works">
-        <p>
-          Bitcoin is the capital for the project. People who do the work are paid in a stable unit they can spend. This demo does not move any Bitcoin.
-        </p>
-      </LearnMore>
-      <LearnMore title="Who this belongs to">
-        <OwnershipSplit />
-      </LearnMore>
-      <LearnMore title="How this number is worked out">
-        <p>
-          This project sets aside {INVESTOR_UNITS.toLocaleString("en-US")} ownership units for people who fund it. Your units are your part of the {moneyShort(project.goalJmd, currency)} goal.
-        </p>
-      </LearnMore>
       {open ? (
         <ActionBar>
           <Button size="lg" className="w-full" disabled={!amount} onClick={save}>
@@ -155,7 +129,6 @@ export function CommittedScreen({ id }: { id: string }) {
     <div className="space-y-6">
       <StepHeader backHref="/you" title="You committed" hint={project.name} />
       <SavedMark label="Saved on this phone" />
-      <p className="text-lg leading-relaxed">{COMMIT_LINE}</p>
       <p className="text-3xl font-semibold">{money(commitment.amountJmd, currency)}</p>
       <p className="text-lg leading-relaxed">
         About {units} ownership units, waiting on the organizer.

@@ -1,11 +1,31 @@
 import Link from "next/link";
-import { Check, ChevronRight } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress, ProgressLabel } from "@/components/ui/progress";
 import { checkLabel } from "@/lib/ai";
+import { SECTOR_MARKS } from "@/lib/catalog";
 import { cn } from "cn";
-import type { Check as TrustCheck, CheckState } from "@/lib/types";
+import type { Check as TrustCheck, CheckState, Sector } from "@/lib/types";
+
+export function SectorTile({
+  sector,
+  size = "card",
+}: {
+  sector: Sector;
+  size?: "card" | "page";
+}) {
+  const mark = SECTOR_MARKS[sector];
+  const Icon = mark.icon;
+  return (
+    <div
+      className={cn("grid aspect-video place-items-center rounded-2xl", mark.tile)}
+      aria-hidden
+    >
+      <Icon className={size === "page" ? "size-16" : "size-12"} strokeWidth={1.75} />
+    </div>
+  );
+}
 
 export function StepHeader({
   backHref,
@@ -17,15 +37,16 @@ export function StepHeader({
   backHref: string;
   step?: number;
   total?: number;
-  title: string;
+  title?: string;
   hint?: string;
 }) {
   return (
-    <div className="mb-6">
+    <div className={title ? "mb-6" : "mb-4"}>
       <Link
         href={backHref}
-        className="inline-flex min-h-11 items-center font-semibold text-primary focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
+        className="inline-flex min-h-11 min-w-11 items-center gap-1 font-semibold text-primary focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
       >
+        <ChevronLeft className="size-6 shrink-0" aria-hidden />
         Back
       </Link>
       {step && total ? (
@@ -33,9 +54,9 @@ export function StepHeader({
           Step {step} of {total}
         </p>
       ) : null}
-      <h1 className="mt-1 font-display text-3xl leading-tight text-foreground">
-        {title}
-      </h1>
+      {title ? (
+        <h1 className="mt-1 font-display text-3xl leading-tight text-foreground">{title}</h1>
+      ) : null}
       {hint ? <p className="mt-2 text-lg text-muted-foreground">{hint}</p> : null}
     </div>
   );
@@ -266,7 +287,7 @@ export function OwnershipStrip() {
       >
         <div className="h-full bg-primary" style={{ width: "55%" }} />
         <div className="h-full bg-work" style={{ width: "35%" }} />
-        <div className="h-full bg-[#5c6b7a]" style={{ width: "10%" }} />
+        <div className="h-full bg-platform" style={{ width: "10%" }} />
       </div>
       <p className="text-sm leading-relaxed text-muted-foreground">
         People who fund it, people who build it, and Fundwork.
@@ -278,7 +299,6 @@ export function OwnershipStrip() {
 export function OwnershipSplit() {
   return (
     <>
-      <p>Your work turns into ownership units.</p>
       <p>
         Fundwork keeps a small part. The rest is for people who put in capital and people who do the work.
       </p>
@@ -289,7 +309,7 @@ export function OwnershipSplit() {
       >
         <div className="h-full bg-primary" style={{ width: "55%" }} />
         <div className="h-full bg-work" style={{ width: "35%" }} />
-        <div className="h-full bg-[#5c6b7a]" style={{ width: "10%" }} />
+        <div className="h-full bg-platform" style={{ width: "10%" }} />
       </div>
       <ul className="space-y-2">
         <li className="flex items-center gap-3">
@@ -301,7 +321,7 @@ export function OwnershipSplit() {
           People who build it
         </li>
         <li className="flex items-center gap-3">
-          <span className="size-4 rounded-sm bg-[#5c6b7a]" aria-hidden />
+          <span className="size-4 rounded-sm bg-platform" aria-hidden />
           Fundwork
         </li>
       </ul>

@@ -26,7 +26,7 @@ The regions are the Caribbean, Latin America, Africa, the Middle East, Eastern E
 
 **Jamaica, then I want to invest.** Pick a parish, a town, and either places to stay or farms and food. Open a project, then commit one of the amounts. The commit step says you deploy Bitcoin capital and workers receive a stable unit. Your commitments show under You.
 
-**Another region.** Kenya, Ghana, Indonesia, Colombia, Bangladesh, Jordan, and Poland each have a sample project. A city with no project points you at the country in that region that has one.
+**Another region.** Kenya, Ghana, Indonesia, Colombia, Bangladesh, Jordan, and Moldova each have a sample project. A city with no project points you at the country in that region that has one.
 
 **Jamaica, then I want to work.** Pick a parish, a town, and the work you do. Add a photo if you want, then open a match and log a day, a few days, or a week. Outside Jamaica, the work list leads with the skill that project needs.
 
@@ -73,7 +73,7 @@ Two layers, kept in plain language on the screen:
 - Bitcoin is the capital. Investors deploy it.
 - A stable unit is what workers receive and spend. The intended asset is a stablecoin backed by a Bitcoin treasury. The demo does not name a coin.
 
-The line on project cards and project pages is: "Funded with Bitcoin capital. Workers paid in a stable unit." The commit step uses: "You deploy Bitcoin capital. Workers receive a stable unit." A short note under "How the money works" is one tap away. There is no chat box.
+The home screen says: "Funded with Bitcoin capital. Workers paid in a stable unit." The commit step says: "You deploy Bitcoin capital. Workers receive a stable unit." How the money works sits under How it works on the project page. There is no chat box.
 
 ## Ownership, and the later LaunchLine connection
 
@@ -83,7 +83,7 @@ Each project in this demo has a fixed pool of 10,000 ownership units:
 - 5,500 set aside for people who fund it
 - 3,500 set aside for people who do the work
 
-That split is a display rule so the screen can stay simple. It is not LaunchLine's ownership cap, and the screen does not say "shares" or "stock". On a project or a contribution, the three-part bar is one tap away under "Who this belongs to". The sentence on the work path is "Your work turns into ownership units."
+That split is a display rule so the screen can stay simple. It is not LaunchLine's ownership cap, and the screen does not say "shares" or "stock". On a project, the three-part bar is one tap away under How it works. The project page says "Your work turns into ownership units." for someone who came to work.
 
 Funder units are your part of the project's money goal, out of the 5,500. A day of work is 8 units, a few days is 24, and a full week is 40, out of the 3,500. Units count as yours only after the organizer accepts them. Until then the status is **Capital waiting on the organizer** or **Work waiting on the organizer**.
 

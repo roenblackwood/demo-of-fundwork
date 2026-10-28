@@ -35,7 +35,6 @@ function countryName(feature: Feature<Geometry>): string {
 
 function shortName(name: string): string {
   if (name === "Trinidad and Tobago") return "Trinidad";
-  if (name === "United Arab Emirates") return "Emirates";
   return name;
 }
 
@@ -181,7 +180,7 @@ export function RegionMap({
                       fill={INK}
                       fontSize={13}
                       fontWeight={700}
-                      fontFamily="var(--font-nunito), Nunito, sans-serif"
+                      fontFamily="var(--font-inter), Inter, sans-serif"
                       stroke={PAPER}
                       strokeWidth={4}
                       paintOrder="stroke"
@@ -265,7 +264,7 @@ function RegionLabel({
           fill={text}
           fontSize={15}
           fontWeight={700}
-          fontFamily="var(--font-nunito), Nunito, sans-serif"
+          fontFamily="var(--font-inter), Inter, sans-serif"
         >
           {name}
         </text>

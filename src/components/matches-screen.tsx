@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { PageBusy } from "@/components/busy";
 import { StepHeader, TrustBadges } from "@/components/parts";
-import { CAPITAL_LINE } from "@/lib/copy";
 import { sectorTitle } from "@/lib/catalog";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -106,7 +105,6 @@ export function MatchesScreen() {
                         : "The money they asked for is in"}
                     </p>
                     <p className="text-lg leading-relaxed">{match.note.body}</p>
-                    <p className="text-base leading-relaxed text-muted-foreground">{CAPITAL_LINE}</p>
                     <TrustBadges checks={match.project.checks} limit={2} />
                     <span className="inline-flex min-h-11 items-center font-semibold text-primary">
                       View project

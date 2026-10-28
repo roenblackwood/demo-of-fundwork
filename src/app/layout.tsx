@@ -1,20 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Nunito } from "next/font/google";
+import { Inter } from "next/font/google";
 import { DemoProvider } from "@/lib/demo-store";
 import { Shell } from "@/components/shell";
 import "./globals.css";
 
-const nunito = Nunito({
+const inter = Inter({
   subsets: ["latin", "latin-ext"],
-  weight: ["400", "600", "700", "800"],
-  variable: "--font-nunito",
-  display: "swap",
-});
-
-const fraunces = Fraunces({
-  subsets: ["latin", "latin-ext"],
-  weight: ["500", "600", "700"],
-  variable: "--font-fraunces",
+  weight: ["400", "600", "700"],
+  variable: "--font-inter",
   display: "swap",
 });
 
@@ -34,7 +27,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${nunito.variable} ${fraunces.variable} h-full antialiased`}
+      className={`${inter.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
         <DemoProvider>

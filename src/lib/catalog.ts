@@ -1,4 +1,25 @@
+import {
+  BedDouble,
+  Droplets,
+  School,
+  Sprout,
+  Stethoscope,
+  Wifi,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
 import type { Sector, Skill, WorkPreset } from "@/lib/types";
+
+/** Sector tile icon and tint. Reuse this anywhere a project needs a sector mark. */
+export const SECTOR_MARKS: Record<Sector, { icon: LucideIcon; tile: string }> = {
+  lodging: { icon: BedDouble, tile: "bg-[#efe6d6] text-[#6b4423]" },
+  agriculture: { icon: Sprout, tile: "bg-[#e3f0e4] text-[#1d6b38]" },
+  energy: { icon: Zap, tile: "bg-[#f8efd4] text-[#8a5a10]" },
+  water: { icon: Droplets, tile: "bg-[#e3f1f4] text-[#0e5f73]" },
+  connectivity: { icon: Wifi, tile: "bg-[#e6e8f6] text-[#343a86]" },
+  education: { icon: School, tile: "bg-[#efe6f4] text-[#5c3478]" },
+  healthcare: { icon: Stethoscope, tile: "bg-[#f8e6e3] text-[#8a3418]" },
+};
 
 export const SECTORS: { id: Sector; title: string; detail: string }[] = [
   {

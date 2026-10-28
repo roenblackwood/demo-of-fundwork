@@ -84,7 +84,6 @@ const AFRICA = new Set([
   "Côte d'Ivoire",
   "Dem. Rep. Congo",
   "Djibouti",
-  "Egypt",
   "Eq. Guinea",
   "Eritrea",
   "eSwatini",
@@ -140,6 +139,7 @@ const SOUTH_ASIA = new Set([
 ]);
 
 const MIDDLE_EAST = new Set([
+  "Egypt",
   "Jordan",
   "Lebanon",
   "Syria",
@@ -200,7 +200,7 @@ export const REGION_VIEWS: Record<
   caribbean: { center: [-73, 17], zoom: 4, label: [-78, 27] },
   "latin-america": { center: [-82, 4], zoom: 1.35, label: [-78, -8] },
   africa: { center: [16, 2], zoom: 1.7, label: [6, 14] },
-  "middle-east": { center: [42, 28], zoom: 3, label: [34, 36] },
+  "middle-east": { center: [36, 30], zoom: 2.5, label: [34, 36] },
   "eastern-europe": { center: [24, 50], zoom: 2.8, label: [14, 56] },
   "south-asia": { center: [80, 22], zoom: 2.6, label: [68, 30] },
   "southeast-asia": { center: [112, 4], zoom: 2.5, label: [104, 12] },
@@ -218,8 +218,8 @@ export const SHOWCASE = [
   { id: "nigeria", name: "Nigeria", mapName: "Nigeria", regionId: "africa", coordinates: [8.2, 9.6] },
   { id: "jordan", name: "Jordan", mapName: "Jordan", regionId: "middle-east", coordinates: [36.3, 31.2] },
   { id: "lebanon", name: "Lebanon", mapName: "Lebanon", regionId: "middle-east", coordinates: [35.8, 33.9] },
-  { id: "uae", name: "United Arab Emirates", mapName: "United Arab Emirates", regionId: "middle-east", coordinates: [54.3, 24.2] },
-  { id: "poland", name: "Poland", mapName: "Poland", regionId: "eastern-europe", coordinates: [19.4, 52.1] },
+  { id: "egypt", name: "Egypt", mapName: "Egypt", regionId: "middle-east", coordinates: [30.2, 26.8] },
+  { id: "moldova", name: "Moldova", mapName: "Moldova", regionId: "eastern-europe", coordinates: [28.6, 47] },
   { id: "romania", name: "Romania", mapName: "Romania", regionId: "eastern-europe", coordinates: [25, 46] },
   { id: "ukraine", name: "Ukraine", mapName: "Ukraine", regionId: "eastern-europe", coordinates: [31.2, 49] },
   { id: "india", name: "India", mapName: "India", regionId: "south-asia", coordinates: [79, 22] },
@@ -249,7 +249,7 @@ const LEADS: Record<RegionId, string> = {
   "latin-america": "colombia",
   africa: "kenya",
   "middle-east": "jordan",
-  "eastern-europe": "poland",
+  "eastern-europe": "moldova",
   "south-asia": "bangladesh",
   "southeast-asia": "indonesia",
 };

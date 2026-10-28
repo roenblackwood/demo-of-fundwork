@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { PageBusy } from "@/components/busy";
 import { GettingStarted } from "@/components/getting-started";
-import { LearnMore, OwnershipSplit, StatusLabel, StepHeader } from "@/components/parts";
+import { LearnMore, StatusLabel, StepHeader } from "@/components/parts";
 import { workPresetLabel } from "@/lib/catalog";
 import { useDemo } from "@/lib/demo-store";
 import { money } from "@/lib/format";
@@ -56,15 +56,9 @@ export function OwnershipScreen() {
     moneyRows.filter((row) => row.status !== "accepted").reduce((sum, row) => sum + row.units, 0) +
     workRows.filter((row) => row.status !== "accepted").reduce((sum, row) => sum + row.units, 0);
 
-  const line =
-    demo.role === "investor"
-      ? "Money you commit turns into ownership units once the organizer accepts it."
-      : "Your work turns into ownership units.";
-
   return (
     <div className="space-y-6">
       <StepHeader backHref="/you" title="Your ownership units" />
-      <p className="text-lg font-semibold">{line}</p>
       {accepted + waiting === 0 ? (
         <GettingStarted />
       ) : (
@@ -94,9 +88,6 @@ export function OwnershipScreen() {
           ) : null}
         </>
       )}
-      <LearnMore title="Who this belongs to">
-        <OwnershipSplit />
-      </LearnMore>
       <LearnMore title="How units are counted">
         <p>Accepted units are counted as yours in this demo. Waiting units need the organizer to say yes.</p>
         <p>A day of work is {workerUnits("day")} units. A few days is {workerUnits("few")}. A full week is {workerUnits("week")}.</p>

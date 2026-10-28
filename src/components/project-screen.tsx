@@ -7,14 +7,14 @@ import {
   FundingPills,
   LearnMore,
   OwnershipSplit,
+  SectorTile,
   StepHeader,
   TrustBadges,
 } from "@/components/parts";
 import { buttonVariants } from "@/components/ui/button";
 import { Progress, ProgressLabel } from "@/components/ui/progress";
 import { checkNote, projectNote } from "@/lib/ai";
-import { CAPITAL_LINE } from "@/lib/copy";
-import { canStillCommit, sectorTitle, skillPhrase } from "@/lib/catalog";
+import { canStillCommit, sectorTitle } from "@/lib/catalog";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
 import { money, moneyShort, placeLine } from "@/lib/format";
@@ -68,11 +68,13 @@ export function ProjectScreen({ id }: { id: string }) {
 
   return (
     <div className="space-y-6">
-      <StepHeader
-        backHref={backHref}
-        title={project.name}
-        hint={`${sectorTitle(project.sector)} · ${place}`}
-      />
+      <StepHeader backHref={backHref} />
+      <SectorTile sector={project.sector} size="page" />
+      <div>
+        <h1 className="font-display text-3xl leading-tight">{project.name}</h1>
+        <p className="mt-2 text-lg font-semibold text-primary">{sectorTitle(project.sector)}</p>
+        <p className="mt-1 text-lg text-muted-foreground">{place}</p>
+      </div>
       <section className="space-y-3">
         <h2 className="text-3xl font-semibold leading-tight">
           {stillOpen > 0
@@ -88,29 +90,29 @@ export function ProjectScreen({ id }: { id: string }) {
           labels={fundingLabels(committed, project.goalJmd, project.workStarted)}
         />
       </section>
+      <div className="grid grid-cols-3 gap-2">
+        <div className="rounded-2xl bg-card p-3 ring-1 ring-foreground/10">
+          <p className="text-sm leading-snug text-muted-foreground">Workers</p>
+          <p className="mt-1 text-base font-semibold leading-snug">
+            {project.workersMatched} of {project.workersNeeded}
+          </p>
+        </div>
+        <div className="rounded-2xl bg-card p-3 ring-1 ring-foreground/10">
+          <p className="text-sm leading-snug text-muted-foreground">Weekly pay</p>
+          <p className="mt-1 text-base font-semibold leading-snug">
+            {money(project.weeklyPayout, currency)}
+          </p>
+          <p className="text-sm leading-snug text-muted-foreground">Stable unit</p>
+        </div>
+        <div className="rounded-2xl bg-card p-3 ring-1 ring-foreground/10">
+          <p className="text-sm leading-snug text-muted-foreground">Checks</p>
+          <p className="mt-1 text-base font-semibold leading-snug">
+            {checksDone} of {project.checks.length}
+          </p>
+        </div>
+      </div>
+      <TrustBadges checks={project.checks} />
       <p className="border-l-4 border-primary pl-4 text-lg leading-relaxed">{note.body}</p>
-      <p className="text-lg leading-relaxed">{CAPITAL_LINE}</p>
-      <section className="space-y-3">
-        <h2 className="text-xl font-semibold">What has been checked</h2>
-        <p className="text-base">
-          {checksDone === project.checks.length
-            ? "Every check on this project is finished."
-            : `${checksDone} of ${project.checks.length} checks are finished.`}
-        </p>
-        <TrustBadges checks={project.checks} />
-      </section>
-      <section className="space-y-3">
-        <p className="text-base">
-          Goal {money(project.goalJmd, currency)}. Needs{" "}
-          {project.needs.map((need) => skillPhrase(need)).join(", ")}.
-        </p>
-        <p className="text-base">
-          {project.workersMatched} of {project.workersNeeded} workers matched.
-        </p>
-        <p className="text-base leading-relaxed">
-          A week of work pays about {money(project.weeklyPayout, currency)} in the stable unit.
-        </p>
-      </section>
       <section>
         <h2 className="text-xl font-semibold">What you get</h2>
         {showInvest ? (
@@ -125,29 +127,39 @@ export function ProjectScreen({ id }: { id: string }) {
       <p className="text-base">
         Organizer: <span className="font-semibold">{project.organizerName}</span>
       </p>
-      {showInvest && !canCommit ? (
+      {showInvest && !canCommit && stillOpen > 0 ? (
         <p className="text-lg">The money they asked for is already in.</p>
       ) : null}
       <p className="text-lg font-semibold">{ownershipLine}</p>
-      <LearnMore title="Who this belongs to">
-        <OwnershipSplit />
-      </LearnMore>
-      {notes.map((item) => (
-        <LearnMore key={item.title} title={item.title}>
-          <p>{item.body}</p>
-        </LearnMore>
-      ))}
-      <LearnMore title="How ownership is set aside">
-        <p>This project has 10,000 ownership units in this demo.</p>
-        <p>{PLATFORM_UNITS.toLocaleString("en-US")} are set aside for Fundwork.</p>
-        <p>{INVESTOR_UNITS.toLocaleString("en-US")} are set aside for people who fund it.</p>
-        <p>{WORKER_UNITS.toLocaleString("en-US")} are set aside for people who do the work.</p>
-        <p>
-          Your amount is your part of the money goal, out of the{" "}
-          {INVESTOR_UNITS.toLocaleString("en-US")} funder units. Accepted work comes out of the{" "}
-          {WORKER_UNITS.toLocaleString("en-US")} build units.
-        </p>
-        <p>This demo keeps the numbers on this phone.</p>
+      <LearnMore title="How it works">
+        <div className="space-y-3">
+          <h3 className="font-semibold">Who this belongs to</h3>
+          <OwnershipSplit />
+        </div>
+        <div className="space-y-3">
+          <h3 className="font-semibold">How ownership is set aside</h3>
+          <p>This project has 10,000 ownership units in this demo.</p>
+          <p>{PLATFORM_UNITS.toLocaleString("en-US")} are set aside for Fundwork.</p>
+          <p>{INVESTOR_UNITS.toLocaleString("en-US")} are set aside for people who fund it.</p>
+          <p>{WORKER_UNITS.toLocaleString("en-US")} are set aside for people who do the work.</p>
+          <p>
+            Your amount is your part of the money goal, out of the{" "}
+            {INVESTOR_UNITS.toLocaleString("en-US")} funder units. Accepted work comes out of the{" "}
+            {WORKER_UNITS.toLocaleString("en-US")} build units.
+          </p>
+        </div>
+        <div className="space-y-3">
+          <h3 className="font-semibold">How the money works</h3>
+          <p>Bitcoin is the capital for the project.</p>
+          <p>People who do the work are paid in a stable unit.</p>
+          <p>No Bitcoin moves in this demo.</p>
+        </div>
+        {notes.map((item) => (
+          <div key={item.title} className="space-y-3">
+            <h3 className="font-semibold">{item.title}</h3>
+            <p>{item.body}</p>
+          </div>
+        ))}
       </LearnMore>
       {canCommit || showWork ? (
         <ActionBar>

@@ -5,12 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 import { PageBusy } from "@/components/busy";
-import { ActionBar, LearnMore, NextSteps, OwnershipSplit, SavedMark, StepHeader } from "@/components/parts";
+import { ActionBar, NextSteps, SavedMark, StepHeader } from "@/components/parts";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { WORK_PRESETS, workPresetLabel } from "@/lib/catalog";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
-import { WORKER_UNITS, workerUnits } from "@/lib/ownership";
+import { workerUnits } from "@/lib/ownership";
 import { getProject } from "@/lib/seed";
 import type { Skill, WorkPreset } from "@/lib/types";
 
@@ -49,7 +49,6 @@ export function LogScreen({ id }: { id: string }) {
         title="What did you do?"
         hint={project.name}
       />
-      <p className="text-lg font-semibold">Your work turns into ownership units.</p>
       <p className="text-lg leading-relaxed">You are paid in a stable unit.</p>
       <div className="space-y-3">
         {WORK_PRESETS.map((item) => {
@@ -78,26 +77,6 @@ export function LogScreen({ id }: { id: string }) {
           {workPresetLabel(preset)} becomes about {workerUnits(preset)} ownership units, once the organizer accepts it.
         </p>
       ) : null}
-      <NextSteps
-        items={[
-          "Your work is saved on this phone.",
-          "The organizer reviews it.",
-          "If they accept it, it turns into ownership units.",
-        ]}
-      />
-      <p className="text-base text-muted-foreground">This is a demo. No money moves.</p>
-      <LearnMore title="Who this belongs to">
-        <OwnershipSplit />
-      </LearnMore>
-      <LearnMore title="How work becomes units">
-        <p>A day on site is {workerUnits("day")} ownership units.</p>
-        <p>A few days is {workerUnits("few")} ownership units.</p>
-        <p>A full week is {workerUnits("week")} ownership units.</p>
-        <p>
-          Units count after the organizer accepts the work. They come out of the{" "}
-          {WORKER_UNITS.toLocaleString("en-US")} units set aside for people who build the project.
-        </p>
-      </LearnMore>
       <ActionBar>
         <Button
           size="lg"
@@ -135,7 +114,6 @@ export function LoggedScreen({ id }: { id: string }) {
       <p className="text-lg leading-relaxed">
         About {workerUnits(contribution.preset)} ownership units, waiting on the organizer.
       </p>
-      <p className="text-lg font-semibold">Your work turns into ownership units.</p>
       <NextSteps
         items={[
           "Your work is saved on this phone.",
@@ -143,9 +121,6 @@ export function LoggedScreen({ id }: { id: string }) {
           "If they accept it, it turns into ownership units.",
         ]}
       />
-      <LearnMore title="Who this belongs to">
-        <OwnershipSplit />
-      </LearnMore>
       <ActionBar>
         <Link href="/you/ownership" className={cn(buttonVariants({ variant: "work", size: "lg" }), "w-full")}>
           See your ownership units

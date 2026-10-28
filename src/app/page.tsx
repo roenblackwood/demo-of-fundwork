@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ActionBar } from "@/components/parts";
 import { RegionMap } from "@/components/region-map";
@@ -15,6 +15,7 @@ export default function HomePage() {
   const { startPath } = useDemo();
   const [regionId, setRegionId] = useState<RegionId | null>(null);
   const [countryId, setCountryId] = useState<string | null>(null);
+  const crumbs = useRef<HTMLElement>(null);
   const region = regionId ? getRegion(regionId) : undefined;
   const country = countryId ? showcaseById(countryId) : undefined;
   const countries = regionId ? countriesIn(regionId) : [];
@@ -26,6 +27,12 @@ export default function HomePage() {
     setRegionId(id);
     setCountryId(null);
   }
+
+  useEffect(() => {
+    crumbs.current
+      ?.querySelector("[aria-current='page']")
+      ?.scrollIntoView({ inline: "nearest", block: "nearest" });
+  }, [regionId, countryId]);
 
   const investHref =
     country?.id === "jamaica" ? "/invest/jamaica" : country ? `/invest/${country.id}` : "/invest";
@@ -43,6 +50,53 @@ export default function HomePage() {
           onSelectCountry={setCountryId}
         />
       </div>
+      <nav ref={crumbs} aria-label="Place" className="mt-3 flex gap-1 overflow-x-auto">
+        {region ? (
+          <button
+            type="button"
+            className="inline-flex min-h-11 shrink-0 items-center rounded-full border-2 border-border bg-card px-2.5 text-base font-semibold whitespace-nowrap"
+            onClick={() => {
+              setRegionId(null);
+              setCountryId(null);
+            }}
+          >
+            World
+          </button>
+        ) : (
+          <span
+            aria-current="page"
+            className="inline-flex min-h-11 shrink-0 items-center rounded-full bg-primary px-2.5 text-base font-semibold whitespace-nowrap text-primary-foreground"
+          >
+            World
+          </span>
+        )}
+        {region ? (
+          country ? (
+            <button
+              type="button"
+              className="inline-flex min-h-11 shrink-0 items-center rounded-full border-2 border-border bg-card px-2.5 text-base font-semibold whitespace-nowrap"
+              onClick={() => setCountryId(null)}
+            >
+              {region.name}
+            </button>
+          ) : (
+            <span
+              aria-current="page"
+              className="inline-flex min-h-11 shrink-0 items-center rounded-full bg-primary px-2.5 text-base font-semibold whitespace-nowrap text-primary-foreground"
+            >
+              {region.name}
+            </span>
+          )
+        ) : null}
+        {country ? (
+          <span
+            aria-current="page"
+            className="inline-flex min-h-11 shrink-0 items-center rounded-full bg-primary px-2.5 text-base font-semibold whitespace-nowrap text-primary-foreground"
+          >
+            {country.name}
+          </span>
+        ) : null}
+      </nav>
       {!region ? (
         <p className="mt-6 text-lg text-muted-foreground">Tap a region.</p>
       ) : !country ? (
@@ -60,48 +114,15 @@ export default function HomePage() {
           ))}
         </div>
       ) : (
-        <div className="mt-2 space-y-2">
-          <p className="text-lg leading-relaxed">
-            {country.id === "jamaica"
-              ? "Jamaica is open, parish by parish."
-              : featured.length > 0
-                ? `${featured[0].name} is open in ${country.name}.`
-                : `${country.name} is on the map. The open project in ${region.name} is next door.`}
-          </p>
-          <div className="flex flex-col items-start">
-            <button
-              type="button"
-              className="min-h-11 font-semibold text-primary"
-              onClick={() => setCountryId(null)}
-            >
-              See other countries
-            </button>
-            <button
-              type="button"
-              className="min-h-11 font-semibold text-primary"
-              onClick={() => {
-                setRegionId(null);
-                setCountryId(null);
-              }}
-            >
-              See the whole world
-            </button>
-          </div>
-        </div>
+        <p className="mt-4 text-lg leading-relaxed">
+          {country.id === "jamaica"
+            ? "Jamaica is open, parish by parish."
+            : featured.length > 0
+              ? `${featured[0].name} is open in ${country.name}.`
+              : `${country.name} is on the map. The open project in ${region.name} is next door.`}
+        </p>
       )}
-      {region && !country ? (
-        <button
-          type="button"
-          className="mt-4 min-h-11 self-start font-semibold text-primary"
-          onClick={() => {
-            setRegionId(null);
-            setCountryId(null);
-          }}
-        >
-          See the whole world
-        </button>
-      ) : null}
-      <p className={country ? "mt-16 text-lg leading-relaxed" : "mt-8 text-lg leading-relaxed"}>
+      <p className={country ? "mt-12 text-lg leading-relaxed" : "mt-8 text-lg leading-relaxed"}>
         {CAPITAL_LINE}
       </p>
       <p className="mt-3 text-base text-muted-foreground">A demo. No money moves.</p>

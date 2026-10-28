@@ -882,13 +882,13 @@
       ]
     },
     {
-      "id": "krakow-classroom",
-      "name": "Kraków Classroom",
-      "countryId": "poland",
+      "id": "chisinau-classroom",
+      "name": "Chișinău Classroom",
+      "countryId": "moldova",
       "parishId": null,
-      "townId": "krakow",
+      "townId": "chisinau",
       "sector": "education",
-      "summary": "A Kraków classroom is being repaired, with a few screens for evening lessons.",
+      "summary": "A Chișinău classroom is being repaired, with a few screens for evening lessons.",
       "whatYouGet": "A part of this classroom, recorded as ownership units if the organizer accepts your capital.",
       "goalJmd": 480000,
       "committedJmd": 140000,
@@ -896,7 +896,7 @@
       "workersNeeded": 5,
       "weeklyPayout": 1800,
       "workStarted": false,
-      "organizerName": "Ania Kowalska",
+      "organizerName": "Elena Rusu",
       "needs": [
         "teaching",
         "building"
@@ -1156,34 +1156,34 @@
       ]
     },
     {
-      "id": "uae",
-      "name": "United Arab Emirates",
+      "id": "egypt",
+      "name": "Egypt",
       "regionId": "middle-east",
-      "currency": "AED",
+      "currency": "E£",
       "cities": [
         {
-          "id": "al-ain",
-          "name": "Al Ain"
+          "id": "cairo",
+          "name": "Cairo"
         },
         {
-          "id": "dubai",
-          "name": "Dubai"
+          "id": "alexandria",
+          "name": "Alexandria"
         }
       ]
     },
     {
-      "id": "poland",
-      "name": "Poland",
+      "id": "moldova",
+      "name": "Moldova",
       "regionId": "eastern-europe",
-      "currency": "zł",
+      "currency": "MDL",
       "cities": [
         {
-          "id": "krakow",
-          "name": "Kraków"
+          "id": "chisinau",
+          "name": "Chișinău"
         },
         {
-          "id": "gdansk",
-          "name": "Gdańsk"
+          "id": "balti",
+          "name": "Bălți"
         }
       ]
     },

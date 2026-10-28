@@ -4,7 +4,6 @@ import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { Checklist } from "@/components/parts";
 import { cn } from "cn";
-import { COMMIT_LINE } from "@/lib/copy";
 import { useDemo } from "@/lib/demo-store";
 
 function placeKey(flow: { parishId?: string; countryId?: string } | null): string | undefined {
@@ -72,7 +71,6 @@ export function GettingStarted() {
     return (
       <Checklist
         title="Get started"
-        hint={COMMIT_LINE}
         steps={[
           {
             label: "Pick a region",
@@ -103,7 +101,6 @@ export function GettingStarted() {
   return (
     <Checklist
       title="Get started"
-      hint="You are paid in a stable unit. Your work can turn into ownership units."
       steps={[
         {
           label: "Pick a region and your work",
