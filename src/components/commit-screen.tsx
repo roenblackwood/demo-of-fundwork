@@ -1,0 +1,163 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { LearnMore, NextSteps, OwnershipSplit, StepHeader } from "@/components/parts";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { COMMIT_PRESETS } from "@/lib/catalog";
+import { COMMIT_LINE } from "@/lib/copy";
+import { cn } from "cn";
+import { useDemo } from "@/lib/demo-store";
+import { money, moneyShort } from "@/lib/format";
+import {
+  INVESTOR_UNITS,
+  investorUnits,
+  moneyStillOpen,
+  projectCommitted,
+} from "@/lib/ownership";
+import { getProject } from "@/lib/seed";
+
+export function CommitScreen({ id }: { id: string }) {
+  const router = useRouter();
+  const demo = useDemo();
+  const project = getProject(id);
+  const [amount, setAmount] = useState<number | null>(null);
+
+  if (!demo.ready) return <p className="text-lg">One moment.</p>;
+  if (!project) return null;
+
+  const committed = projectCommitted(
+    project.committedJmd,
+    demo.addedCommitments,
+    project.id,
+  );
+  const stillOpen = moneyStillOpen(project.goalJmd, committed);
+  const units = amount ? investorUnits(amount, project.goalJmd) : 0;
+
+  function save() {
+    if (!project || !amount) return;
+    demo.addCommitment({
+      id: crypto.randomUUID(),
+      userId: demo.userId,
+      projectId: project.id,
+      amountJmd: amount,
+      status: "pledged",
+      createdAt: new Date().toISOString(),
+    });
+    router.push(`/projects/${project.id}/committed`);
+  }
+
+  return (
+    <div className="space-y-6">
+      <StepHeader
+        backHref={`/projects/${project.id}`}
+        title="How much?"
+        hint={project.name}
+      />
+      <p className="text-lg leading-relaxed">{COMMIT_LINE}</p>
+      {stillOpen < 50_000 ? (
+        <p className="text-lg">The money they asked for is already in.</p>
+      ) : (
+        <div className="space-y-3">
+          {COMMIT_PRESETS.map((preset) => {
+            const tooMuch = preset > stillOpen;
+            const selected = amount === preset;
+            return (
+              <button
+                key={preset}
+                type="button"
+                disabled={tooMuch}
+                aria-pressed={selected}
+                onClick={() => setAmount(preset)}
+                className={cn(
+                  "min-h-14 w-full rounded-2xl border-2 px-4 py-3 text-left text-lg font-semibold",
+                  selected
+                    ? "border-primary bg-secondary text-secondary-foreground"
+                    : "border-border bg-card",
+                  tooMuch && "opacity-60",
+                )}
+              >
+                <span className="block">{money(preset)}</span>
+                {tooMuch ? (
+                  <span className="mt-1 block text-base font-normal">
+                    More than what is still open
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      {amount ? (
+        <p className="text-lg leading-relaxed">
+          {money(amount)} becomes about {units} ownership units, once the organizer accepts it.
+        </p>
+      ) : null}
+      <NextSteps
+        items={[
+          "Your commitment is saved on this phone.",
+          "The organizer reviews it.",
+          "If they accept it, it becomes ownership units.",
+        ]}
+      />
+      {stillOpen >= 50_000 ? (
+        <Button size="lg" className="w-full" disabled={!amount} onClick={save}>
+          {amount ? `Commit ${money(amount)}` : "Choose an amount"}
+        </Button>
+      ) : null}
+      <p className="text-base text-muted-foreground">This is a demo. No money moves.</p>
+      <LearnMore title="How the money works">
+        <p>
+          Bitcoin is the capital for the project. People who do the work are paid in a stable unit they can spend. This demo does not move any Bitcoin.
+        </p>
+      </LearnMore>
+      <LearnMore title="Who this belongs to">
+        <OwnershipSplit />
+      </LearnMore>
+      <LearnMore title="How this number is worked out">
+        <p>
+          This project sets aside {INVESTOR_UNITS.toLocaleString("en-US")} ownership units for people who fund it. Your units are your part of the {moneyShort(project.goalJmd)} goal.
+        </p>
+      </LearnMore>
+    </div>
+  );
+}
+
+export function CommittedScreen({ id }: { id: string }) {
+  const demo = useDemo();
+  const project = getProject(id);
+  const commitment = demo.commitments.find((item) => item.projectId === id);
+
+  if (!demo.ready) return <p className="text-lg">One moment.</p>;
+  if (!project || !commitment) {
+    return (
+      <div>
+        <StepHeader backHref={`/projects/${id}`} title="No commitment saved" />
+      </div>
+    );
+  }
+
+  const units = investorUnits(commitment.amountJmd, project.goalJmd);
+
+  return (
+    <div className="space-y-6">
+      <StepHeader backHref="/you" title="You committed" hint={project.name} />
+      <p className="text-lg leading-relaxed">{COMMIT_LINE}</p>
+      <p className="text-3xl font-semibold">{money(commitment.amountJmd)}</p>
+      <p className="text-lg leading-relaxed">
+        About {units} ownership units, waiting on the organizer.
+      </p>
+      <NextSteps
+        items={[
+          "Your commitment is saved on this phone.",
+          "The organizer reviews it.",
+          "If they accept it, it becomes ownership units.",
+        ]}
+      />
+      <Link href="/you" className={cn(buttonVariants({ size: "lg" }), "w-full")}>
+        See my commitments
+      </Link>
+    </div>
+  );
+}

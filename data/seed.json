@@ -1,0 +1,414 @@
+{
+  "parishes": [
+    {
+      "id": "kingston",
+      "name": "Kingston",
+      "towns": [
+        { "id": "downtown", "name": "Downtown" },
+        { "id": "port-royal", "name": "Port Royal" },
+        { "id": "rae-town", "name": "Rae Town" },
+        { "id": "allman-town", "name": "Allman Town" }
+      ]
+    },
+    {
+      "id": "st-andrew",
+      "name": "St. Andrew",
+      "towns": [
+        { "id": "half-way-tree", "name": "Half Way Tree" },
+        { "id": "liguanea", "name": "Liguanea" },
+        { "id": "papine", "name": "Papine" },
+        { "id": "gordon-town", "name": "Gordon Town" },
+        { "id": "stony-hill", "name": "Stony Hill" }
+      ]
+    },
+    {
+      "id": "st-thomas",
+      "name": "St. Thomas",
+      "towns": [
+        { "id": "morant-bay", "name": "Morant Bay" },
+        { "id": "yallahs", "name": "Yallahs" },
+        { "id": "port-morant", "name": "Port Morant" },
+        { "id": "bath", "name": "Bath" },
+        { "id": "seaforth", "name": "Seaforth" }
+      ]
+    },
+    {
+      "id": "portland",
+      "name": "Portland",
+      "towns": [
+        { "id": "port-antonio", "name": "Port Antonio" },
+        { "id": "buff-bay", "name": "Buff Bay" },
+        { "id": "hope-bay", "name": "Hope Bay" },
+        { "id": "boston", "name": "Boston" },
+        { "id": "manchioneal", "name": "Manchioneal" }
+      ]
+    },
+    {
+      "id": "st-mary",
+      "name": "St. Mary",
+      "towns": [
+        { "id": "port-maria", "name": "Port Maria" },
+        { "id": "annotto-bay", "name": "Annotto Bay" },
+        { "id": "oracabessa", "name": "Oracabessa" },
+        { "id": "highgate", "name": "Highgate" }
+      ]
+    },
+    {
+      "id": "st-ann",
+      "name": "St. Ann",
+      "towns": [
+        { "id": "ocho-rios", "name": "Ocho Rios" },
+        { "id": "st-anns-bay", "name": "St. Ann's Bay" },
+        { "id": "runaway-bay", "name": "Runaway Bay" },
+        { "id": "browns-town", "name": "Brown's Town" }
+      ]
+    },
+    {
+      "id": "trelawny",
+      "name": "Trelawny",
+      "towns": [
+        { "id": "falmouth", "name": "Falmouth" },
+        { "id": "duncans", "name": "Duncans" },
+        { "id": "wakefield", "name": "Wakefield" },
+        { "id": "clarks-town", "name": "Clark's Town" }
+      ]
+    },
+    {
+      "id": "st-james",
+      "name": "St. James",
+      "towns": [
+        { "id": "montego-bay", "name": "Montego Bay" },
+        { "id": "cambridge", "name": "Cambridge" },
+        { "id": "adelphi", "name": "Adelphi" },
+        { "id": "anchovy", "name": "Anchovy" }
+      ]
+    },
+    {
+      "id": "hanover",
+      "name": "Hanover",
+      "towns": [
+        { "id": "lucea", "name": "Lucea" },
+        { "id": "green-island", "name": "Green Island" },
+        { "id": "hopewell", "name": "Hopewell" },
+        { "id": "sandy-bay", "name": "Sandy Bay" }
+      ]
+    },
+    {
+      "id": "westmoreland",
+      "name": "Westmoreland",
+      "towns": [
+        { "id": "savanna-la-mar", "name": "Savanna-la-Mar" },
+        { "id": "negril", "name": "Negril" },
+        { "id": "little-london", "name": "Little London" },
+        { "id": "bluefields", "name": "Bluefields" }
+      ]
+    },
+    {
+      "id": "st-elizabeth",
+      "name": "St. Elizabeth",
+      "towns": [
+        { "id": "black-river", "name": "Black River" },
+        { "id": "santa-cruz", "name": "Santa Cruz" },
+        { "id": "junction", "name": "Junction" },
+        { "id": "treasure-beach", "name": "Treasure Beach" }
+      ]
+    },
+    {
+      "id": "manchester",
+      "name": "Manchester",
+      "towns": [
+        { "id": "mandeville", "name": "Mandeville" },
+        { "id": "christiana", "name": "Christiana" },
+        { "id": "porus", "name": "Porus" },
+        { "id": "spaldings", "name": "Spaldings" }
+      ]
+    },
+    {
+      "id": "clarendon",
+      "name": "Clarendon",
+      "towns": [
+        { "id": "may-pen", "name": "May Pen" },
+        { "id": "chapelton", "name": "Chapelton" },
+        { "id": "frankfield", "name": "Frankfield" },
+        { "id": "milk-river", "name": "Milk River" }
+      ]
+    },
+    {
+      "id": "st-catherine",
+      "name": "St. Catherine",
+      "towns": [
+        { "id": "spanish-town", "name": "Spanish Town" },
+        { "id": "portmore", "name": "Portmore" },
+        { "id": "old-harbour", "name": "Old Harbour" },
+        { "id": "linstead", "name": "Linstead" },
+        { "id": "bog-walk", "name": "Bog Walk" }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "id": "marcia",
+      "name": "Marcia Bennett",
+      "role": "investor",
+      "parishId": "kingston",
+      "townId": "downtown",
+      "verified": true,
+      "skill": null,
+      "extraSkills": [],
+      "proofLabel": null,
+      "example": "Investor in Kingston. Has commitments."
+    },
+    {
+      "id": "andre",
+      "name": "Andre Lewis",
+      "role": "investor",
+      "parishId": "st-james",
+      "townId": "montego-bay",
+      "verified": true,
+      "skill": null,
+      "extraSkills": [],
+      "proofLabel": null,
+      "example": "Investor in Montego Bay. Has a commitment."
+    },
+    {
+      "id": "keisha",
+      "name": "Keisha Palmer",
+      "role": "worker",
+      "parishId": "westmoreland",
+      "townId": "negril",
+      "verified": true,
+      "skill": "building",
+      "extraSkills": ["guest-house"],
+      "proofLabel": "Photo of a finished roof, on file",
+      "example": "Builder in Negril. Has ownership units."
+    },
+    {
+      "id": "omar",
+      "name": "Omar Grant",
+      "role": "worker",
+      "parishId": "manchester",
+      "townId": "christiana",
+      "verified": true,
+      "skill": "farming",
+      "extraSkills": [],
+      "proofLabel": "Photo of a harvested field, on file",
+      "example": "Farmer in Christiana. Has ownership units."
+    }
+  ],
+  "projects": [
+    {
+      "id": "negril-cliff-cottages",
+      "name": "Negril Cliff Cottages",
+      "parishId": "westmoreland",
+      "townId": "negril",
+      "sector": "lodging",
+      "summary": "Six small cottages on the west cliff. Weekend guests already come, and the rooms need finishing before the winter season.",
+      "whatYouGet": "A part of this cottage project, recorded as ownership units if the organizer accepts your money.",
+      "goalJmd": 8000000,
+      "committedJmd": 3200000,
+      "workStarted": false,
+      "organizerName": "Camille Wright",
+      "needs": ["building", "guest-house"],
+      "checks": [
+        { "id": "organizer", "state": "yes" },
+        { "id": "jtb", "state": "yes" },
+        { "id": "site-visit", "state": "yes" }
+      ]
+    },
+    {
+      "id": "port-antonio-harbour-rooms",
+      "name": "Port Antonio Harbour Rooms",
+      "parishId": "portland",
+      "townId": "port-antonio",
+      "sector": "lodging",
+      "summary": "A family is turning the upper floor of a harbour building into four guest rooms. The tourist licence is still being checked.",
+      "whatYouGet": "A part of the guest rooms, once the organizer accepts your money.",
+      "goalJmd": 5000000,
+      "committedJmd": 1100000,
+      "workStarted": false,
+      "organizerName": "Devon Palmer",
+      "needs": ["front", "building"],
+      "checks": [
+        { "id": "organizer", "state": "yes" },
+        { "id": "jtb", "state": "review" }
+      ]
+    },
+    {
+      "id": "ocho-rios-garden-inn",
+      "name": "Ocho Rios Garden Inn",
+      "parishId": "st-ann",
+      "townId": "ocho-rios",
+      "sector": "lodging",
+      "summary": "An inn that is already open, adding a kitchen and six rooms. Most of the money they asked for is already committed.",
+      "whatYouGet": "A part of the inn expansion, once the organizer accepts your money.",
+      "goalJmd": 12000000,
+      "committedJmd": 9100000,
+      "workStarted": true,
+      "organizerName": "Nadine Powell",
+      "needs": ["cooking", "guest-house"],
+      "checks": [
+        { "id": "organizer", "state": "yes" },
+        { "id": "jtb", "state": "yes" },
+        { "id": "site-visit", "state": "yes" }
+      ]
+    },
+    {
+      "id": "treasure-beach-fish-cottages",
+      "name": "Treasure Beach Fish Cottages",
+      "parishId": "st-elizabeth",
+      "townId": "treasure-beach",
+      "sector": "lodging",
+      "summary": "Two cottages for visitors who come for the sea. Building has not started. The organizer has a letter from the parish.",
+      "whatYouGet": "A part of the cottages, once the organizer accepts your money.",
+      "goalJmd": 4500000,
+      "committedJmd": 600000,
+      "workStarted": false,
+      "organizerName": "Linton Gayle",
+      "needs": ["building"],
+      "checks": [
+        { "id": "organizer", "state": "yes" },
+        { "id": "parish-letter", "state": "yes" },
+        { "id": "jtb", "state": "review" }
+      ]
+    },
+    {
+      "id": "gordon-town-coffee-shed",
+      "name": "Gordon Town Coffee Shed",
+      "parishId": "st-andrew",
+      "townId": "gordon-town",
+      "sector": "agriculture",
+      "summary": "A drying shed and a small washing station for Blue Mountain coffee farmers who already sell together.",
+      "whatYouGet": "A part of the coffee shed, once the organizer accepts your money.",
+      "goalJmd": 3500000,
+      "committedJmd": 2000000,
+      "workStarted": false,
+      "organizerName": "Ionie Blake",
+      "needs": ["farming", "building"],
+      "checks": [
+        { "id": "organizer", "state": "yes" },
+        { "id": "rada", "state": "yes" },
+        { "id": "site-visit", "state": "yes" }
+      ]
+    },
+    {
+      "id": "christiana-potato-store",
+      "name": "Christiana Potato Store",
+      "parishId": "manchester",
+      "townId": "christiana",
+      "sector": "agriculture",
+      "summary": "A cool room so Irish potato farmers can keep the crop longer, instead of selling it all on one market day.",
+      "whatYouGet": "A part of the cool room, once the organizer accepts your money.",
+      "goalJmd": 6000000,
+      "committedJmd": 2400000,
+      "workStarted": false,
+      "organizerName": "Basil Reid",
+      "needs": ["building", "farming"],
+      "checks": [
+        { "id": "organizer", "state": "yes" },
+        { "id": "rada", "state": "yes" },
+        { "id": "site-visit", "state": "yes" }
+      ]
+    },
+    {
+      "id": "junction-greenhouse",
+      "name": "Junction Greenhouse Greens",
+      "parishId": "st-elizabeth",
+      "townId": "junction",
+      "sector": "agriculture",
+      "summary": "Shade houses for scallion, thyme, and callaloo. The build is underway. They need more hands than money.",
+      "whatYouGet": "A part of the shade houses, once the organizer accepts your money.",
+      "goalJmd": 2200000,
+      "committedJmd": 2200000,
+      "workStarted": true,
+      "organizerName": "Pauline Myers",
+      "needs": ["farming"],
+      "checks": [
+        { "id": "organizer", "state": "yes" },
+        { "id": "rada", "state": "yes" }
+      ]
+    },
+    {
+      "id": "frankfield-goat-dairy",
+      "name": "Frankfield Goat Dairy",
+      "parishId": "clarendon",
+      "townId": "frankfield",
+      "sector": "agriculture",
+      "summary": "A small goat dairy adding a milking parlour and a cold box. A public health check is still open.",
+      "whatYouGet": "A part of the dairy, once the organizer accepts your money.",
+      "goalJmd": 7000000,
+      "committedJmd": 1500000,
+      "workStarted": false,
+      "organizerName": "Carlton Ellis",
+      "needs": ["farming", "building"],
+      "checks": [
+        { "id": "organizer", "state": "yes" },
+        { "id": "parish-letter", "state": "yes" },
+        { "id": "public-health", "state": "open" }
+      ]
+    }
+  ],
+  "commitments": [
+    {
+      "id": "c-marcia-ocho",
+      "userId": "marcia",
+      "projectId": "ocho-rios-garden-inn",
+      "amountJmd": 500000,
+      "status": "accepted",
+      "createdAt": "2026-09-12T14:00:00.000Z"
+    },
+    {
+      "id": "c-marcia-coffee",
+      "userId": "marcia",
+      "projectId": "gordon-town-coffee-shed",
+      "amountJmd": 150000,
+      "status": "pledged",
+      "createdAt": "2026-10-02T14:00:00.000Z"
+    },
+    {
+      "id": "c-andre-negril",
+      "userId": "andre",
+      "projectId": "negril-cliff-cottages",
+      "amountJmd": 150000,
+      "status": "pledged",
+      "createdAt": "2026-10-18T14:00:00.000Z"
+    }
+  ],
+  "contributions": [
+    {
+      "id": "k-negril-week",
+      "userId": "keisha",
+      "projectId": "negril-cliff-cottages",
+      "skill": "building",
+      "preset": "week",
+      "status": "accepted",
+      "createdAt": "2026-09-20T14:00:00.000Z"
+    },
+    {
+      "id": "k-treasure-day",
+      "userId": "keisha",
+      "projectId": "treasure-beach-fish-cottages",
+      "skill": "building",
+      "preset": "day",
+      "status": "logged",
+      "createdAt": "2026-10-21T14:00:00.000Z"
+    },
+    {
+      "id": "o-christiana-few",
+      "userId": "omar",
+      "projectId": "christiana-potato-store",
+      "skill": "farming",
+      "preset": "few",
+      "status": "accepted",
+      "createdAt": "2026-09-28T14:00:00.000Z"
+    },
+    {
+      "id": "o-junction-day",
+      "userId": "omar",
+      "projectId": "junction-greenhouse",
+      "skill": "farming",
+      "preset": "day",
+      "status": "logged",
+      "createdAt": "2026-10-15T14:00:00.000Z"
+    }
+  ]
+}
