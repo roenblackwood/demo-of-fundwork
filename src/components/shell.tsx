@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CircleDollarSign, Hammer, Home, UserRound } from "lucide-react";
-import { firstName } from "@/lib/format";
-import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
+import { firstName } from "@/lib/format";
+import { youHasUpdate } from "@/lib/requests";
+import { cn } from "cn";
 
 /**
  * Nice to have later, not in this pass:
@@ -24,10 +25,11 @@ const tabs = [
 ] as const;
 
 export function Shell({ children }: { children: React.ReactNode }) {
-  const { ready, name, role } = useDemo();
+  const { ready, name, role, userId, requests, applications } = useDemo();
   const pathname = usePathname();
   const label = ready ? firstName(name) : "You";
   const current = tabFor(pathname, role);
+  const attention = ready && youHasUpdate(role, userId, requests, applications);
 
   return (
     <>
@@ -72,12 +74,18 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 key={tab.id}
                 href={tab.href}
                 aria-current={on ? "page" : undefined}
+                aria-label={tab.id === "you" && attention ? "You, new update" : undefined}
                 className={cn(
                   "flex min-h-14 flex-col items-center justify-center gap-0.5 text-sm font-semibold",
                   on ? "text-primary" : "text-muted-foreground",
                 )}
               >
-                <Icon className="size-6" aria-hidden />
+                <span className="relative">
+                  <Icon className="size-6" aria-hidden />
+                  {tab.id === "you" && attention ? (
+                    <span className="absolute top-0 right-0 size-2 rounded-full bg-primary" aria-hidden />
+                  ) : null}
+                </span>
                 {tab.label}
               </Link>
             );
@@ -93,7 +101,7 @@ function tabFor(pathname: string, role: "investor" | "worker" | null): (typeof t
   if (pathname.startsWith("/invest")) return "invest";
   if (pathname.startsWith("/work")) return "work";
   if (pathname.startsWith("/you")) return "you";
-  if (pathname.startsWith("/projects")) {
+  if (pathname.startsWith("/projects") || pathname.startsWith("/requests")) {
     if (role === "worker") return "work";
     if (role === "investor") return "invest";
   }

@@ -12,7 +12,7 @@ import { countriesIn, getRegion, showcaseById, type RegionId } from "@/lib/regio
 import { getProjects } from "@/lib/seed";
 
 export default function HomePage() {
-  const { startPath } = useDemo();
+  const { startPath, role } = useDemo();
   const [regionId, setRegionId] = useState<RegionId | null>(null);
   const [countryId, setCountryId] = useState<string | null>(null);
   const crumbs = useRef<HTMLElement>(null);
@@ -38,11 +38,18 @@ export default function HomePage() {
     country?.id === "jamaica" ? "/invest/jamaica" : country ? `/invest/${country.id}` : "/invest";
   const workHref =
     country?.id === "jamaica" ? "/work/jamaica" : country ? `/work/${country.id}` : "/work";
+  const startHref =
+    country?.id === "jamaica"
+      ? "/invest/start/jamaica"
+      : country
+        ? `/invest/start/${country.id}`
+        : "/invest/start";
+  const roomForStart = Boolean(country && role === "investor");
 
   return (
     <div className="flex flex-1 flex-col">
       <h1 className="font-display text-4xl leading-tight">Where should we look?</h1>
-      <div className={country ? "mt-3" : "mt-6"}>
+      <div className={roomForStart ? "mx-auto mt-2 w-[60%]" : country ? "mt-3" : "mt-6"}>
         <RegionMap
           selected={regionId}
           countryId={countryId}
@@ -50,7 +57,7 @@ export default function HomePage() {
           onSelectCountry={setCountryId}
         />
       </div>
-      <nav ref={crumbs} aria-label="Place" className="mt-3 flex gap-1 overflow-x-auto">
+      <nav ref={crumbs} aria-label="Place" className={roomForStart ? "mt-2 flex gap-1 overflow-x-auto" : "mt-3 flex gap-1 overflow-x-auto"}>
         {region ? (
           <button
             type="button"
@@ -114,18 +121,29 @@ export default function HomePage() {
           ))}
         </div>
       ) : (
-        <p className="mt-4 text-lg leading-relaxed">
-          {country.id === "jamaica"
-            ? "Jamaica is open, parish by parish."
-            : featured.length > 0
-              ? `${featured[0].name} is open in ${country.name}.`
-              : `${country.name} is on the map. The open project in ${region.name} is next door.`}
-        </p>
+        <div className={roomForStart ? "mt-2 space-y-2" : "mt-4 space-y-3"}>
+          <p className="text-lg leading-relaxed">
+            {country.id === "jamaica"
+              ? "Jamaica is open, parish by parish."
+              : featured.length > 0
+                ? `${featured[0].name} is open in ${country.name}.`
+                : `${country.name} is on the map. The open project in ${region.name} is next door.`}
+          </p>
+          {role === "investor" ? (
+            <Link
+              href={startHref}
+              onClick={() => startPath("investor")}
+              className={cn(buttonVariants({ variant: "outline", size: "sm" }), "w-full")}
+            >
+              Start a project here
+            </Link>
+          ) : null}
+        </div>
       )}
-      <p className={country ? "mt-12 text-lg leading-relaxed" : "mt-8 text-lg leading-relaxed"}>
+      <p className={roomForStart ? "mt-2 text-lg leading-relaxed" : country ? "mt-12 text-lg leading-relaxed" : "mt-8 text-lg leading-relaxed"}>
         {CAPITAL_LINE}
       </p>
-      <p className="mt-3 text-base text-muted-foreground">A demo. No money moves.</p>
+      <p className={roomForStart ? "mt-2 text-base text-muted-foreground" : "mt-3 text-base text-muted-foreground"}>A demo. No money moves.</p>
       {country ? (
         <ActionBar>
           <Link

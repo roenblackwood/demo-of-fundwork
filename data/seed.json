@@ -1315,5 +1315,155 @@
         }
       ]
     }
+  ],
+  "requests": [
+    {
+      "id": "req-kingston-rooms",
+      "userId": "marcia",
+      "countryId": "jamaica",
+      "parishId": "kingston",
+      "townId": "downtown",
+      "sector": "lodging",
+      "budget": 150000,
+      "workersNeeded": 2,
+      "skills": ["building", "guest-house"],
+      "note": "I want to finish two rooms downtown for weekend guests.",
+      "status": "open",
+      "createdAt": "2026-10-20T14:00:00.000Z"
+    },
+    {
+      "id": "req-montego-farm",
+      "userId": "andre",
+      "countryId": "jamaica",
+      "parishId": "st-james",
+      "townId": "montego-bay",
+      "sector": "agriculture",
+      "budget": 500000,
+      "workersNeeded": 3,
+      "skills": ["farming", "cooking"],
+      "note": "I want a small farm stand and a kitchen near the bay.",
+      "status": "open",
+      "createdAt": "2026-10-21T14:00:00.000Z"
+    },
+    {
+      "id": "req-kisumu-water",
+      "userId": "amina",
+      "countryId": "kenya",
+      "parishId": null,
+      "townId": "kisumu",
+      "sector": "water",
+      "budget": 800000,
+      "workersNeeded": 2,
+      "skills": ["water", "building"],
+      "note": "I want a tank and a pump for a clinic yard in Kisumu.",
+      "status": "open",
+      "createdAt": "2026-10-22T14:00:00.000Z"
+    },
+    {
+      "id": "req-tamale-borehole",
+      "userId": "marcia",
+      "countryId": "ghana",
+      "parishId": null,
+      "townId": "tamale",
+      "sector": "water",
+      "budget": 200000,
+      "workersNeeded": 2,
+      "skills": ["water", "building"],
+      "note": "I want a borehole fitted with a pump in Tamale.",
+      "status": "open",
+      "createdAt": "2026-10-23T14:00:00.000Z"
+    },
+    {
+      "id": "req-sylhet-store",
+      "userId": "andre",
+      "countryId": "bangladesh",
+      "parishId": null,
+      "townId": "sylhet",
+      "sector": "agriculture",
+      "budget": 400000,
+      "workersNeeded": 4,
+      "skills": ["farming"],
+      "note": "I want a cool store for the harvest in Sylhet.",
+      "status": "open",
+      "createdAt": "2026-10-24T14:00:00.000Z"
+    },
+    {
+      "id": "req-ubud-rooms",
+      "userId": "amina",
+      "countryId": "indonesia",
+      "parishId": null,
+      "townId": "ubud",
+      "sector": "lodging",
+      "budget": 250000000,
+      "workersNeeded": 3,
+      "skills": ["guest-house", "building"],
+      "note": "I want three guest rooms finished in Ubud.",
+      "status": "open",
+      "createdAt": "2026-10-25T14:00:00.000Z"
+    }
+  ],
+  "applications": [
+    {
+      "id": "app-keisha-kingston",
+      "requestId": "req-kingston-rooms",
+      "workerId": "keisha",
+      "skill": "building",
+      "message": "I have finished guest rooms before.",
+      "origin": "applied",
+      "status": "waiting",
+      "createdAt": "2026-10-26T14:00:00.000Z"
+    },
+    {
+      "id": "app-kwesi-tamale",
+      "requestId": "req-tamale-borehole",
+      "workerId": "kwesi",
+      "skill": "water",
+      "message": "I fit pumps in Tamale.",
+      "origin": "applied",
+      "status": "waiting",
+      "createdAt": "2026-10-26T15:00:00.000Z"
+    },
+    {
+      "id": "app-omar-montego",
+      "requestId": "req-montego-farm",
+      "workerId": "omar",
+      "skill": "farming",
+      "message": "",
+      "origin": "invited",
+      "status": "waiting",
+      "createdAt": "2026-10-26T16:00:00.000Z"
+    }
+  ],
+  "availability": [
+    {
+      "id": "avail-keisha-kingston",
+      "userId": "keisha",
+      "countryId": "jamaica",
+      "parishId": "kingston",
+      "townId": "downtown",
+      "skills": ["building", "guest-house"],
+      "note": "I can take building work in Kingston this month.",
+      "createdAt": "2026-10-19T14:00:00.000Z"
+    },
+    {
+      "id": "avail-omar-montego",
+      "userId": "omar",
+      "countryId": "jamaica",
+      "parishId": "st-james",
+      "townId": "montego-bay",
+      "skills": ["farming"],
+      "note": "I can do farm work around Montego Bay.",
+      "createdAt": "2026-10-19T15:00:00.000Z"
+    },
+    {
+      "id": "avail-kwesi-tamale",
+      "userId": "kwesi",
+      "countryId": "ghana",
+      "parishId": null,
+      "townId": "tamale",
+      "skills": ["water", "building"],
+      "note": "I can fit pumps and pipes in Tamale.",
+      "createdAt": "2026-10-19T16:00:00.000Z"
+    }
   ]
 }

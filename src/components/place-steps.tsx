@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { OpenRequests } from "@/components/open-requests";
 import { ChoiceLink, StepHeader } from "@/components/parts";
 import { RegionMap } from "@/components/region-map";
 import { buttonVariants } from "@/components/ui/button";
@@ -23,13 +24,29 @@ import {
 import { getCity, getCountry, getParish, getParishes, getProjects, getTown } from "@/lib/seed";
 import type { PathChoice, Skill } from "@/lib/types";
 
-function pathRoot(mode: PathChoice): string {
+export type PlacePurpose = "browse" | "request" | "available";
+
+function pathRoot(mode: PathChoice, purpose: PlacePurpose = "browse"): string {
+  if (purpose === "request") return "/invest/start";
+  if (purpose === "available") return "/work/available";
   return mode === "investor" ? "/invest" : "/work";
 }
 
-export function RegionStep({ mode }: { mode: PathChoice }) {
+function regionBack(purpose: PlacePurpose): string {
+  if (purpose === "request") return "/invest";
+  if (purpose === "available") return "/work";
+  return "/";
+}
+
+export function RegionStep({
+  mode,
+  purpose = "browse",
+}: {
+  mode: PathChoice;
+  purpose?: PlacePurpose;
+}) {
   const router = useRouter();
-  const { updateFlow } = useDemo();
+  const { startPath, updateFlow } = useDemo();
   const [regionId, setRegionId] = useState<RegionId | null>(null);
   const region = regionId ? getRegion(regionId) : undefined;
   const countries = regionId ? countriesIn(regionId) : [];
@@ -49,18 +66,32 @@ export function RegionStep({ mode }: { mode: PathChoice }) {
       skill: undefined,
       extraSkills: [],
     });
-    const root = pathRoot(mode);
+    const root = pathRoot(mode, purpose);
     router.push(id === "jamaica" ? `${root}/jamaica` : `${root}/${id}`);
   }
 
   return (
     <div>
       <StepHeader
-        backHref="/"
+        backHref={regionBack(purpose)}
         step={1}
         total={FLOW_STEPS}
         title="Where should we look?"
       />
+      {mode === "worker" && purpose === "browse" ? (
+        <div className="mb-6">
+          <OpenRequests />
+        </div>
+      ) : null}
+      {mode === "investor" && purpose === "browse" ? (
+        <Link
+          href="/invest/start"
+          onClick={() => startPath("investor")}
+          className={cn(buttonVariants({ variant: "outline", size: "lg" }), "mb-6 w-full")}
+        >
+          Start a project here
+        </Link>
+      ) : null}
       <RegionMap
         selected={regionId}
         onSelect={chooseRegion}
@@ -82,8 +113,8 @@ export function RegionStep({ mode }: { mode: PathChoice }) {
                 key={country.id}
                 href={
                   country.id === "jamaica"
-                    ? `${pathRoot(mode)}/jamaica`
-                    : `${pathRoot(mode)}/${country.id}`
+                    ? `${pathRoot(mode, purpose)}/jamaica`
+                    : `${pathRoot(mode, purpose)}/${country.id}`
                 }
                 title={country.name}
                 detail={detail}
@@ -109,10 +140,18 @@ export function RegionStep({ mode }: { mode: PathChoice }) {
   );
 }
 
-export function CountryStep({ regionId, mode }: { regionId: RegionId; mode: PathChoice }) {
+export function CountryStep({
+  regionId,
+  mode,
+  purpose = "browse",
+}: {
+  regionId: RegionId;
+  mode: PathChoice;
+  purpose?: PlacePurpose;
+}) {
   const { updateFlow } = useDemo();
   const region = getRegion(regionId);
-  const root = pathRoot(mode);
+  const root = pathRoot(mode, purpose);
 
   return (
     <div>
@@ -147,7 +186,13 @@ export function CountryStep({ regionId, mode }: { regionId: RegionId; mode: Path
   );
 }
 
-export function ParishStep({ mode }: { mode: PathChoice }) {
+export function ParishStep({
+  mode,
+  purpose = "browse",
+}: {
+  mode: PathChoice;
+  purpose?: PlacePurpose;
+}) {
   const { updateFlow } = useDemo();
   const [finding, setFinding] = useState(false);
   const [query, setQuery] = useState("");
@@ -158,7 +203,7 @@ export function ParishStep({ mode }: { mode: PathChoice }) {
     return parishes.filter((parish) => parish.name.toLowerCase().includes(text));
   }, [parishes, query]);
   const title = mode === "investor" ? "Which parish?" : "Where do you want to work?";
-  const root = pathRoot(mode);
+  const root = pathRoot(mode, purpose);
 
   return (
     <div>
@@ -220,14 +265,16 @@ export function ParishStep({ mode }: { mode: PathChoice }) {
 export function TownStep({
   parishId,
   mode,
+  purpose = "browse",
 }: {
   parishId: string;
   mode: PathChoice;
+  purpose?: PlacePurpose;
 }) {
   const { updateFlow } = useDemo();
   const parish = getParish(parishId);
   if (!parish) return null;
-  const root = pathRoot(mode);
+  const root = pathRoot(mode, purpose);
 
   return (
     <div>
@@ -261,14 +308,16 @@ export function TownStep({
 export function CityStep({
   countryId,
   mode,
+  purpose = "browse",
 }: {
   countryId: string;
   mode: PathChoice;
+  purpose?: PlacePurpose;
 }) {
   const { updateFlow } = useDemo();
   const country = getCountry(countryId);
   if (!country) return null;
-  const root = pathRoot(mode);
+  const root = pathRoot(mode, purpose);
   const region = getRegion(country.regionId);
 
   return (

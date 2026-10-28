@@ -48,11 +48,75 @@ for (const project of seed.projects) {
   }
 }
 
+const skillIds = new Set([
+  "building",
+  "guest-house",
+  "farming",
+  "cooking",
+  "front",
+  "power",
+  "water",
+  "internet",
+  "teaching",
+  "care",
+]);
+const userIds = new Set((seed.users ?? []).map((user) => user.id));
+
+function placeOk(item) {
+  if (item.countryId === "jamaica") {
+    const towns = parishes.get(item.parishId);
+    return Boolean(towns?.has(item.townId));
+  }
+  return !item.parishId && Boolean(countries.get(item.countryId)?.has(item.townId));
+}
+
+if (!Array.isArray(seed.requests) || seed.requests.length === 0) {
+  errors.push("Expected capital requests.");
+}
+const requestsById = new Map();
+for (const request of seed.requests ?? []) {
+  if (requestsById.has(request.id)) errors.push(`Duplicate request ${request.id}.`);
+  requestsById.set(request.id, request);
+  if (!userIds.has(request.userId)) errors.push(`${request.id} points at a missing user.`);
+  if (!placeOk(request)) errors.push(`${request.id} has a bad place.`);
+  if (!sectorsNeeded.includes(request.sector)) errors.push(`${request.id} has a bad sector.`);
+  if (!(request.budget > 0)) errors.push(`${request.id} needs a budget above zero.`);
+  if (!Array.isArray(request.skills) || request.skills.length === 0) {
+    errors.push(`${request.id} needs a skill.`);
+  }
+  for (const skill of request.skills ?? []) {
+    if (!skillIds.has(skill)) errors.push(`${request.id} has an unknown skill.`);
+  }
+}
+
+if (!Array.isArray(seed.applications)) errors.push("Expected applications.");
+for (const application of seed.applications ?? []) {
+  const request = requestsById.get(application.requestId);
+  if (!request) errors.push(`${application.id} points at a missing request.`);
+  if (!userIds.has(application.workerId)) errors.push(`${application.id} points at a missing user.`);
+  if (!skillIds.has(application.skill)) errors.push(`${application.id} has an unknown skill.`);
+  if (request && !request.skills.includes(application.skill)) {
+    errors.push(`${application.id} uses a skill the request does not need.`);
+  }
+}
+
+if (!Array.isArray(seed.availability) || seed.availability.length === 0) {
+  errors.push("Expected availability posts.");
+}
+for (const post of seed.availability ?? []) {
+  if (!userIds.has(post.userId)) errors.push(`${post.id} points at a missing user.`);
+  if (!placeOk(post)) errors.push(`${post.id} has a bad place.`);
+  if (!Array.isArray(post.skills) || post.skills.length === 0) errors.push(`${post.id} needs a skill.`);
+  for (const skill of post.skills ?? []) {
+    if (!skillIds.has(skill)) errors.push(`${post.id} has an unknown skill.`);
+  }
+}
+
 if (errors.length) {
   console.error(errors.join("\n"));
   process.exit(1);
 }
 
 console.log(
-  `Seed ok: ${seed.parishes.length} parishes, ${seed.countries.length} countries, ${seed.projects.length} projects, ${seed.users.length} sample people.`,
+  `Seed ok: ${seed.parishes.length} parishes, ${seed.countries.length} countries, ${seed.projects.length} projects, ${seed.users.length} sample people, ${seed.requests.length} requests.`,
 );

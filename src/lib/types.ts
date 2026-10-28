@@ -116,6 +116,49 @@ export type Contribution = {
   createdAt: string;
 };
 
+export type RequestStatus = "open" | "team-ready" | "closed";
+
+export type CapitalRequest = {
+  id: string;
+  userId: string;
+  countryId: string;
+  parishId: string | null;
+  townId: string;
+  sector: Sector;
+  budget: number;
+  workersNeeded: number;
+  skills: Skill[];
+  note: string;
+  status: RequestStatus;
+  createdAt: string;
+};
+
+export type ApplicationOrigin = "applied" | "invited";
+
+export type ApplicationStatus = "waiting" | "accepted" | "declined";
+
+export type Application = {
+  id: string;
+  requestId: string;
+  workerId: string;
+  skill: Skill;
+  message: string;
+  origin: ApplicationOrigin;
+  status: ApplicationStatus;
+  createdAt: string;
+};
+
+export type Availability = {
+  id: string;
+  userId: string;
+  countryId: string;
+  parishId: string | null;
+  townId: string;
+  skills: Skill[];
+  note: string;
+  createdAt: string;
+};
+
 export type Seed = {
   parishes: Parish[];
   countries: Country[];
@@ -123,6 +166,9 @@ export type Seed = {
   projects: Project[];
   commitments: Commitment[];
   contributions: Contribution[];
+  requests: CapitalRequest[];
+  applications: Application[];
+  availability: Availability[];
 };
 
 export type AiNote = {

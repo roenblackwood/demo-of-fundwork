@@ -92,6 +92,9 @@ export function CommitScreen({ id }: { id: string }) {
           })}
         </div>
       )}
+      {open ? (
+        <p className="text-base text-muted-foreground">This is a demo. No money moves.</p>
+      ) : null}
       {amount ? (
         <p className="text-lg leading-relaxed">
           {money(amount, currency)} becomes about {units} ownership units, once the organizer accepts it.

@@ -29,26 +29,38 @@ export function SectorTile({
 
 export function StepHeader({
   backHref,
+  onBack,
   step,
   total,
   title,
   hint,
 }: {
   backHref: string;
+  onBack?: () => void;
   step?: number;
   total?: number;
   title?: string;
   hint?: string;
 }) {
+  const backClass =
+    "inline-flex min-h-11 min-w-11 items-center gap-1 font-semibold text-primary focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring";
+  const backInner = (
+    <>
+      <ChevronLeft className="size-6 shrink-0" aria-hidden />
+      Back
+    </>
+  );
   return (
     <div className={title ? "mb-6" : "mb-4"}>
-      <Link
-        href={backHref}
-        className="inline-flex min-h-11 min-w-11 items-center gap-1 font-semibold text-primary focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
-      >
-        <ChevronLeft className="size-6 shrink-0" aria-hidden />
-        Back
-      </Link>
+      {onBack ? (
+        <button type="button" onClick={onBack} className={backClass}>
+          {backInner}
+        </button>
+      ) : (
+        <Link href={backHref} className={backClass}>
+          {backInner}
+        </Link>
+      )}
       {step && total ? (
         <p className="mt-4 text-base font-semibold text-muted-foreground">
           Step {step} of {total}
@@ -136,6 +148,51 @@ export function StatusLabel({
     >
       {label}
     </span>
+  );
+}
+
+export function ApplicationStatusLabel({
+  origin,
+  status,
+  viewer,
+}: {
+  origin: "applied" | "invited";
+  status: "waiting" | "accepted" | "declined";
+  viewer: "investor" | "worker";
+}) {
+  const label =
+    status === "accepted"
+      ? "Accepted"
+      : status === "declined"
+        ? "Not this time"
+        : origin === "invited"
+          ? viewer === "worker"
+            ? "Invited. Waiting on you"
+            : "Invited. Waiting on them."
+          : "Waiting on the investor";
+  const tone =
+    status === "accepted"
+      ? "bg-trust text-trust-foreground"
+      : status === "declined"
+        ? "bg-muted text-muted-foreground"
+        : "bg-wait text-wait-foreground";
+  return (
+    <span className={cn("inline-flex min-h-8 items-center rounded-full px-3 py-1 text-sm font-semibold", tone)}>
+      {label}
+    </span>
+  );
+}
+
+export function CapitalChip() {
+  return (
+    <div className="space-y-2">
+      <span className="inline-flex min-h-8 items-center rounded-full bg-wait px-3 py-1 text-sm font-semibold text-wait-foreground">
+        Capital not checked yet.
+      </span>
+      <p className="text-base text-muted-foreground">
+        Wallet connection is coming. For now this request shows the amount you entered.
+      </p>
+    </div>
   );
 }
 

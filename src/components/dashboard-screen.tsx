@@ -3,16 +3,17 @@
 import Link from "next/link";
 import { PageBusy } from "@/components/busy";
 import { GettingStarted } from "@/components/getting-started";
-import { StatusLabel } from "@/components/parts";
+import { ApplicationStatusLabel, StatusLabel } from "@/components/parts";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { workPresetLabel } from "@/lib/catalog";
+import { sectorTitle, skillTitle, workPresetLabel } from "@/lib/catalog";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
-import { firstName, money } from "@/lib/format";
+import { firstName, money, placeLine } from "@/lib/format";
 import { investorUnits, workerUnits } from "@/lib/ownership";
-import { currencyOf, getProject } from "@/lib/seed";
+import { acceptedCount, waitingCount } from "@/lib/requests";
+import { currencyOf, getProject, requestPlace } from "@/lib/seed";
 
 export function DashboardScreen() {
   const demo = useDemo();
@@ -150,6 +151,10 @@ export function DashboardScreen() {
         </Link>
       ) : null}
 
+      {demo.role === "investor" ? <YourRequests /> : null}
+      {demo.role === "worker" ? <YourApplications /> : null}
+      {demo.role === "worker" ? <YourAvailability /> : null}
+
       {demo.role === "investor" && !hasMoney ? <GettingStarted /> : null}
       {demo.role === "worker" && !hasWork ? <GettingStarted /> : null}
       {!demo.role ? <GettingStarted /> : null}
@@ -161,5 +166,143 @@ export function DashboardScreen() {
         See an example person
       </Link>
     </div>
+  );
+}
+
+function YourRequests() {
+  const demo = useDemo();
+  const mine = demo.requests.filter((request) => request.userId === demo.userId);
+  return (
+    <section className="space-y-4">
+      <h2 className="text-xl font-semibold">Your requests</h2>
+      {mine.length === 0 ? (
+        <>
+          <p className="text-lg">You have not posted a request yet.</p>
+          <Link href="/invest/start" className={cn(buttonVariants({ variant: "outline", size: "lg" }), "w-full")}>
+            Start a project here
+          </Link>
+        </>
+      ) : (
+        mine.map((request) => {
+          const where = requestPlace(request);
+          const place = where ? placeLine(where.town, where.parish) : "This place";
+          const waiting = waitingCount(demo.applications, request.id);
+          const accepted = acceptedCount(demo.applications, request.id);
+          return (
+            <Link
+              key={request.id}
+              href={`/requests/${request.id}`}
+              className="block rounded-2xl focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle>
+                    {sectorTitle(request.sector)} in {place}
+                  </CardTitle>
+                  <Badge className="border-transparent bg-wait text-wait-foreground">
+                    {waiting} waiting
+                  </Badge>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-lg font-semibold">{money(request.budget, currencyOf(request.countryId))}</p>
+                  <p className="mt-1 text-base">
+                    {accepted} of {request.workersNeeded} workers
+                  </p>
+                  {request.status === "team-ready" ? <p className="mt-1 text-base">The team is ready.</p> : null}
+                </CardContent>
+              </Card>
+            </Link>
+          );
+        })
+      )}
+    </section>
+  );
+}
+
+function YourApplications() {
+  const demo = useDemo();
+  const mine = demo.applications.filter((item) => item.workerId === demo.userId);
+  return (
+    <section className="space-y-4">
+      <h2 className="text-xl font-semibold">Your applications</h2>
+      {mine.length === 0 ? (
+        <>
+          <p className="text-lg">You have not applied yet.</p>
+          <Link href="/work" className={cn(buttonVariants({ variant: "outline", size: "lg" }), "w-full")}>
+            See open requests
+          </Link>
+        </>
+      ) : (
+        mine.map((application) => {
+          const request = demo.requests.find((item) => item.id === application.requestId);
+          if (!request) return null;
+          const where = requestPlace(request);
+          const place = where ? placeLine(where.town, where.parish) : "This place";
+          return (
+            <Link
+              key={application.id}
+              href={`/requests/${request.id}`}
+              className="block rounded-2xl focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle>
+                    {sectorTitle(request.sector)} in {place}
+                  </CardTitle>
+                  <ApplicationStatusLabel
+                    origin={application.origin}
+                    status={application.status}
+                    viewer="worker"
+                  />
+                </CardHeader>
+                <CardContent>
+                  <p className="text-lg font-semibold">{skillTitle(application.skill)}</p>
+                </CardContent>
+              </Card>
+            </Link>
+          );
+        })
+      )}
+    </section>
+  );
+}
+
+function YourAvailability() {
+  const demo = useDemo();
+  const mine = demo.availability.filter((item) => item.userId === demo.userId);
+  return (
+    <section className="space-y-4">
+      <h2 className="text-xl font-semibold">Your availability</h2>
+      {mine.length === 0 ? (
+        <>
+          <p className="text-lg">You have not posted that you are available.</p>
+          <Link
+            href="/work/available"
+            className={cn(buttonVariants({ variant: "outline", size: "lg" }), "w-full")}
+          >
+            Post that you are available
+          </Link>
+        </>
+      ) : (
+        mine.map((post) => {
+          const where = requestPlace(post);
+          const place = where ? placeLine(where.town, where.parish) : "This place";
+          return (
+            <Card key={post.id}>
+              <CardHeader>
+                <CardTitle>{place}</CardTitle>
+                <Badge className="border-transparent bg-trust text-trust-foreground">Posted</Badge>
+              </CardHeader>
+              <CardContent>
+                <p className="text-lg font-semibold">
+                  {post.skills.map((skill) => skillTitle(skill)).join(", ")}
+                </p>
+                {post.note ? <p className="mt-1 text-base">{post.note}</p> : null}
+              </CardContent>
+            </Card>
+          );
+        })
+      )}
+    </section>
   );
 }

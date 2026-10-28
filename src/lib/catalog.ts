@@ -199,3 +199,23 @@ export function skillPhrase(id: Skill): string {
 export function workPresetLabel(id: WorkPreset): string {
   return WORK_PRESETS.find((preset) => preset.id === id)?.label ?? "Work";
 }
+
+const SECTOR_SKILLS: Record<Sector, Skill[]> = {
+  lodging: ["guest-house", "building"],
+  agriculture: ["farming"],
+  energy: ["power"],
+  water: ["water"],
+  connectivity: ["internet"],
+  education: ["teaching"],
+  healthcare: ["care"],
+};
+
+export function skillsForSector(sector: Sector): Skill[] {
+  return [...SECTOR_SKILLS[sector]];
+}
+
+/** Three local amounts for a new request. Jamaica keeps the commit presets. */
+export function requestBudgets(currency: string): number[] {
+  if (currency === "J$") return [...COMMIT_PRESETS];
+  return commitChoices(10_000_000, currency);
+}

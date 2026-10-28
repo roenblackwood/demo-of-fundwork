@@ -2,6 +2,9 @@ import raw from "../../data/seed.json";
 import { isSector, isSkill } from "@/lib/catalog";
 import { getRegion } from "@/lib/regions";
 import type {
+  Application,
+  Availability,
+  CapitalRequest,
   Commitment,
   Contribution,
   Country,
@@ -135,6 +138,89 @@ function assertSeed(data: Seed): void {
       throw new Error(`Contribution ${contribution.id} has an unknown skill.`);
     }
   }
+  const requestStatus = new Set(["open", "team-ready", "closed"]);
+  const applicationStatus = new Set(["waiting", "accepted", "declined"]);
+  const applicationOrigin = new Set(["applied", "invited"]);
+  function placeOk(countryId: string, parishId: string | null, townId: string): boolean {
+    if (countryId === "jamaica") {
+      const towns = parishId ? jamaicaTowns.get(parishId) : undefined;
+      return Boolean(towns?.has(townId));
+    }
+    return !parishId && Boolean(cities.get(countryId)?.has(townId));
+  }
+  if (!Array.isArray(data.requests) || data.requests.length === 0) {
+    throw new Error("Expected capital requests.");
+  }
+  const requestIds = new Set<string>();
+  const requestsById = new Map<string, (typeof data.requests)[number]>();
+  for (const request of data.requests) {
+    if (requestIds.has(request.id)) throw new Error(`Duplicate request ${request.id}.`);
+    requestIds.add(request.id);
+    requestsById.set(request.id, request);
+    if (!userIds.has(request.userId)) {
+      throw new Error(`Request ${request.id} points at a missing user.`);
+    }
+    if (!placeOk(request.countryId, request.parishId, request.townId)) {
+      throw new Error(`Request ${request.id} has an unknown place.`);
+    }
+    if (!isSector(request.sector)) {
+      throw new Error(`Request ${request.id} has an unknown sector.`);
+    }
+    if (!(request.budget > 0) || !Number.isFinite(request.budget)) {
+      throw new Error(`Request ${request.id} needs a budget above zero.`);
+    }
+    if (!Number.isInteger(request.workersNeeded) || request.workersNeeded < 1) {
+      throw new Error(`Request ${request.id} needs at least one worker.`);
+    }
+    if (!Array.isArray(request.skills) || request.skills.length === 0) {
+      throw new Error(`Request ${request.id} needs a skill.`);
+    }
+    for (const skill of request.skills) {
+      if (!isSkill(skill)) throw new Error(`Request ${request.id} has an unknown skill.`);
+    }
+    if (!requestStatus.has(request.status)) {
+      throw new Error(`Request ${request.id} has an unknown status.`);
+    }
+  }
+  if (!Array.isArray(data.applications)) throw new Error("Expected applications.");
+  const applicationIds = new Set<string>();
+  for (const application of data.applications) {
+    if (applicationIds.has(application.id)) {
+      throw new Error(`Duplicate application ${application.id}.`);
+    }
+    applicationIds.add(application.id);
+    const request = requestsById.get(application.requestId);
+    if (!request) throw new Error(`Application ${application.id} points at a missing request.`);
+    if (!userIds.has(application.workerId)) {
+      throw new Error(`Application ${application.id} points at a missing user.`);
+    }
+    if (!isSkill(application.skill) || !request.skills.includes(application.skill)) {
+      throw new Error(`Application ${application.id} has an unknown skill.`);
+    }
+    if (!applicationOrigin.has(application.origin) || !applicationStatus.has(application.status)) {
+      throw new Error(`Application ${application.id} has an unknown status.`);
+    }
+  }
+  if (!Array.isArray(data.availability) || data.availability.length === 0) {
+    throw new Error("Expected availability posts.");
+  }
+  const availabilityIds = new Set<string>();
+  for (const post of data.availability) {
+    if (availabilityIds.has(post.id)) throw new Error(`Duplicate availability ${post.id}.`);
+    availabilityIds.add(post.id);
+    if (!userIds.has(post.userId)) {
+      throw new Error(`Availability ${post.id} points at a missing user.`);
+    }
+    if (!placeOk(post.countryId, post.parishId, post.townId)) {
+      throw new Error(`Availability ${post.id} has an unknown place.`);
+    }
+    if (!Array.isArray(post.skills) || post.skills.length === 0) {
+      throw new Error(`Availability ${post.id} needs a skill.`);
+    }
+    for (const skill of post.skills) {
+      if (!isSkill(skill)) throw new Error(`Availability ${post.id} has an unknown skill.`);
+    }
+  }
 }
 
 const seed = raw as Seed;
@@ -199,6 +285,26 @@ export function seedCommitments(): Commitment[] {
 
 export function seedContributions(): Contribution[] {
   return seed.contributions;
+}
+
+export function seedRequests(): CapitalRequest[] {
+  return seed.requests;
+}
+
+export function seedApplications(): Application[] {
+  return seed.applications;
+}
+
+export function seedAvailability(): Availability[] {
+  return seed.availability;
+}
+
+export function requestPlace(request: {
+  countryId: string;
+  parishId: string | null;
+  townId: string;
+}): { town: string; parish: string } | null {
+  return askedPlace(request.countryId, request.parishId, request.townId);
 }
 
 export function projectPlace(project: Project): { town: string; parish: string } | null {

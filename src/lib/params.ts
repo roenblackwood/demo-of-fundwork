@@ -1,5 +1,5 @@
 import { SECTORS, SKILLS } from "@/lib/catalog";
-import { getCountries, getParishes, getProjects } from "@/lib/seed";
+import { getCountries, getParishes, getProjects, seedRequests } from "@/lib/seed";
 
 export function parishParams() {
   const parishes = getParishes().map((parish) => ({ parish: parish.id }));
@@ -38,4 +38,8 @@ export function roleParams() {
 
 export function projectParams() {
   return getProjects().map((project) => ({ id: project.id }));
+}
+
+export function requestParams() {
+  return seedRequests().map((request) => ({ id: request.id }));
 }

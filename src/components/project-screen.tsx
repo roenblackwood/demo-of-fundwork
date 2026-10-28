@@ -128,7 +128,7 @@ export function ProjectScreen({ id }: { id: string }) {
         Organizer: <span className="font-semibold">{project.organizerName}</span>
       </p>
       {showInvest && !canCommit && stillOpen > 0 ? (
-        <p className="text-lg">The money they asked for is already in.</p>
+        <p className="text-lg">Almost there. What is left is less than the smallest amount.</p>
       ) : null}
       <p className="text-lg font-semibold">{ownershipLine}</p>
       <LearnMore title="How it works">
