@@ -9,15 +9,24 @@ import {
   useRef,
   useState,
 } from "react";
+import { openChecks, sectorWeekly } from "@/lib/catalog";
 import {
   acceptedCount,
   baseRequest,
   listApplications,
   listAvailability,
+  listProjects,
   listRequests,
   statusForTeam,
 } from "@/lib/requests";
-import { askedPlace, getUser, seedCommitments, seedContributions } from "@/lib/seed";
+import {
+  askedPlace,
+  getCity,
+  getTown,
+  getUser,
+  seedCommitments,
+  seedContributions,
+} from "@/lib/seed";
 import type { RegionId } from "@/lib/regions";
 import type {
   Application,
@@ -26,12 +35,14 @@ import type {
   Commitment,
   Contribution,
   PathChoice,
+  Project,
   Sector,
   Skill,
 } from "@/lib/types";
 
-const STORAGE_KEY = "fundwork-demo-v2";
-const LEGACY_KEY = "fundwork-demo-v1";
+const STORAGE_KEY = "fundwork-demo-v3";
+const V2_KEY = "fundwork-demo-v2";
+const V1_KEY = "fundwork-demo-v1";
 
 export type Flow = {
   regionId?: RegionId;
@@ -61,6 +72,9 @@ type Session = {
   requests: CapitalRequest[];
   applications: Application[];
   availability: Availability[];
+  projects: Project[];
+  requestProjects: Record<string, string>;
+  teamAdds: Record<string, string[]>;
   requestStatus: Record<string, CapitalRequest["status"]>;
   applicationStatus: Record<string, Application["status"]>;
   withdrawnIds: string[];
@@ -68,7 +82,7 @@ type Session = {
 };
 
 type Persisted = {
-  version: 1 | 2;
+  version: 1 | 2 | 3;
   session: Partial<Session>;
 };
 
@@ -103,6 +117,9 @@ const initialSession: Session = {
   requests: [],
   applications: [],
   availability: [],
+  projects: [],
+  requestProjects: {},
+  teamAdds: {},
   requestStatus: {},
   applicationStatus: {},
   withdrawnIds: [],
@@ -128,9 +145,20 @@ function normalize(input: Partial<Session>): Session {
     proofs: input.proofs ?? {},
     commitments: Array.isArray(input.commitments) ? input.commitments : [],
     contributions: Array.isArray(input.contributions) ? input.contributions : [],
-    requests: Array.isArray(input.requests) ? input.requests : [],
-    applications: Array.isArray(input.applications) ? input.applications : [],
+    requests: Array.isArray(input.requests)
+      ? input.requests.map((request) => ({ ...request, projectId: request.projectId ?? null }))
+      : [],
+    applications: Array.isArray(input.applications)
+      ? input.applications.map((application) => ({
+          ...application,
+          requestId: application.requestId ?? null,
+          projectId: application.projectId ?? null,
+        }))
+      : [],
     availability: Array.isArray(input.availability) ? input.availability : [],
+    projects: Array.isArray(input.projects) ? input.projects : [],
+    requestProjects: input.requestProjects ?? {},
+    teamAdds: input.teamAdds ?? {},
     requestStatus: input.requestStatus ?? {},
     applicationStatus: input.applicationStatus ?? {},
     withdrawnIds: Array.isArray(input.withdrawnIds) ? input.withdrawnIds : [],
@@ -144,7 +172,11 @@ function normalize(input: Partial<Session>): Session {
 function readPayload(raw: string | null): Persisted | null {
   if (!raw) return null;
   const parsed = JSON.parse(raw) as Persisted;
-  if (!parsed || (parsed.version !== 1 && parsed.version !== 2) || !isSession(parsed.session)) {
+  if (
+    !parsed ||
+    (parsed.version !== 1 && parsed.version !== 2 && parsed.version !== 3) ||
+    !isSession(parsed.session)
+  ) {
     return null;
   }
   return parsed;
@@ -154,9 +186,12 @@ function loadSession(): Session {
   if (typeof window === "undefined") return initialSession;
   try {
     const current = readPayload(window.localStorage.getItem(STORAGE_KEY));
-    if (current?.version === 2) return normalize(current.session);
+    if (current?.version === 3) return normalize(current.session);
     if (window.localStorage.getItem(STORAGE_KEY)) return initialSession;
-    const legacy = readPayload(window.localStorage.getItem(LEGACY_KEY));
+    const previous = readPayload(window.localStorage.getItem(V2_KEY));
+    if (previous?.version === 2) return normalize(previous.session);
+    if (window.localStorage.getItem(V2_KEY)) return initialSession;
+    const legacy = readPayload(window.localStorage.getItem(V1_KEY));
     if (!legacy || legacy.version !== 1) return initialSession;
     return normalize(legacy.session);
   } catch {
@@ -167,6 +202,21 @@ function loadSession(): Session {
 function currentUserId(session: Session): string {
   if (session.mode === "sample" && session.sampleId) return session.sampleId;
   return "you";
+}
+
+function personName(session: Session): string {
+  const sample = session.mode === "sample" && session.sampleId ? getUser(session.sampleId) : undefined;
+  return sample?.name || session.displayName || "You";
+}
+
+function workerSkills(session: Session): Skill[] {
+  const sample = session.mode === "sample" && session.sampleId ? getUser(session.sampleId) : undefined;
+  if (sample?.role === "worker") {
+    return [sample.skill, ...sample.extraSkills].filter((item): item is Skill => Boolean(item));
+  }
+  return [session.flow?.skill, ...(session.flow?.extraSkills ?? [])].filter(
+    (item): item is Skill => Boolean(item),
+  );
 }
 
 function roleOf(session: Session): PathChoice | null {
@@ -206,6 +256,7 @@ type DemoValue = {
   requests: CapitalRequest[];
   applications: Application[];
   availability: Availability[];
+  projects: Project[];
   addedRequests: CapitalRequest[];
   addedApplications: Application[];
   addedAvailability: Availability[];
@@ -217,11 +268,13 @@ type DemoValue = {
   addCommitment: (commitment: Commitment) => void;
   addContribution: (contribution: Contribution) => void;
   addRequest: (draft: RequestDraft) => string | null;
-  applyToRequest: (input: { requestId: string; skill: Skill; message: string }) => void;
-  inviteWorker: (requestId: string, workerId: string) => void;
-  setApplicationStatus: (id: string, status: "accepted" | "declined") => void;
+  applyToRequest: (input: { requestId: string; skill: Skill; message: string }) => boolean;
+  inviteWorker: (requestId: string, workerId: string) => boolean;
+  setApplicationStatus: (id: string, status: "accepted" | "declined") => boolean;
   addAvailability: (draft: AvailabilityDraft) => string | null;
-  withdrawApplication: (id: string) => void;
+  withdrawApplication: (id: string) => boolean;
+  startProject: (requestId: string, name: string) => string | null;
+  askToJoin: (projectId: string) => boolean;
   markOpened: () => void;
   useSample: (id: string) => void;
   useNewPerson: () => void;
@@ -248,7 +301,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!ready) return;
-    const payload: Persisted = { version: 2, session };
+    const payload: Persisted = { version: 3, session };
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   }, [ready, session]);
 
@@ -279,10 +332,12 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addContribution = useCallback((contribution: Contribution) => {
-    setSession((current) => ({
-      ...current,
-      contributions: [...current.contributions, contribution],
-    }));
+    setSession((current) => {
+      if (contribution.userId !== currentUserId(current)) return current;
+      const project = listProjects(current).find((item) => item.id === contribution.projectId);
+      if (!project || !project.team.includes(contribution.userId)) return current;
+      return { ...current, contributions: [...current.contributions, contribution] };
+    });
   }, []);
 
   const addRequest = useCallback((draft: RequestDraft) => {
@@ -312,6 +367,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         skills: [...draft.skills],
         note: draft.note.trim().slice(0, 240),
         status: "open",
+        projectId: null,
         createdAt: new Date().toISOString(),
       };
       return { ...current, requests: [...current.requests, request] };
@@ -321,6 +377,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
 
   const applyToRequest = useCallback(
     (input: { requestId: string; skill: Skill; message: string }) => {
+      let changed = false;
       setSession((current) => {
         if (roleOf(current) !== "worker") return current;
         const userId = currentUserId(current);
@@ -334,9 +391,11 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
             item.status !== "declined",
         );
         if (existing) return current;
+        changed = true;
         const application: Application = {
           id: crypto.randomUUID(),
           requestId: input.requestId,
+          projectId: null,
           workerId: userId,
           skill: input.skill,
           message: input.message.trim().slice(0, 200),
@@ -346,11 +405,13 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         };
         return { ...current, applications: [...current.applications, application] };
       });
+      return changed;
     },
     [],
   );
 
   const inviteWorker = useCallback((requestId: string, workerId: string) => {
+    let changed = false;
     setSession((current) => {
       const userId = currentUserId(current);
       const request = listRequests(current).find((item) => item.id === requestId);
@@ -364,9 +425,11 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         (item) => item.requestId === requestId && item.workerId === workerId && item.status !== "declined",
       );
       if (existing) return current;
+      changed = true;
       const application: Application = {
         id: crypto.randomUUID(),
         requestId,
+        projectId: null,
         workerId,
         skill,
         message: "",
@@ -376,15 +439,44 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       };
       return { ...current, applications: [...current.applications, application] };
     });
+    return changed;
   }, []);
 
   const setApplicationStatus = useCallback((id: string, status: "accepted" | "declined") => {
+    let changed = false;
     setSession((current) => {
       const application = listApplications(current).find((item) => item.id === id);
       if (!application || application.status !== "waiting") return current;
-      const request = baseRequest(current, application.requestId);
-      if (!request) return current;
       const userId = currentUserId(current);
+      const applicationStatus = { ...current.applicationStatus, [id]: status };
+
+      if (application.projectId && !application.requestId) {
+        const project = listProjects(current).find((item) => item.id === application.projectId);
+        if (!project || project.organizerName !== personName(current)) return current;
+        if (application.origin !== "applied") return current;
+        if (status === "declined") {
+          changed = true;
+          return { ...current, applicationStatus };
+        }
+        if (project.team.includes(application.workerId)) {
+          changed = true;
+          return { ...current, applicationStatus };
+        }
+        changed = true;
+        return {
+          ...current,
+          applicationStatus,
+          teamAdds: {
+            ...current.teamAdds,
+            [project.id]: [...(current.teamAdds[project.id] ?? []), application.workerId],
+          },
+        };
+      }
+
+      if (!application.requestId) return current;
+      const request = baseRequest(current, application.requestId);
+      const shown = listRequests(current).find((item) => item.id === application.requestId);
+      if (!request || !shown) return current;
       const owner = request.userId === userId;
       const invitedWorker = application.workerId === userId && application.origin === "invited";
       if (owner) {
@@ -393,18 +485,21 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         return current;
       }
       if (status === "accepted") {
-        const shown = listRequests(current).find((item) => item.id === request.id);
         const filled = acceptedCount(listApplications(current), request.id);
-        if (!shown || shown.status !== "open" || filled >= request.workersNeeded) return current;
+        if (shown.status !== "open" || filled >= request.workersNeeded) return current;
       }
-      const applicationStatus = { ...current.applicationStatus, [id]: status };
       const nextApplications = listApplications({ ...current, applicationStatus });
-      const requestStatus = {
-        ...current.requestStatus,
-        [request.id]: statusForTeam(request, nextApplications),
+      changed = true;
+      return {
+        ...current,
+        applicationStatus,
+        requestStatus: {
+          ...current.requestStatus,
+          [request.id]: statusForTeam(shown, nextApplications),
+        },
       };
-      return { ...current, applicationStatus, requestStatus };
     });
+    return changed;
   }, []);
 
   const addAvailability = useCallback((draft: AvailabilityDraft) => {
@@ -434,6 +529,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const withdrawApplication = useCallback((id: string) => {
+    let changed = false;
     setSession((current) => {
       const application = listApplications(current).find((item) => item.id === id);
       if (!application || application.status !== "waiting") return current;
@@ -442,7 +538,9 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         ? current.withdrawnIds
         : [...current.withdrawnIds, id];
       const next = { ...current, withdrawnIds };
-      const request = baseRequest(current, application.requestId);
+      changed = true;
+      if (!application.requestId) return next;
+      const request = listRequests(current).find((item) => item.id === application.requestId);
       if (!request) return next;
       return {
         ...next,
@@ -452,6 +550,106 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         },
       };
     });
+    return changed;
+  }, []);
+
+  const startProject = useCallback((requestId: string, name: string) => {
+    const trimmed = name.trim().slice(0, 80);
+    if (!trimmed) return null;
+    const seen = listRequests(sessionRef.current).find((item) => item.id === requestId);
+    if (
+      !seen ||
+      seen.userId !== currentUserId(sessionRef.current) ||
+      seen.status !== "team-ready" ||
+      seen.projectId
+    ) {
+      return null;
+    }
+    const id = crypto.randomUUID();
+    setSession((current) => {
+      const shown = listRequests(current).find((item) => item.id === requestId);
+      if (!shown || shown.userId !== currentUserId(current) || shown.status !== "team-ready" || shown.projectId) {
+        return current;
+      }
+      const accepted = listApplications(current).filter(
+        (item) => item.requestId === requestId && item.status === "accepted",
+      );
+      const town = shown.parishId
+        ? getTown(shown.parishId, shown.townId)
+        : getCity(shown.countryId, shown.townId);
+      const placeName = town?.name ?? "this place";
+      const project: Project = {
+        id,
+        name: trimmed,
+        countryId: shown.countryId,
+        parishId: shown.parishId,
+        townId: shown.townId,
+        sector: shown.sector,
+        summary: shown.note || `Work on this in ${placeName}.`,
+        whatYouGet:
+          "A part of this project, recorded as ownership units if the organizer accepts your money.",
+        goalJmd: shown.budget,
+        committedJmd: 0,
+        workersMatched: accepted.length,
+        workersNeeded: accepted.length,
+        weeklyPayout: sectorWeekly(shown.sector),
+        workStarted: false,
+        organizerName: personName(current),
+        needs: [...shown.skills],
+        checks: openChecks(shown.sector, shown.countryId === "jamaica"),
+        team: accepted.map((item) => item.workerId),
+      };
+      const commitment: Commitment = {
+        id: crypto.randomUUID(),
+        userId: currentUserId(current),
+        projectId: id,
+        amountJmd: shown.budget,
+        status: "pledged",
+        createdAt: new Date().toISOString(),
+      };
+      return {
+        ...current,
+        projects: [...current.projects, project],
+        commitments: [...current.commitments, commitment],
+        requestProjects: { ...current.requestProjects, [requestId]: id },
+        requestStatus: { ...current.requestStatus, [requestId]: "closed" },
+        openedProject: true,
+      };
+    });
+    return id;
+  }, []);
+
+  const askToJoin = useCallback((projectId: string) => {
+    let changed = false;
+    setSession((current) => {
+      if (roleOf(current) !== "worker") return current;
+      const userId = currentUserId(current);
+      const project = listProjects(current).find((item) => item.id === projectId);
+      if (!project || project.team.includes(userId) || project.organizerName === personName(current)) {
+        return current;
+      }
+      const existing = listApplications(current).find(
+        (item) => item.projectId === projectId && item.workerId === userId && item.status !== "declined",
+      );
+      if (existing) return current;
+      const mine = workerSkills(current);
+      const skill = project.needs.find((item) => mine.includes(item)) ?? mine[0] ?? project.needs[0];
+      if (!skill) return current;
+      changed = true;
+      const application: Application = {
+        id: crypto.randomUUID(),
+        requestId: null,
+        projectId,
+        workerId: userId,
+        skill,
+        message: "",
+        origin: "applied",
+        status: "waiting",
+        createdAt: new Date().toISOString(),
+      };
+      return { ...current, applications: [...current.applications, application] };
+    });
+    return changed;
   }, []);
 
   const markOpened = useCallback(() => {
@@ -482,7 +680,8 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   const reset = useCallback(() => {
     setSession(initialSession);
     window.localStorage.removeItem(STORAGE_KEY);
-    window.localStorage.removeItem(LEGACY_KEY);
+    window.localStorage.removeItem(V2_KEY);
+    window.localStorage.removeItem(V1_KEY);
   }, []);
 
   const value = useMemo<DemoValue>(() => {
@@ -524,6 +723,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       requests: listRequests(session),
       applications: listApplications(session),
       availability: listAvailability(session),
+      projects: listProjects(session),
       addedRequests: session.requests,
       addedApplications: session.applications,
       addedAvailability: session.availability,
@@ -549,6 +749,8 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       setApplicationStatus,
       addAvailability,
       withdrawApplication,
+      startProject,
+      askToJoin,
       markOpened,
       useSample,
       useNewPerson,
@@ -565,9 +767,11 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     ready,
     reset,
     session,
+    askToJoin,
     setApplicationStatus,
     setDisplayName,
     startPath,
+    startProject,
     updateFlow,
     useNewPerson,
     useSample,

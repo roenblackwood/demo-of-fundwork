@@ -12,14 +12,14 @@ import {
   workerUnits,
   WORKER_UNITS,
 } from "@/lib/ownership";
-import { currencyOf, getProject } from "@/lib/seed";
+import { currencyOf } from "@/lib/seed";
 
 export function OwnershipScreen() {
   const demo = useDemo();
   if (!demo.ready) return <PageBusy />;
 
   const moneyRows = demo.commitments.flatMap((commitment) => {
-    const project = getProject(commitment.projectId);
+    const project = demo.projects.find((item) => item.id === commitment.projectId);
     if (!project) return [];
     return [
       {
@@ -34,7 +34,7 @@ export function OwnershipScreen() {
     ];
   });
   const workRows = demo.contributions.flatMap((contribution) => {
-    const project = getProject(contribution.projectId);
+    const project = demo.projects.find((item) => item.id === contribution.projectId);
     if (!project) return [];
     return [
       {

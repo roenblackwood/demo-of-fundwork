@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CircleDollarSign, Hammer, Home, UserRound } from "lucide-react";
+import { SnackbarProvider } from "@/components/snackbar";
 import { useDemo } from "@/lib/demo-store";
 import { firstName } from "@/lib/format";
 import { youHasUpdate } from "@/lib/requests";
@@ -15,6 +16,9 @@ import { cn } from "cn";
  * - A shared move from a map pin into the country list.
  * - Saved projects, the way Instagram saves a post.
  * - A dark theme checked for the same contrast, not the unused default.
+ * - Messages between an investor and a worker.
+ * - Push notifications when someone applies, is invited, or accepts.
+ * - More than one investor funding the same request.
  */
 
 const tabs = [
@@ -25,14 +29,14 @@ const tabs = [
 ] as const;
 
 export function Shell({ children }: { children: React.ReactNode }) {
-  const { ready, name, role, userId, requests, applications } = useDemo();
+  const { ready, name, role, userId, requests, applications, projects } = useDemo();
   const pathname = usePathname();
   const label = ready ? firstName(name) : "You";
   const current = tabFor(pathname, role);
-  const attention = ready && youHasUpdate(role, userId, requests, applications);
+  const attention = ready && youHasUpdate(role, userId, name, requests, applications, projects);
 
   return (
-    <>
+    <SnackbarProvider>
       <a
         href="#content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-xl focus:bg-card focus:px-4 focus:py-3 focus:font-semibold"
@@ -92,7 +96,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           })}
         </div>
       </nav>
-    </>
+    </SnackbarProvider>
   );
 }
 

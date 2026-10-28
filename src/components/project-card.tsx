@@ -12,7 +12,7 @@ import type { Project } from "@/lib/types";
 
 // Nice to have: a photo in place of the sector tile, the way YouTube leads with a thumbnail.
 
-export function ProjectCard({ project }: { project: Project }) {
+export function ProjectCard({ project, mark }: { project: Project; mark?: string }) {
   const { addedCommitments } = useDemo();
   const where = projectPlace(project);
   const currency = currencyOf(project.countryId);
@@ -34,6 +34,11 @@ export function ProjectCard({ project }: { project: Project }) {
       <Card className="h-full shadow-sm">
         <CardHeader>
           <SectorTile sector={project.sector} />
+          {mark ? (
+            <span className="inline-flex min-h-8 w-fit items-center rounded-full bg-secondary px-3 text-sm font-semibold text-secondary-foreground">
+              {mark}
+            </span>
+          ) : null}
           <p className="text-base font-semibold text-primary">{sectorTitle(project.sector)}</p>
           <CardTitle>{project.name}</CardTitle>
           <p className="text-base text-muted-foreground">{place}</p>

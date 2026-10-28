@@ -10,22 +10,6 @@ function placeKey(flow: { parishId?: string; countryId?: string } | null): strin
   return flow?.parishId || flow?.countryId;
 }
 
-function investHref(flow: {
-  parishId?: string;
-  countryId?: string;
-  townId?: string;
-  sector?: string;
-} | null): string {
-  const place = placeKey(flow);
-  if (place && flow?.townId && flow.sector) {
-    return `/invest/${place}/${flow.townId}/${flow.sector}`;
-  }
-  if (place && flow?.townId) return `/invest/${place}/${flow.townId}`;
-  if (place === "jamaica") return "/invest/jamaica";
-  if (place) return `/invest/${place}`;
-  return "/invest";
-}
-
 function profileHref(flow: {
   parishId?: string;
   countryId?: string;
@@ -34,9 +18,9 @@ function profileHref(flow: {
 } | null): string {
   const place = placeKey(flow);
   if (place && flow?.townId && flow.skill) {
-    return `/work/${place}/${flow.townId}/${flow.skill}`;
+    return `/work/place/${place}/${flow.townId}/${flow.skill}`;
   }
-  return "/work";
+  return "/work/place";
 }
 
 export function GettingStarted() {
@@ -65,30 +49,34 @@ export function GettingStarted() {
   }
 
   if (demo.role === "investor") {
-    const picked = Boolean(placeKey(demo.flow)) || demo.commitments.length > 0;
-    const opened = demo.openedProject || demo.commitments.length > 0;
+    const placed = Boolean(demo.flow?.countryId || demo.homeCountryId);
+    const posted =
+      demo.requests.some((request) => request.userId === demo.userId) ||
+      demo.openedProject ||
+      demo.projects.some((project) => project.organizerName === demo.name);
     const committed = demo.commitments.length > 0;
+    if (placed && posted && committed) return null;
     return (
       <Checklist
         title="Get started"
         steps={[
           {
-            label: "Pick a region",
-            done: picked,
+            label: "Pick your place",
+            done: placed,
+            href: "/invest/place",
+            action: "Pick your place",
+          },
+          {
+            label: "Post a request or open a project",
+            done: posted,
             href: "/invest",
-            action: "Choose a region",
+            action: "See projects here",
           },
           {
-            label: "Open a project",
-            done: opened,
-            href: investHref(demo.flow),
-            action: "Choose a project",
-          },
-          {
-            label: "Commit capital",
+            label: "Commit capital or start a project",
             done: committed,
-            href: investHref(demo.flow),
-            action: "Choose a project",
+            href: "/invest",
+            action: "See projects here",
           },
         ]}
       />
@@ -98,6 +86,7 @@ export function GettingStarted() {
   const picked = Boolean(demo.flow?.skill || demo.homeSkill) || demo.contributions.length > 0;
   const photo = Boolean(demo.proof || demo.proofLabel);
   const logged = demo.contributions.length > 0;
+  if (picked && photo && logged) return null;
   return (
     <Checklist
       title="Get started"
@@ -105,7 +94,7 @@ export function GettingStarted() {
         {
           label: "Pick a region and your work",
           done: picked,
-          href: "/work",
+          href: "/work/place",
           action: "Choose a region",
         },
         {
@@ -117,8 +106,8 @@ export function GettingStarted() {
         {
           label: "Log work on a project",
           done: logged,
-          href: "/work/matches",
-          action: "See projects for you",
+          href: "/work",
+          action: "See work here",
         },
       ]}
     />

@@ -13,16 +13,23 @@ import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
 import { money } from "@/lib/format";
 import { investorUnits, moneyStillOpen, projectCommitted } from "@/lib/ownership";
-import { currencyOf, getProject } from "@/lib/seed";
+import { currencyOf } from "@/lib/seed";
 
 export function CommitScreen({ id }: { id: string }) {
   const router = useRouter();
   const demo = useDemo();
-  const project = getProject(id);
+  const project = demo.projects.find((item) => item.id === id);
   const [amount, setAmount] = useState<number | null>(null);
 
   if (!demo.ready) return <PageBusy />;
-  if (!project) return null;
+  if (!project) {
+    return (
+      <div className="space-y-4">
+        <StepHeader backHref="/invest" />
+        <p className="text-lg">This project is not on this phone.</p>
+      </div>
+    );
+  }
 
   const committed = projectCommitted(
     project.committedJmd,
@@ -113,7 +120,7 @@ export function CommitScreen({ id }: { id: string }) {
 
 export function CommittedScreen({ id }: { id: string }) {
   const demo = useDemo();
-  const project = getProject(id);
+  const project = demo.projects.find((item) => item.id === id);
   const commitment = demo.commitments.find((item) => item.projectId === id);
 
   if (!demo.ready) return <PageBusy />;

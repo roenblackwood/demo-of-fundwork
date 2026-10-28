@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { PageBusy } from "@/components/busy";
-import { OpenRequests } from "@/components/open-requests";
 import { StepHeader, TrustBadges } from "@/components/parts";
 import { sectorTitle } from "@/lib/catalog";
 import { buttonVariants } from "@/components/ui/button";
@@ -30,7 +29,7 @@ export function MatchesScreen() {
   const uniqueSkills = [...new Set(skills)];
   const matches =
     countryId && townId
-      ? matchProjects({ countryId, parishId, townId, skills: uniqueSkills })
+      ? matchProjects({ countryId, parishId, townId, skills: uniqueSkills, projects: demo.projects })
       : [];
 
   if (!demo.ready) return <PageBusy />;
@@ -39,7 +38,6 @@ export function MatchesScreen() {
     return (
       <div className="space-y-6">
         <StepHeader backHref="/work" title="Pick your work first" />
-        <OpenRequests emptyPlace="Pick a place and your work to see requests." />
         <Link href="/work" className={cn(buttonVariants({ variant: "work", size: "lg" }), "w-full")}>
           Choose a region
         </Link>
@@ -55,7 +53,6 @@ export function MatchesScreen() {
           matches.length === 0 ? "No project needs this work yet" : "Projects for you"
         }
       />
-      <OpenRequests emptyPlace="Pick a place and your work to see requests." />
       {matches.length === 0 ? (
         <div className="space-y-4">
           <p className="text-lg leading-relaxed">

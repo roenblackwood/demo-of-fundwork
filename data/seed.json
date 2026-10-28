@@ -407,6 +407,180 @@
       ],
       "proofLabel": "Photo of a finished pump, on file",
       "example": "Works on water in Tamale. Has ownership units."
+    },
+    {
+      "id": "nadine",
+      "name": "Nadine Brown",
+      "role": "worker",
+      "countryId": "jamaica",
+      "parishId": "portland",
+      "townId": "port-antonio",
+      "verified": true,
+      "skill": "front",
+      "extraSkills": [
+        "building"
+      ],
+      "proofLabel": "Photo of recent work, on file",
+      "example": "Works in port-antonio."
+    },
+    {
+      "id": "tanya",
+      "name": "Tanya Reid",
+      "role": "worker",
+      "countryId": "jamaica",
+      "parishId": "st-ann",
+      "townId": "ocho-rios",
+      "verified": true,
+      "skill": "cooking",
+      "extraSkills": [
+        "guest-house"
+      ],
+      "proofLabel": "Photo of recent work, on file",
+      "example": "Works in ocho-rios."
+    },
+    {
+      "id": "carl",
+      "name": "Carl Bennett",
+      "role": "worker",
+      "countryId": "jamaica",
+      "parishId": "st-elizabeth",
+      "townId": "treasure-beach",
+      "verified": true,
+      "skill": "building",
+      "extraSkills": [],
+      "proofLabel": "Photo of recent work, on file",
+      "example": "Works in treasure-beach."
+    },
+    {
+      "id": "ruth",
+      "name": "Ruth Clarke",
+      "role": "worker",
+      "countryId": "jamaica",
+      "parishId": "st-andrew",
+      "townId": "gordon-town",
+      "verified": true,
+      "skill": "farming",
+      "extraSkills": [
+        "building"
+      ],
+      "proofLabel": "Photo of recent work, on file",
+      "example": "Works in gordon-town."
+    },
+    {
+      "id": "imani",
+      "name": "Imani Cole",
+      "role": "worker",
+      "countryId": "jamaica",
+      "parishId": "st-elizabeth",
+      "townId": "junction",
+      "verified": true,
+      "skill": "farming",
+      "extraSkills": [],
+      "proofLabel": "Photo of recent work, on file",
+      "example": "Works in junction."
+    },
+    {
+      "id": "paul",
+      "name": "Paul Grant",
+      "role": "worker",
+      "countryId": "jamaica",
+      "parishId": "clarendon",
+      "townId": "frankfield",
+      "verified": true,
+      "skill": "farming",
+      "extraSkills": [
+        "building"
+      ],
+      "proofLabel": "Photo of recent work, on file",
+      "example": "Works in frankfield."
+    },
+    {
+      "id": "achieng",
+      "name": "Achieng Otieno",
+      "role": "worker",
+      "countryId": "kenya",
+      "parishId": null,
+      "townId": "kisumu",
+      "verified": true,
+      "skill": "power",
+      "extraSkills": [],
+      "proofLabel": "Photo of recent work, on file",
+      "example": "Works in kisumu."
+    },
+    {
+      "id": "wayan",
+      "name": "Wayan Putu",
+      "role": "worker",
+      "countryId": "indonesia",
+      "parishId": null,
+      "townId": "ubud",
+      "verified": true,
+      "skill": "internet",
+      "extraSkills": [
+        "building"
+      ],
+      "proofLabel": "Photo of recent work, on file",
+      "example": "Works in ubud."
+    },
+    {
+      "id": "luz",
+      "name": "Luz Herrera",
+      "role": "worker",
+      "countryId": "colombia",
+      "parishId": null,
+      "townId": "medellin",
+      "verified": true,
+      "skill": "teaching",
+      "extraSkills": [
+        "building"
+      ],
+      "proofLabel": "Photo of recent work, on file",
+      "example": "Works in medellin."
+    },
+    {
+      "id": "farzana",
+      "name": "Farzana Rahman",
+      "role": "worker",
+      "countryId": "bangladesh",
+      "parishId": null,
+      "townId": "sylhet",
+      "verified": true,
+      "skill": "care",
+      "extraSkills": [
+        "power"
+      ],
+      "proofLabel": "Photo of recent work, on file",
+      "example": "Works in sylhet."
+    },
+    {
+      "id": "lina",
+      "name": "Lina Haddad",
+      "role": "worker",
+      "countryId": "jordan",
+      "parishId": null,
+      "townId": "amman",
+      "verified": true,
+      "skill": "water",
+      "extraSkills": [
+        "building"
+      ],
+      "proofLabel": "Photo of recent work, on file",
+      "example": "Works in amman."
+    },
+    {
+      "id": "ion",
+      "name": "Ion Popescu",
+      "role": "worker",
+      "countryId": "moldova",
+      "parishId": null,
+      "townId": "chisinau",
+      "verified": true,
+      "skill": "teaching",
+      "extraSkills": [
+        "building"
+      ],
+      "proofLabel": "Photo of recent work, on file",
+      "example": "Works in chisinau."
     }
   ],
   "projects": [
@@ -443,7 +617,10 @@
       "countryId": "jamaica",
       "workersMatched": 4,
       "workersNeeded": 8,
-      "weeklyPayout": 32000
+      "weeklyPayout": 32000,
+      "team": [
+        "keisha"
+      ]
     },
     {
       "id": "port-antonio-harbour-rooms",
@@ -474,7 +651,10 @@
       "countryId": "jamaica",
       "workersMatched": 1,
       "workersNeeded": 4,
-      "weeklyPayout": 28000
+      "weeklyPayout": 28000,
+      "team": [
+        "nadine"
+      ]
     },
     {
       "id": "ocho-rios-garden-inn",
@@ -509,7 +689,10 @@
       "countryId": "jamaica",
       "workersMatched": 6,
       "workersNeeded": 7,
-      "weeklyPayout": 36000
+      "weeklyPayout": 36000,
+      "team": [
+        "tanya"
+      ]
     },
     {
       "id": "treasure-beach-fish-cottages",
@@ -543,7 +726,10 @@
       "countryId": "jamaica",
       "workersMatched": 1,
       "workersNeeded": 5,
-      "weeklyPayout": 30000
+      "weeklyPayout": 30000,
+      "team": [
+        "carl"
+      ]
     },
     {
       "id": "gordon-town-coffee-shed",
@@ -578,7 +764,10 @@
       "countryId": "jamaica",
       "workersMatched": 3,
       "workersNeeded": 5,
-      "weeklyPayout": 24000
+      "weeklyPayout": 24000,
+      "team": [
+        "ruth"
+      ]
     },
     {
       "id": "christiana-potato-store",
@@ -613,7 +802,10 @@
       "countryId": "jamaica",
       "workersMatched": 2,
       "workersNeeded": 6,
-      "weeklyPayout": 26000
+      "weeklyPayout": 26000,
+      "team": [
+        "omar"
+      ]
     },
     {
       "id": "junction-greenhouse",
@@ -643,7 +835,10 @@
       "countryId": "jamaica",
       "workersMatched": 4,
       "workersNeeded": 4,
-      "weeklyPayout": 22000
+      "weeklyPayout": 22000,
+      "team": [
+        "imani"
+      ]
     },
     {
       "id": "frankfield-goat-dairy",
@@ -678,7 +873,10 @@
       "countryId": "jamaica",
       "workersMatched": 2,
       "workersNeeded": 6,
-      "weeklyPayout": 25000
+      "weeklyPayout": 25000,
+      "team": [
+        "paul"
+      ]
     },
     {
       "id": "kisumu-clinic-solar",
@@ -712,6 +910,9 @@
           "id": "community",
           "state": "review"
         }
+      ],
+      "team": [
+        "achieng"
       ]
     },
     {
@@ -747,6 +948,9 @@
           "id": "community",
           "state": "yes"
         }
+      ],
+      "team": [
+        "kwesi"
       ]
     },
     {
@@ -778,6 +982,9 @@
           "id": "community",
           "state": "review"
         }
+      ],
+      "team": [
+        "wayan"
       ]
     },
     {
@@ -809,6 +1016,9 @@
           "id": "community",
           "state": "yes"
         }
+      ],
+      "team": [
+        "luz"
       ]
     },
     {
@@ -844,6 +1054,9 @@
           "id": "community",
           "state": "open"
         }
+      ],
+      "team": [
+        "farzana"
       ]
     },
     {
@@ -879,6 +1092,9 @@
           "id": "community",
           "state": "review"
         }
+      ],
+      "team": [
+        "lina"
       ]
     },
     {
@@ -910,6 +1126,9 @@
           "id": "community",
           "state": "yes"
         }
+      ],
+      "team": [
+        "ion"
       ]
     }
   ],
@@ -1326,10 +1545,14 @@
       "sector": "lodging",
       "budget": 150000,
       "workersNeeded": 2,
-      "skills": ["building", "guest-house"],
+      "skills": [
+        "building",
+        "guest-house"
+      ],
       "note": "I want to finish two rooms downtown for weekend guests.",
       "status": "open",
-      "createdAt": "2026-10-20T14:00:00.000Z"
+      "createdAt": "2026-10-20T14:00:00.000Z",
+      "projectId": null
     },
     {
       "id": "req-montego-farm",
@@ -1340,10 +1563,14 @@
       "sector": "agriculture",
       "budget": 500000,
       "workersNeeded": 3,
-      "skills": ["farming", "cooking"],
+      "skills": [
+        "farming",
+        "cooking"
+      ],
       "note": "I want a small farm stand and a kitchen near the bay.",
       "status": "open",
-      "createdAt": "2026-10-21T14:00:00.000Z"
+      "createdAt": "2026-10-21T14:00:00.000Z",
+      "projectId": null
     },
     {
       "id": "req-kisumu-water",
@@ -1354,10 +1581,14 @@
       "sector": "water",
       "budget": 800000,
       "workersNeeded": 2,
-      "skills": ["water", "building"],
+      "skills": [
+        "water",
+        "building"
+      ],
       "note": "I want a tank and a pump for a clinic yard in Kisumu.",
       "status": "open",
-      "createdAt": "2026-10-22T14:00:00.000Z"
+      "createdAt": "2026-10-22T14:00:00.000Z",
+      "projectId": null
     },
     {
       "id": "req-tamale-borehole",
@@ -1368,10 +1599,14 @@
       "sector": "water",
       "budget": 200000,
       "workersNeeded": 2,
-      "skills": ["water", "building"],
+      "skills": [
+        "water",
+        "building"
+      ],
       "note": "I want a borehole fitted with a pump in Tamale.",
       "status": "open",
-      "createdAt": "2026-10-23T14:00:00.000Z"
+      "createdAt": "2026-10-23T14:00:00.000Z",
+      "projectId": null
     },
     {
       "id": "req-sylhet-store",
@@ -1382,10 +1617,13 @@
       "sector": "agriculture",
       "budget": 400000,
       "workersNeeded": 4,
-      "skills": ["farming"],
+      "skills": [
+        "farming"
+      ],
       "note": "I want a cool store for the harvest in Sylhet.",
       "status": "open",
-      "createdAt": "2026-10-24T14:00:00.000Z"
+      "createdAt": "2026-10-24T14:00:00.000Z",
+      "projectId": null
     },
     {
       "id": "req-ubud-rooms",
@@ -1396,10 +1634,14 @@
       "sector": "lodging",
       "budget": 250000000,
       "workersNeeded": 3,
-      "skills": ["guest-house", "building"],
+      "skills": [
+        "guest-house",
+        "building"
+      ],
       "note": "I want three guest rooms finished in Ubud.",
       "status": "open",
-      "createdAt": "2026-10-25T14:00:00.000Z"
+      "createdAt": "2026-10-25T14:00:00.000Z",
+      "projectId": null
     }
   ],
   "applications": [
@@ -1411,7 +1653,8 @@
       "message": "I have finished guest rooms before.",
       "origin": "applied",
       "status": "waiting",
-      "createdAt": "2026-10-26T14:00:00.000Z"
+      "createdAt": "2026-10-26T14:00:00.000Z",
+      "projectId": null
     },
     {
       "id": "app-kwesi-tamale",
@@ -1421,7 +1664,8 @@
       "message": "I fit pumps in Tamale.",
       "origin": "applied",
       "status": "waiting",
-      "createdAt": "2026-10-26T15:00:00.000Z"
+      "createdAt": "2026-10-26T15:00:00.000Z",
+      "projectId": null
     },
     {
       "id": "app-omar-montego",
@@ -1431,7 +1675,8 @@
       "message": "",
       "origin": "invited",
       "status": "waiting",
-      "createdAt": "2026-10-26T16:00:00.000Z"
+      "createdAt": "2026-10-26T16:00:00.000Z",
+      "projectId": null
     }
   ],
   "availability": [
@@ -1441,7 +1686,10 @@
       "countryId": "jamaica",
       "parishId": "kingston",
       "townId": "downtown",
-      "skills": ["building", "guest-house"],
+      "skills": [
+        "building",
+        "guest-house"
+      ],
       "note": "I can take building work in Kingston this month.",
       "createdAt": "2026-10-19T14:00:00.000Z"
     },
@@ -1451,7 +1699,9 @@
       "countryId": "jamaica",
       "parishId": "st-james",
       "townId": "montego-bay",
-      "skills": ["farming"],
+      "skills": [
+        "farming"
+      ],
       "note": "I can do farm work around Montego Bay.",
       "createdAt": "2026-10-19T15:00:00.000Z"
     },
@@ -1461,7 +1711,10 @@
       "countryId": "ghana",
       "parishId": null,
       "townId": "tamale",
-      "skills": ["water", "building"],
+      "skills": [
+        "water",
+        "building"
+      ],
       "note": "I can fit pumps and pipes in Tamale.",
       "createdAt": "2026-10-19T16:00:00.000Z"
     }

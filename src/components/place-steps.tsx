@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { OpenRequests } from "@/components/open-requests";
 import { ChoiceLink, StepHeader } from "@/components/parts";
 import { RegionMap } from "@/components/region-map";
 import { buttonVariants } from "@/components/ui/button";
@@ -21,7 +20,7 @@ import {
   showcaseById,
   type RegionId,
 } from "@/lib/regions";
-import { getCity, getCountry, getParish, getParishes, getProjects, getTown } from "@/lib/seed";
+import { getCity, getCountry, getParish, getParishes, getTown } from "@/lib/seed";
 import type { PathChoice, Skill } from "@/lib/types";
 
 export type PlacePurpose = "browse" | "request" | "available";
@@ -29,13 +28,18 @@ export type PlacePurpose = "browse" | "request" | "available";
 function pathRoot(mode: PathChoice, purpose: PlacePurpose = "browse"): string {
   if (purpose === "request") return "/invest/start";
   if (purpose === "available") return "/work/available";
+  return mode === "investor" ? "/invest/place" : "/work/place";
+}
+
+function regionBack(mode: PathChoice, purpose: PlacePurpose): string {
+  if (purpose === "request") return "/invest";
+  if (purpose === "available") return "/work";
   return mode === "investor" ? "/invest" : "/work";
 }
 
-function regionBack(purpose: PlacePurpose): string {
-  if (purpose === "request") return "/invest";
-  if (purpose === "available") return "/work";
-  return "/";
+function placeTotal(mode: PathChoice, purpose: PlacePurpose, jamaica: boolean): number {
+  if (purpose === "browse" && mode === "worker") return jamaica ? FLOW_STEPS : 4;
+  return jamaica ? 3 : 2;
 }
 
 export function RegionStep({
@@ -46,7 +50,7 @@ export function RegionStep({
   purpose?: PlacePurpose;
 }) {
   const router = useRouter();
-  const { startPath, updateFlow } = useDemo();
+  const { updateFlow, projects: allProjects } = useDemo();
   const [regionId, setRegionId] = useState<RegionId | null>(null);
   const region = regionId ? getRegion(regionId) : undefined;
   const countries = regionId ? countriesIn(regionId) : [];
@@ -73,25 +77,11 @@ export function RegionStep({
   return (
     <div>
       <StepHeader
-        backHref={regionBack(purpose)}
+        backHref={regionBack(mode, purpose)}
         step={1}
-        total={FLOW_STEPS}
+        total={placeTotal(mode, purpose, true)}
         title="Where should we look?"
       />
-      {mode === "worker" && purpose === "browse" ? (
-        <div className="mb-6">
-          <OpenRequests />
-        </div>
-      ) : null}
-      {mode === "investor" && purpose === "browse" ? (
-        <Link
-          href="/invest/start"
-          onClick={() => startPath("investor")}
-          className={cn(buttonVariants({ variant: "outline", size: "lg" }), "mb-6 w-full")}
-        >
-          Start a project here
-        </Link>
-      ) : null}
       <RegionMap
         selected={regionId}
         onSelect={chooseRegion}
@@ -101,7 +91,7 @@ export function RegionStep({
         <div className="mt-6 space-y-3">
           <p className="text-lg leading-relaxed">Tap a country in {region.name}.</p>
           {countries.map((country) => {
-            const projects = getProjects().filter((project) => project.countryId === country.id);
+            const projects = allProjects.filter((project) => project.countryId === country.id);
             const detail =
               country.id === "jamaica"
                 ? "Parishes and towns"
@@ -158,7 +148,7 @@ export function CountryStep({
       <StepHeader
         backHref={root}
         step={2}
-        total={FLOW_STEPS}
+        total={placeTotal(mode, purpose, true)}
         title="Which country?"
         hint={region?.name}
       />
@@ -210,7 +200,7 @@ export function ParishStep({
       <StepHeader
         backHref={root}
         step={2}
-        total={FLOW_STEPS}
+        total={placeTotal(mode, purpose, true)}
         title={title}
         hint="Caribbean, Jamaica"
       />
@@ -281,25 +271,29 @@ export function TownStep({
       <StepHeader
         backHref={`${root}/jamaica`}
         step={3}
-        total={FLOW_STEPS}
+        total={placeTotal(mode, purpose, true)}
         title="Which town?"
         hint={parish.name}
       />
       <div className="space-y-3">
-        {parish.towns.map((town) => (
-          <ChoiceLink
-            key={town.id}
-            href={`${root}/${parish.id}/${town.id}`}
-            title={town.name}
-            onClick={() =>
-              updateFlow({
-                countryId: "jamaica",
-                parishId: parish.id,
-                townId: town.id,
-              })
-            }
-          />
-        ))}
+        {parish.towns.map((town) => {
+          const done = purpose === "browse" && mode === "investor";
+          return (
+            <ChoiceLink
+              key={town.id}
+              href={done ? "/invest" : `${root}/${parish.id}/${town.id}`}
+              title={town.name}
+              onClick={() =>
+                updateFlow({
+                  regionId: "caribbean",
+                  countryId: "jamaica",
+                  parishId: parish.id,
+                  townId: town.id,
+                })
+              }
+            />
+          );
+        })}
       </div>
     </div>
   );
@@ -314,7 +308,7 @@ export function CityStep({
   mode: PathChoice;
   purpose?: PlacePurpose;
 }) {
-  const { updateFlow } = useDemo();
+  const { updateFlow, projects: allProjects } = useDemo();
   const country = getCountry(countryId);
   if (!country) return null;
   const root = pathRoot(mode, purpose);
@@ -325,19 +319,20 @@ export function CityStep({
       <StepHeader
         backHref={root}
         step={2}
-        total={4}
+        total={placeTotal(mode, purpose, false)}
         title={mode === "investor" ? "Which city?" : "Where do you want to work?"}
         hint={region ? `${region.name}, ${country.name}` : country.name}
       />
       <div className="space-y-3">
         {country.cities.map((city) => {
-          const project = getProjects().find(
+          const project = allProjects.find(
             (item) => item.countryId === country.id && item.townId === city.id,
           );
+          const done = purpose === "browse" && mode === "investor";
           return (
             <ChoiceLink
               key={city.id}
-              href={`${root}/${country.id}/${city.id}`}
+              href={done ? "/invest" : `${root}/${country.id}/${city.id}`}
               title={city.name}
               detail={project ? sectorTitle(project.sector) : "No project yet"}
               onClick={() =>
@@ -374,12 +369,12 @@ function emptyPlaceLink(placeId: string, mode: PathChoice): { href: string; labe
 }
 
 export function SectorStep({ placeId, townId }: { placeId: string; townId: string }) {
-  const { updateFlow } = useDemo();
+  const { updateFlow, projects: allProjects } = useDemo();
   const parish = getParish(placeId);
   const country = parish ? undefined : getCountry(placeId);
   const town = parish ? getTown(placeId, townId) : getCity(placeId, townId);
   if (!town || (!parish && !country)) return null;
-  const present = new Set(sectorsHere(placeId, townId));
+  const present = new Set(sectorsHere(placeId, townId, allProjects));
   const sectors = parish
     ? SECTORS.filter(
         (sector) =>
@@ -391,19 +386,13 @@ export function SectorStep({ placeId, townId }: { placeId: string; townId: strin
 
   return (
     <div>
-      <StepHeader
-        backHref={`/invest/${placeId}`}
-        step={parish ? 4 : 3}
-        total={parish ? FLOW_STEPS : 4}
-        title="What kind of project?"
-        hint={hint}
-      />
+      <StepHeader backHref="/invest" title="What kind of project?" hint={hint} />
       {sectors.length > 0 ? (
         <div className="space-y-3">
           {sectors.map((sector) => (
             <ChoiceLink
               key={sector.id}
-              href={`/invest/${placeId}/${town.id}/${sector.id}`}
+              href={`/invest?sector=${sector.id}`}
               title={sector.title}
               detail={sector.detail}
               onClick={() =>
@@ -432,7 +421,7 @@ export function SectorStep({ placeId, townId }: { placeId: string; townId: strin
 }
 
 export function RoleStep({ placeId, townId }: { placeId: string; townId: string }) {
-  const { updateFlow } = useDemo();
+  const { updateFlow, projects: allProjects } = useDemo();
   const [more, setMore] = useState(false);
   const parish = getParish(placeId);
   const country = parish ? undefined : getCountry(placeId);
@@ -440,7 +429,7 @@ export function RoleStep({ placeId, townId }: { placeId: string; townId: string 
   if (!town || (!parish && !country)) return null;
 
   const needed = new Set<Skill>(
-    getProjects()
+    allProjects
       .filter((project) => {
         const here = parish ? project.parishId === placeId : project.countryId === placeId;
         return here && project.townId === townId;
@@ -467,7 +456,7 @@ export function RoleStep({ placeId, townId }: { placeId: string; townId: string 
   return (
     <div>
       <StepHeader
-        backHref={`/work/${placeId}`}
+        backHref={`/work/place/${placeId}`}
         step={parish ? 4 : 3}
         total={parish ? FLOW_STEPS : 4}
         title="What work do you do?"
@@ -478,7 +467,7 @@ export function RoleStep({ placeId, townId }: { placeId: string; townId: string 
           {lead.map((skill) => (
             <ChoiceLink
               key={skill.id}
-              href={`/work/${placeId}/${town.id}/${skill.id}`}
+              href={`/work/place/${placeId}/${town.id}/${skill.id}`}
               title={skill.title}
               detail={skill.detail}
               onClick={() => choose(skill.id)}
@@ -497,7 +486,7 @@ export function RoleStep({ placeId, townId }: { placeId: string; townId: string 
             ? rest.map((skill) => (
                 <ChoiceLink
                   key={skill.id}
-                  href={`/work/${placeId}/${town.id}/${skill.id}`}
+                  href={`/work/place/${placeId}/${town.id}/${skill.id}`}
                   title={skill.title}
                   detail={skill.detail}
                   onClick={() => choose(skill.id)}

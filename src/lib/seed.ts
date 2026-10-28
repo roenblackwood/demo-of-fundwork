@@ -100,6 +100,23 @@ function assertSeed(data: Seed): void {
     for (const skill of project.needs) {
       if (!isSkill(skill)) throw new Error(`Project ${project.id} has an unknown skill.`);
     }
+    if (!Array.isArray(project.team) || project.team.length === 0) {
+      throw new Error(`Project ${project.id} needs a team.`);
+    }
+    for (const member of project.team) {
+      const user = data.users.find((item) => item.id === member);
+      if (!user || user.role !== "worker") {
+        throw new Error(`Project ${project.id} has a team member who is not a worker.`);
+      }
+      const samePlace =
+        project.countryId === "jamaica"
+          ? user.countryId === "jamaica" && user.parishId === project.parishId
+          : user.countryId === project.countryId && user.townId === project.townId;
+      const skills = [user.skill, ...user.extraSkills].filter(Boolean);
+      if (!samePlace || !project.needs.some((need) => skills.includes(need))) {
+        throw new Error(`Project ${project.id} has a team member who does not fit.`);
+      }
+    }
     for (const check of project.checks) {
       const known: readonly string[] = CHECK_IDS;
       if (!known.includes(check.id)) {
@@ -181,6 +198,9 @@ function assertSeed(data: Seed): void {
     if (!requestStatus.has(request.status)) {
       throw new Error(`Request ${request.id} has an unknown status.`);
     }
+    if (request.projectId !== null && !projectIds.has(request.projectId)) {
+      throw new Error(`Request ${request.id} points at a missing project.`);
+    }
   }
   if (!Array.isArray(data.applications)) throw new Error("Expected applications.");
   const applicationIds = new Set<string>();
@@ -189,12 +209,25 @@ function assertSeed(data: Seed): void {
       throw new Error(`Duplicate application ${application.id}.`);
     }
     applicationIds.add(application.id);
-    const request = requestsById.get(application.requestId);
-    if (!request) throw new Error(`Application ${application.id} points at a missing request.`);
+    const hasRequest = Boolean(application.requestId);
+    const hasProject = Boolean(application.projectId);
+    if (hasRequest === hasProject) {
+      throw new Error(`Application ${application.id} must point at a request or a project.`);
+    }
+    const request = application.requestId ? requestsById.get(application.requestId) : undefined;
+    if (application.requestId && !request) {
+      throw new Error(`Application ${application.id} points at a missing request.`);
+    }
+    if (application.projectId && !projectIds.has(application.projectId)) {
+      throw new Error(`Application ${application.id} points at a missing project.`);
+    }
     if (!userIds.has(application.workerId)) {
       throw new Error(`Application ${application.id} points at a missing user.`);
     }
-    if (!isSkill(application.skill) || !request.skills.includes(application.skill)) {
+    const allowed = request
+      ? request.skills
+      : data.projects.find((item) => item.id === application.projectId)?.needs ?? [];
+    if (!isSkill(application.skill) || !allowed.includes(application.skill)) {
       throw new Error(`Application ${application.id} has an unknown skill.`);
     }
     if (!applicationOrigin.has(application.origin) || !applicationStatus.has(application.status)) {

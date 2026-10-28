@@ -9,11 +9,12 @@ import {
   SectorTile,
   StepHeader,
 } from "@/components/parts";
+import { useSnackbar } from "@/components/snackbar";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { sectorTitle, skillPhrase, skillTitle } from "@/lib/catalog";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
-import { money, placeLine } from "@/lib/format";
+import { firstName, money, placeLine } from "@/lib/format";
 import { matchWorkers } from "@/lib/match";
 import { acceptedCount } from "@/lib/requests";
 import { currencyOf, getUser, requestPlace } from "@/lib/seed";
@@ -21,6 +22,7 @@ import type { Application } from "@/lib/types";
 
 export function RequestScreen({ id }: { id: string }) {
   const demo = useDemo();
+  const show = useSnackbar();
   const request = demo.requests.find((item) => item.id === id);
 
   if (!demo.ready) return <PageBusy />;
@@ -58,7 +60,16 @@ export function RequestScreen({ id }: { id: string }) {
         {accepted} of {request.workersNeeded} workers
       </p>
       {request.status === "team-ready" ? <p className="text-lg">The team is ready.</p> : null}
-      {request.status === "closed" ? <p className="text-lg">This request is closed.</p> : null}
+      {request.projectId ? (
+        <div className="space-y-2">
+          <p className="text-lg">This is now a project.</p>
+          <Link href={`/projects/${request.projectId}`} className="inline-flex min-h-11 items-center font-semibold text-primary">
+            See the project
+          </Link>
+        </div>
+      ) : request.status === "closed" ? (
+        <p className="text-lg">This request is closed.</p>
+      ) : null}
 
       {isWorker && active ? (
         <div className="space-y-4">
@@ -67,17 +78,31 @@ export function RequestScreen({ id }: { id: string }) {
             <button
               type="button"
               className="inline-flex min-h-11 items-center font-semibold text-primary"
-              onClick={() => demo.withdrawApplication(active.id)}
+              onClick={() => {
+                if (demo.withdrawApplication(active.id)) show("Application withdrawn.");
+              }}
             >
               Withdraw
             </button>
           ) : null}
           {active.origin === "invited" && active.status === "waiting" && request.status === "open" ? (
             <div className="flex flex-col gap-2">
-              <Button variant="work" onClick={() => demo.setApplicationStatus(active.id, "accepted")}>
+              <Button
+                variant="work"
+                onClick={() => {
+                  if (demo.setApplicationStatus(active.id, "accepted")) {
+                    show(`${firstName(demo.name)} is on the team.`);
+                  }
+                }}
+              >
                 Accept
               </Button>
-              <Button variant="outline" onClick={() => demo.setApplicationStatus(active.id, "declined")}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (demo.setApplicationStatus(active.id, "declined")) show("Declined.");
+                }}
+              >
                 Decline
               </Button>
             </div>
@@ -85,7 +110,12 @@ export function RequestScreen({ id }: { id: string }) {
           {active.origin === "invited" && active.status === "waiting" && request.status !== "open" ? (
             <div className="space-y-3">
               <p className="text-lg">The team is full.</p>
-              <Button variant="outline" onClick={() => demo.setApplicationStatus(active.id, "declined")}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (demo.setApplicationStatus(active.id, "declined")) show("Declined.");
+                }}
+              >
                 Decline
               </Button>
             </div>
@@ -114,7 +144,11 @@ export function RequestScreen({ id }: { id: string }) {
                 youId={demo.userId}
                 youName={demo.name}
                 open={request.status === "open"}
-                onStatus={demo.setApplicationStatus}
+                onStatus={(applicationId, status) => {
+                  const person = personName(application.workerId, demo.userId, demo.name);
+                  if (!demo.setApplicationStatus(applicationId, status)) return;
+                  show(status === "accepted" ? `${firstName(person)} is on the team.` : "Declined.");
+                }}
               />
             ))
           )}
@@ -147,7 +181,11 @@ export function RequestScreen({ id }: { id: string }) {
                     <Button
                       variant="outline"
                       className="w-full"
-                      onClick={() => demo.inviteWorker(request.id, post.userId)}
+                      onClick={() => {
+                        if (demo.inviteWorker(request.id, post.userId)) {
+                          show(`Invited ${firstName(name)}.`);
+                        }
+                      }}
                     >
                       Invite
                     </Button>
@@ -159,6 +197,13 @@ export function RequestScreen({ id }: { id: string }) {
         </section>
       ) : null}
 
+      {isOwner && request.status === "team-ready" && !request.projectId ? (
+        <ActionBar>
+          <Link href={`/requests/${request.id}/start`} className={cn(buttonVariants({ size: "lg" }), "w-full")}>
+            Start the project
+          </Link>
+        </ActionBar>
+      ) : null}
       {isWorker && !active && request.status === "open" ? (
         <ActionBar>
           <Link

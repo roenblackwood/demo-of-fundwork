@@ -8,7 +8,7 @@ import {
   Zap,
   type LucideIcon,
 } from "lucide-react";
-import type { Sector, Skill, WorkPreset } from "@/lib/types";
+import type { Check, CheckId, Sector, Skill, WorkPreset } from "@/lib/types";
 
 /** Sector tile icon and tint. Reuse this anywhere a project needs a sector mark. */
 export const SECTOR_MARKS: Record<Sector, { icon: LucideIcon; tile: string }> = {
@@ -20,6 +20,31 @@ export const SECTOR_MARKS: Record<Sector, { icon: LucideIcon; tile: string }> = 
   education: { icon: School, tile: "bg-[#efe6f4] text-[#5c3478]" },
   healthcare: { icon: Stethoscope, tile: "bg-[#f8e6e3] text-[#8a3418]" },
 };
+
+/** Weekly pay in the local currency, used when a request becomes a project. */
+export const SECTOR_WEEKLY: Record<Sector, number> = {
+  lodging: 30000,
+  agriculture: 24000,
+  energy: 18000,
+  water: 16000,
+  connectivity: 20000,
+  education: 18000,
+  healthcare: 20000,
+};
+
+export function sectorWeekly(sector: Sector): number {
+  return SECTOR_WEEKLY[sector];
+}
+
+export function openChecks(sector: Sector, jamaica: boolean): Check[] {
+  const ids: CheckId[] =
+    jamaica && sector === "lodging"
+      ? ["organizer", "jtb", "site-visit"]
+      : jamaica && sector === "agriculture"
+        ? ["organizer", "rada", "site-visit"]
+        : ["organizer", "engineer", "community"];
+  return ids.map((id) => ({ id, state: "open" }));
+}
 
 export const SECTORS: { id: Sector; title: string; detail: string }[] = [
   {

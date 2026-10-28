@@ -1,3 +1,4 @@
+/** Jamaica worker path: region, parish, town, skill, photo. */
 export const FLOW_STEPS = 5;
 
 export const REGIONS = [

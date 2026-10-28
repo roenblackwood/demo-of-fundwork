@@ -23,11 +23,12 @@ export function matchProjects(input: {
   parishId: string | null;
   townId: string;
   skills: Skill[];
+  projects?: Project[];
 }): Match[] {
   const asked = askedPlace(input.countryId, input.parishId, input.townId);
   if (!asked || input.skills.length === 0) return [];
 
-  const fits = getProjects().filter((project) =>
+  const fits = (input.projects ?? getProjects()).filter((project) =>
     project.needs.some((need) => input.skills.includes(need)),
   );
   const inTown = fits.filter(
@@ -71,8 +72,13 @@ function rank(project: Project, homeRegion: string, primary: Skill | undefined):
   return regionScore + skillScore;
 }
 
-export function projectsForPlace(placeId: string, townId: string, sector: Sector): Project[] {
-  return getProjects().filter((project) => {
+export function projectsForPlace(
+  placeId: string,
+  townId: string,
+  sector: Sector,
+  projects: Project[] = getProjects(),
+): Project[] {
+  return projects.filter((project) => {
     if (project.sector !== sector) return false;
     const here =
       project.parishId === placeId ||
@@ -102,6 +108,14 @@ function spotRegion(spot: Spot): string {
 }
 
 type Band = "town" | "area" | "region" | "far";
+
+export function bandRank(home: Spot, item: Spot): number {
+  const band = bandOf(home, item);
+  if (band === "town") return 0;
+  if (band === "area") return 1;
+  if (band === "region") return 2;
+  return 3;
+}
 
 function bandOf(home: Spot, item: Spot): Band {
   if (sameSpot(home, item) && home.townId === item.townId) return "town";
@@ -205,9 +219,13 @@ export function matchWorkers(request: CapitalRequest, posts: Availability[]): Wo
   });
 }
 
-export function sectorsHere(placeId: string, townId: string): Sector[] {
+export function sectorsHere(
+  placeId: string,
+  townId: string,
+  projects: Project[] = getProjects(),
+): Sector[] {
   const present = new Set<Sector>();
-  for (const project of getProjects()) {
+  for (const project of projects) {
     const jamaica = project.countryId === "jamaica";
     const here = jamaica ? project.parishId === placeId : project.countryId === placeId;
     if (!here) continue;

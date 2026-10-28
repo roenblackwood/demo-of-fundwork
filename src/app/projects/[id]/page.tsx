@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import { ProjectScreen } from "@/components/project-screen";
 import { Pending, Resolved } from "@/components/resolved";
 import { projectParams } from "@/lib/params";
@@ -27,10 +26,7 @@ export default function Page({
   return (
     <Pending>
       <Resolved params={params}>
-        {({ id }) => {
-          if (!getProject(id)) notFound();
-          return <ProjectScreen id={id} />;
-        }}
+        {({ id }) => <ProjectScreen id={id} />}
       </Resolved>
     </Pending>
   );

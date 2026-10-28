@@ -6,11 +6,11 @@ import { ProjectCard } from "@/components/project-card";
 import { StepHeader } from "@/components/parts";
 import { buttonVariants } from "@/components/ui/button";
 import { sectorTitle } from "@/lib/catalog";
-import { FLOW_STEPS, getRegion, leadCountry, showcaseById } from "@/lib/regions";
+import { getRegion, leadCountry, showcaseById } from "@/lib/regions";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
 import { projectsForPlace } from "@/lib/match";
-import { getCity, getCountry, getParish, getProjects, getTown, projectPlace } from "@/lib/seed";
+import { getCity, getCountry, getParish, getTown, projectPlace } from "@/lib/seed";
 import type { Sector } from "@/lib/types";
 
 export function ProjectList({
@@ -22,11 +22,11 @@ export function ProjectList({
   townId: string;
   sector: Sector;
 }) {
-  const { updateFlow } = useDemo();
+  const { updateFlow, projects: allProjects } = useDemo();
   const parish = getParish(placeId);
   const country = parish ? getCountry("jamaica") : getCountry(placeId);
   const town = townId === "all" ? null : parish ? getTown(placeId, townId) : getCity(placeId, townId);
-  const projects = projectsForPlace(placeId, townId, sector);
+  const projects = projectsForPlace(placeId, townId, sector, allProjects);
   const sectorName = sectorTitle(sector).toLowerCase();
   const jamaica = Boolean(parish);
 
@@ -45,7 +45,7 @@ export function ProjectList({
   const place = town ? town.name : areaName;
   const heading =
     projects.length === 1 ? `1 project in ${place}` : `${projects.length} projects in ${place}`;
-  const sibling = getProjects().find(
+  const sibling = allProjects.find(
     (project) =>
       project.sector === sector &&
       project.townId !== townId &&
@@ -61,9 +61,7 @@ export function ProjectList({
   return (
     <div>
       <StepHeader
-        backHref={town ? `/invest/${placeId}/${town.id}` : `/invest/${placeId}`}
-        step={jamaica ? 5 : 4}
-        total={jamaica ? FLOW_STEPS : 4}
+        backHref="/invest"
         title={projects.length === 0 ? `Nothing open in ${place} yet` : heading}
         hint={town ? `${sectorTitle(sector)} in ${areaName}` : sectorTitle(sector)}
       />

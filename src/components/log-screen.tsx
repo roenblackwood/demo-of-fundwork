@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
@@ -11,13 +11,12 @@ import { WORK_PRESETS, workPresetLabel } from "@/lib/catalog";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
 import { workerUnits } from "@/lib/ownership";
-import { getProject } from "@/lib/seed";
 import type { Skill, WorkPreset } from "@/lib/types";
 
 export function LogScreen({ id }: { id: string }) {
   const router = useRouter();
   const demo = useDemo();
-  const project = getProject(id);
+  const project = demo.projects.find((item) => item.id === id);
   const [preset, setPreset] = useState<WorkPreset | null>(null);
   const skill: Skill =
     demo.flow?.skill ||
@@ -25,8 +24,21 @@ export function LogScreen({ id }: { id: string }) {
     project?.needs[0] ||
     "building";
 
+  useEffect(() => {
+    if (!demo.ready || !project) return;
+    if (!project.team.includes(demo.userId)) router.replace(`/projects/${project.id}`);
+  }, [demo.ready, demo.userId, project, router]);
+
   if (!demo.ready) return <PageBusy />;
-  if (!project) return null;
+  if (!project) {
+    return (
+      <div className="space-y-4">
+        <StepHeader backHref="/work" />
+        <p className="text-lg">This project is not on this phone.</p>
+      </div>
+    );
+  }
+  if (!project.team.includes(demo.userId)) return <PageBusy />;
 
   function save() {
     if (!project || !preset) return;
@@ -94,7 +106,7 @@ export function LogScreen({ id }: { id: string }) {
 
 export function LoggedScreen({ id }: { id: string }) {
   const demo = useDemo();
-  const project = getProject(id);
+  const project = demo.projects.find((item) => item.id === id);
   const contribution = demo.contributions.find((item) => item.projectId === id);
 
   if (!demo.ready) return <PageBusy />;

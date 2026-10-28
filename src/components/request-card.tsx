@@ -9,9 +9,11 @@ import type { CapitalRequest } from "@/lib/types";
 export function RequestCard({
   request,
   reason,
+  mark,
 }: {
   request: CapitalRequest;
   reason?: string;
+  mark?: string;
 }) {
   const where = requestPlace(request);
   const place = where ? placeLine(where.town, where.parish) : "This place";
@@ -25,6 +27,11 @@ export function RequestCard({
       <Card className="h-full shadow-sm">
         <CardHeader>
           <SectorTile sector={request.sector} />
+          {mark ? (
+            <span className="inline-flex min-h-8 w-fit items-center rounded-full bg-secondary px-3 text-sm font-semibold text-secondary-foreground">
+              {mark}
+            </span>
+          ) : null}
           <p className="text-base font-semibold text-primary">{sectorTitle(request.sector)}</p>
           <CardTitle>{place}</CardTitle>
         </CardHeader>

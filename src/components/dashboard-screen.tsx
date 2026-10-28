@@ -4,8 +4,9 @@ import Link from "next/link";
 import { PageBusy } from "@/components/busy";
 import { GettingStarted } from "@/components/getting-started";
 import { ApplicationStatusLabel, StatusLabel } from "@/components/parts";
+import { useSnackbar } from "@/components/snackbar";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { sectorTitle, skillTitle, workPresetLabel } from "@/lib/catalog";
 import { cn } from "cn";
@@ -13,7 +14,8 @@ import { useDemo } from "@/lib/demo-store";
 import { firstName, money, placeLine } from "@/lib/format";
 import { investorUnits, workerUnits } from "@/lib/ownership";
 import { acceptedCount, waitingCount } from "@/lib/requests";
-import { currencyOf, getProject, requestPlace } from "@/lib/seed";
+import { currencyOf, getUser, requestPlace } from "@/lib/seed";
+import type { Application } from "@/lib/types";
 
 export function DashboardScreen() {
   const demo = useDemo();
@@ -46,11 +48,17 @@ export function DashboardScreen() {
         </div>
       </div>
 
+      <NeedsYou />
+
+      {demo.role === "investor" ? <YourRequests /> : null}
+      {demo.role === "worker" ? <YourApplications /> : null}
+      {demo.role === "worker" ? <YourAvailability /> : null}
+
       {hasMoney ? (
           <section className="space-y-4">
             <h2 className="text-xl font-semibold">Your commitments</h2>
             {demo.commitments.map((commitment) => {
-              const project = getProject(commitment.projectId);
+              const project = demo.projects.find((item) => item.id === commitment.projectId);
               if (!project) return null;
               const units = investorUnits(commitment.amountJmd, project.goalJmd);
               return (
@@ -100,7 +108,7 @@ export function DashboardScreen() {
               <p className="font-semibold">{demo.proofLabel}</p>
             ) : null}
             {demo.contributions.map((contribution) => {
-              const project = getProject(contribution.projectId);
+              const project = demo.projects.find((item) => item.id === contribution.projectId);
               if (!project) return null;
               const units = workerUnits(contribution.preset);
               return (
@@ -130,7 +138,7 @@ export function DashboardScreen() {
             })}
             {demo.role === "worker" ? (
               <Link
-                href="/work/matches"
+                href="/work"
                 className={cn(buttonVariants({ variant: "outline", size: "lg" }), "w-full")}
               >
                 Find more work
@@ -151,21 +159,116 @@ export function DashboardScreen() {
         </Link>
       ) : null}
 
-      {demo.role === "investor" ? <YourRequests /> : null}
-      {demo.role === "worker" ? <YourApplications /> : null}
-      {demo.role === "worker" ? <YourAvailability /> : null}
+      <GettingStarted />
 
-      {demo.role === "investor" && !hasMoney ? <GettingStarted /> : null}
-      {demo.role === "worker" && !hasWork ? <GettingStarted /> : null}
-      {!demo.role ? <GettingStarted /> : null}
-
-      <Link
-        href="/you/switch"
-        className="inline-flex min-h-11 items-center font-semibold text-primary"
-      >
-        See an example person
-      </Link>
+      <section className="space-y-3">
+        <h2 className="text-xl font-semibold">Demo</h2>
+        <Link
+          href="/you/switch"
+          className="inline-flex min-h-11 items-center font-semibold text-primary"
+        >
+          See an example person
+        </Link>
+      </section>
     </div>
+  );
+}
+
+function personLabel(id: string, youId: string, youName: string): string {
+  if (id === youId) return youName;
+  return getUser(id)?.name ?? "A worker";
+}
+
+function NeedsYou() {
+  const demo = useDemo();
+  const show = useSnackbar();
+  const waiting =
+    demo.role === "investor"
+      ? demo.applications.filter((item) => {
+          if (item.origin !== "applied" || item.status !== "waiting") return false;
+          if (item.requestId && demo.requests.some((request) => request.id === item.requestId && request.userId === demo.userId)) {
+            return true;
+          }
+          return Boolean(
+            item.projectId &&
+              demo.projects.some((project) => project.id === item.projectId && project.organizerName === demo.name),
+          );
+        })
+      : demo.role === "worker"
+        ? demo.applications.filter(
+            (item) => item.workerId === demo.userId && item.origin === "invited" && item.status === "waiting",
+          )
+        : [];
+  if (waiting.length === 0) return null;
+
+  return (
+    <section className="space-y-4">
+      <h2 className="text-xl font-semibold">Needs you</h2>
+      {waiting.map((application) => (
+        <NeedRow key={application.id} application={application} show={show} />
+      ))}
+    </section>
+  );
+}
+
+function NeedRow({
+  application,
+  show,
+}: {
+  application: Application;
+  show: (text: string) => void;
+}) {
+  const demo = useDemo();
+  const request = application.requestId
+    ? demo.requests.find((item) => item.id === application.requestId)
+    : undefined;
+  const project = application.projectId
+    ? demo.projects.find((item) => item.id === application.projectId)
+    : undefined;
+  const person = personLabel(application.workerId, demo.userId, demo.name);
+  const href = request ? `/requests/${request.id}` : project ? `/projects/${project.id}` : "/you";
+  const title = request
+    ? `${sectorTitle(request.sector)} request`
+    : project
+      ? project.name
+      : "An application";
+  const open = request ? request.status === "open" : true;
+  const work = demo.role === "worker";
+
+  function accept() {
+    if (!demo.setApplicationStatus(application.id, "accepted")) return;
+    show(`${firstName(work ? demo.name : person)} is on the team.`);
+  }
+
+  function decline() {
+    if (!demo.setApplicationStatus(application.id, "declined")) return;
+    show("Declined.");
+  }
+
+  return (
+    <article className="space-y-3 rounded-2xl bg-card p-4 ring-1 ring-foreground/10">
+      <Link href={href} className="text-lg font-semibold text-primary">
+        {work ? title : person}
+      </Link>
+      <p className="text-base">{work ? "Invited. Waiting on you." : title}</p>
+      {open ? (
+        <div className="flex flex-col gap-2">
+          <Button variant={work ? "work" : "default"} onClick={accept}>
+            Accept
+          </Button>
+          <Button variant="outline" onClick={decline}>
+            {work ? "Decline" : "Not this time"}
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <p className="text-lg">The team is full.</p>
+          <Button variant="outline" onClick={decline}>
+            {work ? "Decline" : "Not this time"}
+          </Button>
+        </div>
+      )}
+    </article>
   );
 }
 
@@ -234,21 +337,28 @@ function YourApplications() {
         </>
       ) : (
         mine.map((application) => {
-          const request = demo.requests.find((item) => item.id === application.requestId);
-          if (!request) return null;
-          const where = requestPlace(request);
-          const place = where ? placeLine(where.town, where.parish) : "This place";
+          const request = application.requestId
+            ? demo.requests.find((item) => item.id === application.requestId)
+            : undefined;
+          const project = application.projectId
+            ? demo.projects.find((item) => item.id === application.projectId)
+            : undefined;
+          if (!request && !project) return null;
+          const where = request ? requestPlace(request) : null;
+          const place = where ? placeLine(where.town, where.parish) : "";
+          const title = request
+            ? `${sectorTitle(request.sector)} in ${place}`
+            : project?.name ?? "A project";
+          const href = request ? `/requests/${request.id}` : `/projects/${project?.id}`;
           return (
             <Link
               key={application.id}
-              href={`/requests/${request.id}`}
+              href={href}
               className="block rounded-2xl focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
             >
               <Card>
                 <CardHeader>
-                  <CardTitle>
-                    {sectorTitle(request.sector)} in {place}
-                  </CardTitle>
+                  <CardTitle>{title}</CardTitle>
                   <ApplicationStatusLabel
                     origin={application.origin}
                     status={application.status}

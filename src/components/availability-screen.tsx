@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Check } from "lucide-react";
 import { PageBusy } from "@/components/busy";
 import { ActionBar, NextSteps, SavedMark, StepHeader } from "@/components/parts";
+import { useSnackbar } from "@/components/snackbar";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { SKILLS, skillPhrase } from "@/lib/catalog";
@@ -21,6 +22,7 @@ const choiceClass =
 
 export function AvailabilityScreen({ placeId, townId }: { placeId: string; townId: string }) {
   const demo = useDemo();
+  const show = useSnackbar();
   const parish = getParish(placeId);
   const countryId = parish ? "jamaica" : placeId;
   const parishId = parish?.id ?? null;
@@ -66,6 +68,7 @@ export function AvailabilityScreen({ placeId, townId }: { placeId: string; townI
       note,
     });
     if (!id) return;
+    show("You are listed as available.");
     setSaved(true);
     setStep("posted");
   }

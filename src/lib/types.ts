@@ -91,6 +91,7 @@ export type Project = {
   organizerName: string;
   needs: Skill[];
   checks: Check[];
+  team: string[];
 };
 
 export type CommitmentStatus = "pledged" | "accepted";
@@ -130,6 +131,7 @@ export type CapitalRequest = {
   skills: Skill[];
   note: string;
   status: RequestStatus;
+  projectId: string | null;
   createdAt: string;
 };
 
@@ -139,7 +141,8 @@ export type ApplicationStatus = "waiting" | "accepted" | "declined";
 
 export type Application = {
   id: string;
-  requestId: string;
+  requestId: string | null;
+  projectId: string | null;
   workerId: string;
   skill: Skill;
   message: string;

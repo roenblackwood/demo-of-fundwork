@@ -79,7 +79,7 @@ export function ProfileStep({
   return (
     <div>
       <StepHeader
-        backHref={`/work/${placeId}/${town.id}`}
+        backHref={`/work/place/${placeId}/${town.id}`}
         step={parish ? 5 : 4}
         total={parish ? FLOW_STEPS : 4}
         title="Show your work"
@@ -155,10 +155,10 @@ export function ProfileStep({
         </LearnMore>
         <ActionBar>
           <Link
-            href="/work/matches"
+            href="/work"
             className={cn(buttonVariants({ variant: "work", size: "lg" }), "w-full")}
           >
-            See projects for me
+            See work for me
           </Link>
         </ActionBar>
       </div>

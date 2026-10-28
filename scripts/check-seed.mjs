@@ -39,6 +39,9 @@ for (const project of seed.projects) {
   if (project.workersMatched > project.workersNeeded || project.weeklyPayout <= 0) {
     errors.push(`${project.id} has a bad worker or payout figure.`);
   }
+  if (!Array.isArray(project.team) || project.team.length === 0) {
+    errors.push(`${project.id} needs a team.`);
+  }
   if (project.countryId !== "jamaica") {
     for (const check of project.checks) {
       if (["jtb", "rada", "parish-letter"].includes(check.id)) {
@@ -61,6 +64,25 @@ const skillIds = new Set([
   "care",
 ]);
 const userIds = new Set((seed.users ?? []).map((user) => user.id));
+const usersById = new Map((seed.users ?? []).map((user) => [user.id, user]));
+const projectIds = new Set(seed.projects.map((project) => project.id));
+for (const project of seed.projects) {
+  for (const member of project.team ?? []) {
+    const user = usersById.get(member);
+    if (!user || user.role !== "worker") {
+      errors.push(`${project.id} team member ${member} is not a worker.`);
+      continue;
+    }
+    const samePlace =
+      project.countryId === "jamaica"
+        ? user.countryId === "jamaica" && user.parishId === project.parishId
+        : user.countryId === project.countryId && user.townId === project.townId;
+    const skills = [user.skill, ...(user.extraSkills ?? [])];
+    if (!samePlace || !project.needs.some((need) => skills.includes(need))) {
+      errors.push(`${project.id} team member ${member} does not fit the project.`);
+    }
+  }
+}
 
 function placeOk(item) {
   if (item.countryId === "jamaica") {
@@ -87,16 +109,29 @@ for (const request of seed.requests ?? []) {
   for (const skill of request.skills ?? []) {
     if (!skillIds.has(skill)) errors.push(`${request.id} has an unknown skill.`);
   }
+  if (request.projectId !== null && !projectIds.has(request.projectId)) {
+    errors.push(`${request.id} points at a missing project.`);
+  }
 }
 
 if (!Array.isArray(seed.applications)) errors.push("Expected applications.");
 for (const application of seed.applications ?? []) {
-  const request = requestsById.get(application.requestId);
-  if (!request) errors.push(`${application.id} points at a missing request.`);
+  const hasRequest = Boolean(application.requestId);
+  const hasProject = Boolean(application.projectId);
+  if (hasRequest === hasProject) {
+    errors.push(`${application.id} must point at a request or a project.`);
+  }
+  const request = application.requestId ? requestsById.get(application.requestId) : undefined;
+  if (application.requestId && !request) errors.push(`${application.id} points at a missing request.`);
+  if (application.projectId && !projectIds.has(application.projectId)) {
+    errors.push(`${application.id} points at a missing project.`);
+  }
   if (!userIds.has(application.workerId)) errors.push(`${application.id} points at a missing user.`);
   if (!skillIds.has(application.skill)) errors.push(`${application.id} has an unknown skill.`);
-  if (request && !request.skills.includes(application.skill)) {
-    errors.push(`${application.id} uses a skill the request does not need.`);
+  const project = seed.projects.find((item) => item.id === application.projectId);
+  const allowed = request?.skills ?? project?.needs ?? [];
+  if (allowed.length > 0 && !allowed.includes(application.skill)) {
+    errors.push(`${application.id} uses a skill that does not fit.`);
   }
 }
 

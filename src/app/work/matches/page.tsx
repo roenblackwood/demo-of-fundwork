@@ -1,5 +1,5 @@
-import { MatchesScreen } from "@/components/matches-screen";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <MatchesScreen />;
+  redirect("/work");
 }

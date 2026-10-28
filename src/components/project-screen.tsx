@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import {
   ActionBar,
+  ApplicationStatusLabel,
   FundingPills,
   LearnMore,
   OwnershipSplit,
@@ -11,13 +12,14 @@ import {
   StepHeader,
   TrustBadges,
 } from "@/components/parts";
-import { buttonVariants } from "@/components/ui/button";
+import { useSnackbar } from "@/components/snackbar";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Progress, ProgressLabel } from "@/components/ui/progress";
 import { checkNote, projectNote } from "@/lib/ai";
 import { canStillCommit, sectorTitle } from "@/lib/catalog";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
-import { money, moneyShort, placeLine } from "@/lib/format";
+import { firstName, money, moneyShort, placeLine } from "@/lib/format";
 import {
   INVESTOR_UNITS,
   PLATFORM_UNITS,
@@ -26,17 +28,26 @@ import {
   moneyStillOpen,
   projectCommitted,
 } from "@/lib/ownership";
-import { currencyOf, getProject, projectPlace } from "@/lib/seed";
+import { currencyOf, getUser, projectPlace } from "@/lib/seed";
 
 export function ProjectScreen({ id }: { id: string }) {
   const demo = useDemo();
-  const project = getProject(id);
+  const show = useSnackbar();
+  const project = demo.projects.find((item) => item.id === id);
 
   useEffect(() => {
     if (demo.ready && project) demo.markOpened();
   }, [demo, project]);
 
-  if (!project) return null;
+  if (!demo.ready) return null;
+  if (!project) {
+    return (
+      <div className="space-y-4">
+        <StepHeader backHref={demo.role === "worker" ? "/work" : "/invest"} />
+        <p className="text-lg">This project is not on this phone.</p>
+      </div>
+    );
+  }
   const where = projectPlace(project);
   const place = where ? placeLine(where.town, where.parish) : "Jamaica";
   const currency = currencyOf(project.countryId);
@@ -52,13 +63,19 @@ export function ProjectScreen({ id }: { id: string }) {
     .map((check) => checkNote(check.id, check.state))
     .filter((item) => item !== null);
   const checksDone = project.checks.filter((check) => check.state === "yes").length;
+  const onTeam = project.team.includes(demo.userId);
   const showInvest = demo.role !== "worker";
-  const showWork = demo.role !== "investor";
+  const showWork = demo.role === "worker" && onTeam;
+  const askJoin = demo.role === "worker" && !onTeam;
+  const join = demo.applications.find(
+    (item) => item.projectId === project.id && item.workerId === demo.userId && item.status !== "declined",
+  );
   const canCommit = showInvest && canStillCommit(stillOpen, project.goalJmd, currency);
-  const backHref =
-    demo.role === "worker" && (demo.flow?.skill || demo.homeSkill)
-      ? "/work/matches"
-      : `/invest/${demo.flow?.parishId || demo.flow?.countryId || project.parishId || project.countryId}/${demo.flow?.townId || project.townId}/${demo.flow?.sector || project.sector}`;
+  const backHref = demo.role === "worker" ? "/work" : "/invest";
+  const joins = demo.applications.filter(
+    (item) => item.projectId === project.id && item.origin === "applied",
+  );
+  const organizing = project.organizerName === demo.name;
   const ownershipLine =
     demo.role === "worker"
       ? "Your work turns into ownership units."
@@ -127,6 +144,49 @@ export function ProjectScreen({ id }: { id: string }) {
       <p className="text-base">
         Organizer: <span className="font-semibold">{project.organizerName}</span>
       </p>
+      {askJoin && join ? (
+        <ApplicationStatusLabel origin={join.origin} status={join.status} viewer="worker" />
+      ) : null}
+      {organizing ? (
+        <section className="space-y-4">
+          <h2 className="text-xl font-semibold">People asking to join</h2>
+          {joins.length === 0 ? (
+            <p className="text-lg">No one has asked to join yet.</p>
+          ) : (
+            joins.map((application) => {
+              const person = application.workerId === demo.userId ? demo.name : getUser(application.workerId)?.name ?? "A worker";
+              const waiting = application.status === "waiting";
+              return (
+                <article key={application.id} className="space-y-3 rounded-2xl bg-card p-4 ring-1 ring-foreground/10">
+                  <p className="text-lg font-semibold">{person}</p>
+                  <ApplicationStatusLabel origin={application.origin} status={application.status} viewer="investor" />
+                  {waiting ? (
+                    <div className="flex flex-col gap-2">
+                      <Button
+                        onClick={() => {
+                          if (demo.setApplicationStatus(application.id, "accepted")) {
+                            show(`${firstName(person)} is on the team.`);
+                          }
+                        }}
+                      >
+                        Accept
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          if (demo.setApplicationStatus(application.id, "declined")) show("Declined.");
+                        }}
+                      >
+                        Not this time
+                      </Button>
+                    </div>
+                  ) : null}
+                </article>
+              );
+            })
+          )}
+        </section>
+      ) : null}
       {showInvest && !canCommit && stillOpen > 0 ? (
         <p className="text-lg">Almost there. What is left is less than the smallest amount.</p>
       ) : null}
@@ -161,7 +221,7 @@ export function ProjectScreen({ id }: { id: string }) {
           </div>
         ))}
       </LearnMore>
-      {canCommit || showWork ? (
+      {canCommit || showWork || (askJoin && !join) ? (
         <ActionBar>
           {canCommit ? (
             <Link
@@ -181,6 +241,18 @@ export function ProjectScreen({ id }: { id: string }) {
             >
               Log work
             </Link>
+          ) : null}
+          {askJoin && !join ? (
+            <Button
+              variant="work"
+              size="lg"
+              className="w-full"
+              onClick={() => {
+                if (demo.askToJoin(project.id)) show("Asked to join.");
+              }}
+            >
+              Ask to join
+            </Button>
           ) : null}
         </ActionBar>
       ) : null}

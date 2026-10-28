@@ -1,5 +1,11 @@
-import { RegionStep } from "@/components/place-steps";
+import { Suspense } from "react";
+import { PageBusy } from "@/components/busy";
+import { FeedScreen } from "@/components/feed-screen";
 
 export default function Page() {
-  return <RegionStep mode="investor" />;
+  return (
+    <Suspense fallback={<PageBusy />}>
+      <FeedScreen mode="investor" />
+    </Suspense>
+  );
 }

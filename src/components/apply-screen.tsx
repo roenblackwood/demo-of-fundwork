@@ -6,13 +6,14 @@ import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 import { PageBusy } from "@/components/busy";
 import { ActionBar, StepHeader } from "@/components/parts";
+import { useSnackbar } from "@/components/snackbar";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { skillTitle } from "@/lib/catalog";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
-import { placeLine } from "@/lib/format";
-import { requestPlace } from "@/lib/seed";
+import { firstName, placeLine } from "@/lib/format";
+import { getUser, requestPlace } from "@/lib/seed";
 import type { Skill } from "@/lib/types";
 
 const choiceClass =
@@ -20,6 +21,7 @@ const choiceClass =
 
 export function ApplyScreen({ id }: { id: string }) {
   const router = useRouter();
+  const show = useSnackbar();
   const demo = useDemo();
   const request = demo.requests.find((item) => item.id === id);
   const [skill, setSkill] = useState<Skill | null>(null);
@@ -46,8 +48,10 @@ export function ApplyScreen({ id }: { id: string }) {
   );
 
   function send() {
-    if (!skill) return;
-    demo.applyToRequest({ requestId: id, skill, message });
+    if (!skill || !request) return;
+    if (!demo.applyToRequest({ requestId: id, skill, message })) return;
+    const owner = getUser(request.userId)?.name ?? "the investor";
+    show(`Sent to ${firstName(owner)}.`);
     router.push(`/requests/${id}`);
   }
 
