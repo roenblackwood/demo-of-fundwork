@@ -72,11 +72,19 @@ export function RequestScreen({ id }: { id: string }) {
               Withdraw
             </button>
           ) : null}
-          {active.origin === "invited" && active.status === "waiting" ? (
+          {active.origin === "invited" && active.status === "waiting" && request.status === "open" ? (
             <div className="flex flex-col gap-2">
               <Button variant="work" onClick={() => demo.setApplicationStatus(active.id, "accepted")}>
                 Accept
               </Button>
+              <Button variant="outline" onClick={() => demo.setApplicationStatus(active.id, "declined")}>
+                Decline
+              </Button>
+            </div>
+          ) : null}
+          {active.origin === "invited" && active.status === "waiting" && request.status !== "open" ? (
+            <div className="space-y-3">
+              <p className="text-lg">The team is full.</p>
               <Button variant="outline" onClick={() => demo.setApplicationStatus(active.id, "declined")}>
                 Decline
               </Button>
@@ -105,6 +113,7 @@ export function RequestScreen({ id }: { id: string }) {
                 application={application}
                 youId={demo.userId}
                 youName={demo.name}
+                open={request.status === "open"}
                 onStatus={demo.setApplicationStatus}
               />
             ))
@@ -173,11 +182,13 @@ function ApplicationRow({
   application,
   youId,
   youName,
+  open,
   onStatus,
 }: {
   application: Application;
   youId: string;
   youName: string;
+  open: boolean;
   onStatus: (id: string, status: "accepted" | "declined") => void;
 }) {
   const waitingApply = application.origin === "applied" && application.status === "waiting";
@@ -187,9 +198,17 @@ function ApplicationRow({
       <p className="text-base">{skillTitle(application.skill)}</p>
       {application.message ? <p className="text-base leading-relaxed">{application.message}</p> : null}
       <ApplicationStatusLabel origin={application.origin} status={application.status} viewer="investor" />
-      {waitingApply ? (
+      {waitingApply && open ? (
         <div className="flex flex-col gap-2">
           <Button onClick={() => onStatus(application.id, "accepted")}>Accept</Button>
+          <Button variant="outline" onClick={() => onStatus(application.id, "declined")}>
+            Not this time
+          </Button>
+        </div>
+      ) : null}
+      {waitingApply && !open ? (
+        <div className="space-y-3">
+          <p className="text-lg">The team is full.</p>
           <Button variant="outline" onClick={() => onStatus(application.id, "declined")}>
             Not this time
           </Button>

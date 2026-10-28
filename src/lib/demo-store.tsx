@@ -10,6 +10,7 @@ import {
   useState,
 } from "react";
 import {
+  acceptedCount,
   baseRequest,
   listApplications,
   listAvailability,
@@ -382,7 +383,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       const application = listApplications(current).find((item) => item.id === id);
       if (!application || application.status !== "waiting") return current;
       const request = baseRequest(current, application.requestId);
-      if (!request || request.status === "closed") return current;
+      if (!request) return current;
       const userId = currentUserId(current);
       const owner = request.userId === userId;
       const invitedWorker = application.workerId === userId && application.origin === "invited";
@@ -390,6 +391,11 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         if (application.origin !== "applied") return current;
       } else if (!invitedWorker) {
         return current;
+      }
+      if (status === "accepted") {
+        const shown = listRequests(current).find((item) => item.id === request.id);
+        const filled = acceptedCount(listApplications(current), request.id);
+        if (!shown || shown.status !== "open" || filled >= request.workersNeeded) return current;
       }
       const applicationStatus = { ...current.applicationStatus, [id]: status };
       const nextApplications = listApplications({ ...current, applicationStatus });
