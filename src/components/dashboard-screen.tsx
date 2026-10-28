@@ -11,7 +11,7 @@ import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
 import { firstName, money } from "@/lib/format";
 import { investorUnits, workerUnits } from "@/lib/ownership";
-import { getProject } from "@/lib/seed";
+import { currencyOf, getProject } from "@/lib/seed";
 
 export function DashboardScreen() {
   const demo = useDemo();
@@ -63,7 +63,9 @@ export function DashboardScreen() {
                       <StatusLabel status={commitment.status} kind="capital" />
                     </CardHeader>
                     <CardContent>
-                      <p className="text-lg font-semibold">{money(commitment.amountJmd)}</p>
+                      <p className="text-lg font-semibold">
+                        {money(commitment.amountJmd, currencyOf(project.countryId))}
+                      </p>
                       <p className="mt-1 text-base">
                         {commitment.status === "accepted"
                           ? `About ${units} ownership units`

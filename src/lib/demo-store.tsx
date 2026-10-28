@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { getUser, seedCommitments, seedContributions } from "@/lib/seed";
+import type { RegionId } from "@/lib/regions";
 import type {
   Commitment,
   Contribution,
@@ -20,6 +21,8 @@ import type {
 const STORAGE_KEY = "fundwork-demo-v1";
 
 export type Flow = {
+  regionId?: RegionId;
+  countryId?: string;
   parishId?: string;
   townId?: string;
   sector?: Sector;
@@ -116,6 +119,7 @@ type DemoValue = {
   role: PathChoice | null;
   path: PathChoice | null;
   flow: Flow | null;
+  homeCountryId: string | null;
   homeParishId: string | null;
   homeTownId: string | null;
   homeSkill: Skill | null;
@@ -246,6 +250,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       role,
       path: session.path,
       flow: session.flow,
+      homeCountryId: sample?.countryId ?? null,
       homeParishId: sample?.parishId ?? null,
       homeTownId: sample?.townId ?? null,
       homeSkill: sample?.skill ?? null,

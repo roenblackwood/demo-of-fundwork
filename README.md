@@ -1,6 +1,6 @@
 # Fundwork
 
-A mobile-first demo of a two-sided marketplace for Jamaica. Investors deploy Bitcoin capital. Workers are paid in a stable unit they can spend, and real projects sit on the ground (places to stay, and farms and food). Underneath, Fundwork keeps a simple ownership record in the same spirit as LaunchLine Equity Units.
+A mobile-first demo of a two-sided marketplace. Investors deploy Bitcoin capital. Workers are paid in a stable unit they can spend, and projects sit on the ground: places to stay, farms and food, power, water, internet, schools, and clinics. Jamaica is the deep demo, with all 14 parishes. Underneath, Fundwork keeps a simple ownership record in the same spirit as LaunchLine Equity Units.
 
 This is a demo. No Bitcoin moves, no stable unit is issued, no ID is checked, and nothing is written to LaunchLine. The product name is Fundwork. The project folder is still `parishline`.
 
@@ -20,13 +20,15 @@ npm run build
 
 ## How to walk through it
 
-The home screen is a world map. Tap a region first.
+The home screen is a world map. Tap a region. The map zooms to that region's countries. Tap a country, then choose invest or work.
 
-The five regions are the Caribbean, Latin America, Africa, South Asia, and Southeast Asia. Only the Caribbean is open in this demo. The others say so, and offer a way back to the Caribbean. The map is a lightweight SVG in `src/components/region-map.tsx`. It is not a GIS library.
+The regions are the Caribbean, Latin America, Africa, the Middle East, Eastern Europe, South Asia, and Southeast Asia. Each region has two or three countries. Jamaica opens into parishes and towns. Other countries open into one or two cities. The map is Natural Earth, drawn with react-simple-maps from `src/lib/maps/countries-50m.json`. It is not a live GIS service.
 
-**Caribbean, then I want to invest.** Pick a Jamaica parish, a town, and either places to stay or farms and food. Open a project, then commit one of the amounts. The commit step says you deploy Bitcoin capital and workers receive a stable unit. Your commitments show under You.
+**Jamaica, then I want to invest.** Pick a parish, a town, and either places to stay or farms and food. Open a project, then commit one of the amounts. The commit step says you deploy Bitcoin capital and workers receive a stable unit. Your commitments show under You.
 
-**Caribbean, then I want to work.** Pick a parish, a town, and the work you do. Add a photo if you want, then open a match and log a day, a few days, or a week.
+**Another region.** Kenya, Ghana, Indonesia, Colombia, Bangladesh, Jordan, and Poland each have a sample project. A city with no project points you at the country in that region that has one.
+
+**Jamaica, then I want to work.** Pick a parish, a town, and the work you do. Add a photo if you want, then open a match and log a day, a few days, or a week. Outside Jamaica, the work list leads with the skill that project needs.
 
 The header name opens You. **See an example person** loads a sample record:
 
@@ -36,6 +38,8 @@ The header name opens You. **See an example person** loads a sample record:
 | Andre Lewis | Verified investor with one commitment |
 | Keisha Palmer | Verified builder with ownership units |
 | Omar Grant | Verified farmer with ownership units |
+| Amina Diallo | Verified investor in Kisumu |
+| Kwesi Mensah | Verified water worker in Tamale |
 
 **Start this demo over** clears this phone's saved demo data.
 
@@ -50,7 +54,7 @@ Try a town with no open project, such as Brown's Town, to see the "look at the r
 - a plain-language project summary
 - a one-sentence reason a project fits the work you picked
 - a photo tip for the skill you picked
-- a short explanation of a tourist licence, farm papers, a parish letter, or a health check, and only on projects that have that check
+- a short explanation of a tourist licence, farm papers, a parish letter, a health check, an engineer visit, or a community letter, and only on projects that have that check
 
 Those functions return `{ title, body }`. The words are fixtures in the seed and in that file, not a live model call. To connect a model later, replace the body of those functions with a **server-side** call. Keep the key off the browser:
 
@@ -60,7 +64,7 @@ Those functions return `{ title, body }`. The words are fixtures in the seed and
 
 Ask for the same short shape. Do not add a global chat box.
 
-**Money and files.** Commitments and logged work are saved on this phone. A photo under 800KB is kept as a preview. A larger photo keeps the file name only. Project goals stay in Jamaican dollars so the amounts are easy to read. No Bitcoin is priced, held, or sent.
+**Money and files.** Commitments and logged work are saved on this phone. A photo under 800KB is kept as a preview. A larger photo keeps the file name only. Jamaica amounts stay in Jamaican dollars. Other countries use their own currency prefix, still as a plain amount. The screen calls the worker payout a stable unit. No Bitcoin is priced, held, or sent.
 
 ## Capital and the stable unit
 
@@ -100,12 +104,13 @@ The math lives in `src/lib/ownership.ts`. The UI says "ownership units". Equity 
 
 `data/seed.json` holds:
 
-- Jamaica's 14 parishes, each with 3 to 5 towns, reached from the Caribbean region
-- 8 projects in lodging and agriculture inside that region
-- 4 sample people
+- Jamaica's 14 parishes, each with 3 to 5 towns
+- 20 more countries, each with 1 or 2 cities
+- 15 projects across lodging, farms, power, water, internet, schools, and clinics
+- 6 sample people
 - their commitments and contributions
 
-`npm run check:seed` checks the parish count, town counts, and that every project points at a real town.
+`npm run check:seed` checks the parish count, the countries, and that every project points at a real place. Jamaica tourist and farm checks stay on Jamaica projects.
 
 ## Stack
 

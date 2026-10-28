@@ -1,26 +1,32 @@
-import { SKILLS } from "@/lib/catalog";
-import { getParishes, getProjects } from "@/lib/seed";
-import type { Sector } from "@/lib/types";
-
-const SECTOR_IDS: Sector[] = ["lodging", "agriculture"];
+import { SECTORS, SKILLS } from "@/lib/catalog";
+import { getCountries, getParishes, getProjects } from "@/lib/seed";
 
 export function parishParams() {
-  return getParishes().map((parish) => ({ parish: parish.id }));
+  const parishes = getParishes().map((parish) => ({ parish: parish.id }));
+  const countries = getCountries().map((country) => ({ parish: country.id }));
+  return [...parishes, ...countries];
 }
 
 export function townParams() {
-  return getParishes().flatMap((parish) =>
+  const towns = getParishes().flatMap((parish) =>
     parish.towns.map((town) => ({ parish: parish.id, town: town.id })),
   );
+  const cities = getCountries().flatMap((country) =>
+    country.cities.map((city) => ({ parish: country.id, town: city.id })),
+  );
+  return [...towns, ...cities];
 }
 
 export function sectorParams() {
   const places = [
     ...townParams(),
     ...getParishes().map((parish) => ({ parish: parish.id, town: "all" })),
+    ...getCountries()
+      .filter((country) => country.id !== "jamaica")
+      .map((country) => ({ parish: country.id, town: "all" })),
   ];
   return places.flatMap((place) =>
-    SECTOR_IDS.map((sector) => ({ ...place, sector })),
+    SECTORS.map((sector) => ({ ...place, sector: sector.id })),
   );
 }
 

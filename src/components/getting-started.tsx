@@ -7,28 +7,35 @@ import { cn } from "cn";
 import { COMMIT_LINE } from "@/lib/copy";
 import { useDemo } from "@/lib/demo-store";
 
+function placeKey(flow: { parishId?: string; countryId?: string } | null): string | undefined {
+  return flow?.parishId || flow?.countryId;
+}
+
 function investHref(flow: {
   parishId?: string;
+  countryId?: string;
   townId?: string;
   sector?: string;
 } | null): string {
-  if (flow?.parishId && flow.townId && flow.sector) {
-    return `/invest/${flow.parishId}/${flow.townId}/${flow.sector}`;
+  const place = placeKey(flow);
+  if (place && flow?.townId && flow.sector) {
+    return `/invest/${place}/${flow.townId}/${flow.sector}`;
   }
-  if (flow?.parishId && flow.townId) {
-    return `/invest/${flow.parishId}/${flow.townId}`;
-  }
-  if (flow?.parishId) return `/invest/${flow.parishId}`;
+  if (place && flow?.townId) return `/invest/${place}/${flow.townId}`;
+  if (place === "jamaica") return "/invest/jamaica";
+  if (place) return `/invest/${place}`;
   return "/invest";
 }
 
 function profileHref(flow: {
   parishId?: string;
+  countryId?: string;
   townId?: string;
   skill?: string;
 } | null): string {
-  if (flow?.parishId && flow.townId && flow.skill) {
-    return `/work/${flow.parishId}/${flow.townId}/${flow.skill}`;
+  const place = placeKey(flow);
+  if (place && flow?.townId && flow.skill) {
+    return `/work/${place}/${flow.townId}/${flow.skill}`;
   }
   return "/work";
 }
@@ -59,7 +66,7 @@ export function GettingStarted() {
   }
 
   if (demo.role === "investor") {
-    const picked = Boolean(demo.flow?.parishId) || demo.commitments.length > 0;
+    const picked = Boolean(placeKey(demo.flow)) || demo.commitments.length > 0;
     const opened = demo.openedProject || demo.commitments.length > 0;
     const committed = demo.commitments.length > 0;
     return (

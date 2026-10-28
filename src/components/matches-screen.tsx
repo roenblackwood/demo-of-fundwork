@@ -9,26 +9,30 @@ import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
 import { placeLine } from "@/lib/format";
 import { matchProjects } from "@/lib/match";
-import { placeName } from "@/lib/seed";
+import { projectPlace } from "@/lib/seed";
 import type { Skill } from "@/lib/types";
 
 export function MatchesScreen() {
   const demo = useDemo();
-  const usingFlow = Boolean(demo.flow?.parishId && demo.flow?.townId);
-  const parishId = usingFlow ? demo.flow?.parishId ?? "" : demo.homeParishId ?? "";
+  const usingFlow = Boolean(demo.flow?.townId && (demo.flow.parishId || demo.flow.countryId));
+  const countryId = usingFlow
+    ? demo.flow?.countryId || (demo.flow?.parishId ? "jamaica" : "")
+    : demo.homeCountryId ?? "";
+  const parishId = usingFlow ? demo.flow?.parishId ?? null : demo.homeParishId;
   const townId = usingFlow ? demo.flow?.townId ?? "" : demo.homeTownId ?? "";
+  const placeId = parishId || countryId;
   const primary = demo.flow?.skill || demo.homeSkill;
   const extras = demo.flow?.skill ? demo.flow.extraSkills : demo.homeExtraSkills;
   const skills = [primary, ...extras].filter((item): item is Skill => Boolean(item));
   const uniqueSkills = [...new Set(skills)];
   const matches =
-    parishId && townId
-      ? matchProjects({ parishId, townId, skills: uniqueSkills })
+    countryId && townId
+      ? matchProjects({ countryId, parishId, townId, skills: uniqueSkills })
       : [];
 
   if (!demo.ready) return <p className="text-lg">One moment.</p>;
 
-  if (!primary || !parishId || !townId) {
+  if (!primary || !countryId || !townId) {
     return (
       <div>
         <StepHeader backHref="/work" title="Pick your work first" />
@@ -42,7 +46,7 @@ export function MatchesScreen() {
   return (
     <div>
       <StepHeader
-        backHref={`/work/${parishId}/${townId}/${primary}`}
+        backHref={`/work/${placeId}/${townId}/${primary}`}
         title={
           matches.length === 0 ? "No project needs this work yet" : "Projects for you"
         }
@@ -53,13 +57,13 @@ export function MatchesScreen() {
             Nothing open matches this work right now. You can try another parish or another kind of work.
           </p>
           <Link
-            href="/work/caribbean"
+            href={countryId === "jamaica" ? "/work/jamaica" : "/work"}
             className={cn(buttonVariants({ variant: "work", size: "lg" }), "w-full")}
           >
-            Try another parish
+            {countryId === "jamaica" ? "Try another parish" : "Try another place"}
           </Link>
           <Link
-            href={`/work/${parishId}/${townId}`}
+            href={`/work/${placeId}/${townId}`}
             className={cn(buttonVariants({ variant: "outline", size: "lg" }), "w-full")}
           >
             Try another kind of work
@@ -68,7 +72,7 @@ export function MatchesScreen() {
       ) : (
         <div className="space-y-4">
           {matches.map((match) => {
-            const where = placeName(match.project.parishId, match.project.townId);
+            const where = projectPlace(match.project);
             return (
               <Link
                 key={match.project.id}

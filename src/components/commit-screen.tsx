@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LearnMore, NextSteps, OwnershipSplit, StepHeader } from "@/components/parts";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { COMMIT_PRESETS } from "@/lib/catalog";
+import { canStillCommit, commitChoices } from "@/lib/catalog";
 import { COMMIT_LINE } from "@/lib/copy";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
@@ -16,7 +16,7 @@ import {
   moneyStillOpen,
   projectCommitted,
 } from "@/lib/ownership";
-import { getProject } from "@/lib/seed";
+import { currencyOf, getProject } from "@/lib/seed";
 
 export function CommitScreen({ id }: { id: string }) {
   const router = useRouter();
@@ -33,6 +33,9 @@ export function CommitScreen({ id }: { id: string }) {
     project.id,
   );
   const stillOpen = moneyStillOpen(project.goalJmd, committed);
+  const currency = currencyOf(project.countryId);
+  const choices = commitChoices(project.goalJmd, currency);
+  const open = canStillCommit(stillOpen, project.goalJmd, currency);
   const units = amount ? investorUnits(amount, project.goalJmd) : 0;
 
   function save() {
@@ -56,11 +59,11 @@ export function CommitScreen({ id }: { id: string }) {
         hint={project.name}
       />
       <p className="text-lg leading-relaxed">{COMMIT_LINE}</p>
-      {stillOpen < 50_000 ? (
+      {!open ? (
         <p className="text-lg">The money they asked for is already in.</p>
       ) : (
         <div className="space-y-3">
-          {COMMIT_PRESETS.map((preset) => {
+          {choices.map((preset) => {
             const tooMuch = preset > stillOpen;
             const selected = amount === preset;
             return (
@@ -78,7 +81,7 @@ export function CommitScreen({ id }: { id: string }) {
                   tooMuch && "opacity-60",
                 )}
               >
-                <span className="block">{money(preset)}</span>
+                <span className="block">{money(preset, currency)}</span>
                 {tooMuch ? (
                   <span className="mt-1 block text-base font-normal">
                     More than what is still open
@@ -91,7 +94,7 @@ export function CommitScreen({ id }: { id: string }) {
       )}
       {amount ? (
         <p className="text-lg leading-relaxed">
-          {money(amount)} becomes about {units} ownership units, once the organizer accepts it.
+          {money(amount, currency)} becomes about {units} ownership units, once the organizer accepts it.
         </p>
       ) : null}
       <NextSteps
@@ -101,9 +104,9 @@ export function CommitScreen({ id }: { id: string }) {
           "If they accept it, it becomes ownership units.",
         ]}
       />
-      {stillOpen >= 50_000 ? (
+      {open ? (
         <Button size="lg" className="w-full" disabled={!amount} onClick={save}>
-          {amount ? `Commit ${money(amount)}` : "Choose an amount"}
+          {amount ? `Commit ${money(amount, currency)}` : "Choose an amount"}
         </Button>
       ) : null}
       <p className="text-base text-muted-foreground">This is a demo. No money moves.</p>
@@ -117,7 +120,7 @@ export function CommitScreen({ id }: { id: string }) {
       </LearnMore>
       <LearnMore title="How this number is worked out">
         <p>
-          This project sets aside {INVESTOR_UNITS.toLocaleString("en-US")} ownership units for people who fund it. Your units are your part of the {moneyShort(project.goalJmd)} goal.
+          This project sets aside {INVESTOR_UNITS.toLocaleString("en-US")} ownership units for people who fund it. Your units are your part of the {moneyShort(project.goalJmd, currency)} goal.
         </p>
       </LearnMore>
     </div>
@@ -139,12 +142,13 @@ export function CommittedScreen({ id }: { id: string }) {
   }
 
   const units = investorUnits(commitment.amountJmd, project.goalJmd);
+  const currency = currencyOf(project.countryId);
 
   return (
     <div className="space-y-6">
       <StepHeader backHref="/you" title="You committed" hint={project.name} />
       <p className="text-lg leading-relaxed">{COMMIT_LINE}</p>
-      <p className="text-3xl font-semibold">{money(commitment.amountJmd)}</p>
+      <p className="text-3xl font-semibold">{money(commitment.amountJmd, currency)}</p>
       <p className="text-lg leading-relaxed">
         About {units} ownership units, waiting on the organizer.
       </p>

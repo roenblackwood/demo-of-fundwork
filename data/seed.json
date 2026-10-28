@@ -4,144 +4,324 @@
       "id": "kingston",
       "name": "Kingston",
       "towns": [
-        { "id": "downtown", "name": "Downtown" },
-        { "id": "port-royal", "name": "Port Royal" },
-        { "id": "rae-town", "name": "Rae Town" },
-        { "id": "allman-town", "name": "Allman Town" }
+        {
+          "id": "downtown",
+          "name": "Downtown"
+        },
+        {
+          "id": "port-royal",
+          "name": "Port Royal"
+        },
+        {
+          "id": "rae-town",
+          "name": "Rae Town"
+        },
+        {
+          "id": "allman-town",
+          "name": "Allman Town"
+        }
       ]
     },
     {
       "id": "st-andrew",
       "name": "St. Andrew",
       "towns": [
-        { "id": "half-way-tree", "name": "Half Way Tree" },
-        { "id": "liguanea", "name": "Liguanea" },
-        { "id": "papine", "name": "Papine" },
-        { "id": "gordon-town", "name": "Gordon Town" },
-        { "id": "stony-hill", "name": "Stony Hill" }
+        {
+          "id": "half-way-tree",
+          "name": "Half Way Tree"
+        },
+        {
+          "id": "liguanea",
+          "name": "Liguanea"
+        },
+        {
+          "id": "papine",
+          "name": "Papine"
+        },
+        {
+          "id": "gordon-town",
+          "name": "Gordon Town"
+        },
+        {
+          "id": "stony-hill",
+          "name": "Stony Hill"
+        }
       ]
     },
     {
       "id": "st-thomas",
       "name": "St. Thomas",
       "towns": [
-        { "id": "morant-bay", "name": "Morant Bay" },
-        { "id": "yallahs", "name": "Yallahs" },
-        { "id": "port-morant", "name": "Port Morant" },
-        { "id": "bath", "name": "Bath" },
-        { "id": "seaforth", "name": "Seaforth" }
+        {
+          "id": "morant-bay",
+          "name": "Morant Bay"
+        },
+        {
+          "id": "yallahs",
+          "name": "Yallahs"
+        },
+        {
+          "id": "port-morant",
+          "name": "Port Morant"
+        },
+        {
+          "id": "bath",
+          "name": "Bath"
+        },
+        {
+          "id": "seaforth",
+          "name": "Seaforth"
+        }
       ]
     },
     {
       "id": "portland",
       "name": "Portland",
       "towns": [
-        { "id": "port-antonio", "name": "Port Antonio" },
-        { "id": "buff-bay", "name": "Buff Bay" },
-        { "id": "hope-bay", "name": "Hope Bay" },
-        { "id": "boston", "name": "Boston" },
-        { "id": "manchioneal", "name": "Manchioneal" }
+        {
+          "id": "port-antonio",
+          "name": "Port Antonio"
+        },
+        {
+          "id": "buff-bay",
+          "name": "Buff Bay"
+        },
+        {
+          "id": "hope-bay",
+          "name": "Hope Bay"
+        },
+        {
+          "id": "boston",
+          "name": "Boston"
+        },
+        {
+          "id": "manchioneal",
+          "name": "Manchioneal"
+        }
       ]
     },
     {
       "id": "st-mary",
       "name": "St. Mary",
       "towns": [
-        { "id": "port-maria", "name": "Port Maria" },
-        { "id": "annotto-bay", "name": "Annotto Bay" },
-        { "id": "oracabessa", "name": "Oracabessa" },
-        { "id": "highgate", "name": "Highgate" }
+        {
+          "id": "port-maria",
+          "name": "Port Maria"
+        },
+        {
+          "id": "annotto-bay",
+          "name": "Annotto Bay"
+        },
+        {
+          "id": "oracabessa",
+          "name": "Oracabessa"
+        },
+        {
+          "id": "highgate",
+          "name": "Highgate"
+        }
       ]
     },
     {
       "id": "st-ann",
       "name": "St. Ann",
       "towns": [
-        { "id": "ocho-rios", "name": "Ocho Rios" },
-        { "id": "st-anns-bay", "name": "St. Ann's Bay" },
-        { "id": "runaway-bay", "name": "Runaway Bay" },
-        { "id": "browns-town", "name": "Brown's Town" }
+        {
+          "id": "ocho-rios",
+          "name": "Ocho Rios"
+        },
+        {
+          "id": "st-anns-bay",
+          "name": "St. Ann's Bay"
+        },
+        {
+          "id": "runaway-bay",
+          "name": "Runaway Bay"
+        },
+        {
+          "id": "browns-town",
+          "name": "Brown's Town"
+        }
       ]
     },
     {
       "id": "trelawny",
       "name": "Trelawny",
       "towns": [
-        { "id": "falmouth", "name": "Falmouth" },
-        { "id": "duncans", "name": "Duncans" },
-        { "id": "wakefield", "name": "Wakefield" },
-        { "id": "clarks-town", "name": "Clark's Town" }
+        {
+          "id": "falmouth",
+          "name": "Falmouth"
+        },
+        {
+          "id": "duncans",
+          "name": "Duncans"
+        },
+        {
+          "id": "wakefield",
+          "name": "Wakefield"
+        },
+        {
+          "id": "clarks-town",
+          "name": "Clark's Town"
+        }
       ]
     },
     {
       "id": "st-james",
       "name": "St. James",
       "towns": [
-        { "id": "montego-bay", "name": "Montego Bay" },
-        { "id": "cambridge", "name": "Cambridge" },
-        { "id": "adelphi", "name": "Adelphi" },
-        { "id": "anchovy", "name": "Anchovy" }
+        {
+          "id": "montego-bay",
+          "name": "Montego Bay"
+        },
+        {
+          "id": "cambridge",
+          "name": "Cambridge"
+        },
+        {
+          "id": "adelphi",
+          "name": "Adelphi"
+        },
+        {
+          "id": "anchovy",
+          "name": "Anchovy"
+        }
       ]
     },
     {
       "id": "hanover",
       "name": "Hanover",
       "towns": [
-        { "id": "lucea", "name": "Lucea" },
-        { "id": "green-island", "name": "Green Island" },
-        { "id": "hopewell", "name": "Hopewell" },
-        { "id": "sandy-bay", "name": "Sandy Bay" }
+        {
+          "id": "lucea",
+          "name": "Lucea"
+        },
+        {
+          "id": "green-island",
+          "name": "Green Island"
+        },
+        {
+          "id": "hopewell",
+          "name": "Hopewell"
+        },
+        {
+          "id": "sandy-bay",
+          "name": "Sandy Bay"
+        }
       ]
     },
     {
       "id": "westmoreland",
       "name": "Westmoreland",
       "towns": [
-        { "id": "savanna-la-mar", "name": "Savanna-la-Mar" },
-        { "id": "negril", "name": "Negril" },
-        { "id": "little-london", "name": "Little London" },
-        { "id": "bluefields", "name": "Bluefields" }
+        {
+          "id": "savanna-la-mar",
+          "name": "Savanna-la-Mar"
+        },
+        {
+          "id": "negril",
+          "name": "Negril"
+        },
+        {
+          "id": "little-london",
+          "name": "Little London"
+        },
+        {
+          "id": "bluefields",
+          "name": "Bluefields"
+        }
       ]
     },
     {
       "id": "st-elizabeth",
       "name": "St. Elizabeth",
       "towns": [
-        { "id": "black-river", "name": "Black River" },
-        { "id": "santa-cruz", "name": "Santa Cruz" },
-        { "id": "junction", "name": "Junction" },
-        { "id": "treasure-beach", "name": "Treasure Beach" }
+        {
+          "id": "black-river",
+          "name": "Black River"
+        },
+        {
+          "id": "santa-cruz",
+          "name": "Santa Cruz"
+        },
+        {
+          "id": "junction",
+          "name": "Junction"
+        },
+        {
+          "id": "treasure-beach",
+          "name": "Treasure Beach"
+        }
       ]
     },
     {
       "id": "manchester",
       "name": "Manchester",
       "towns": [
-        { "id": "mandeville", "name": "Mandeville" },
-        { "id": "christiana", "name": "Christiana" },
-        { "id": "porus", "name": "Porus" },
-        { "id": "spaldings", "name": "Spaldings" }
+        {
+          "id": "mandeville",
+          "name": "Mandeville"
+        },
+        {
+          "id": "christiana",
+          "name": "Christiana"
+        },
+        {
+          "id": "porus",
+          "name": "Porus"
+        },
+        {
+          "id": "spaldings",
+          "name": "Spaldings"
+        }
       ]
     },
     {
       "id": "clarendon",
       "name": "Clarendon",
       "towns": [
-        { "id": "may-pen", "name": "May Pen" },
-        { "id": "chapelton", "name": "Chapelton" },
-        { "id": "frankfield", "name": "Frankfield" },
-        { "id": "milk-river", "name": "Milk River" }
+        {
+          "id": "may-pen",
+          "name": "May Pen"
+        },
+        {
+          "id": "chapelton",
+          "name": "Chapelton"
+        },
+        {
+          "id": "frankfield",
+          "name": "Frankfield"
+        },
+        {
+          "id": "milk-river",
+          "name": "Milk River"
+        }
       ]
     },
     {
       "id": "st-catherine",
       "name": "St. Catherine",
       "towns": [
-        { "id": "spanish-town", "name": "Spanish Town" },
-        { "id": "portmore", "name": "Portmore" },
-        { "id": "old-harbour", "name": "Old Harbour" },
-        { "id": "linstead", "name": "Linstead" },
-        { "id": "bog-walk", "name": "Bog Walk" }
+        {
+          "id": "spanish-town",
+          "name": "Spanish Town"
+        },
+        {
+          "id": "portmore",
+          "name": "Portmore"
+        },
+        {
+          "id": "old-harbour",
+          "name": "Old Harbour"
+        },
+        {
+          "id": "linstead",
+          "name": "Linstead"
+        },
+        {
+          "id": "bog-walk",
+          "name": "Bog Walk"
+        }
       ]
     }
   ],
@@ -156,7 +336,8 @@
       "skill": null,
       "extraSkills": [],
       "proofLabel": null,
-      "example": "Investor in Kingston. Has commitments."
+      "example": "Investor in Kingston. Has commitments.",
+      "countryId": "jamaica"
     },
     {
       "id": "andre",
@@ -168,7 +349,8 @@
       "skill": null,
       "extraSkills": [],
       "proofLabel": null,
-      "example": "Investor in Montego Bay. Has a commitment."
+      "example": "Investor in Montego Bay. Has a commitment.",
+      "countryId": "jamaica"
     },
     {
       "id": "keisha",
@@ -178,9 +360,12 @@
       "townId": "negril",
       "verified": true,
       "skill": "building",
-      "extraSkills": ["guest-house"],
+      "extraSkills": [
+        "guest-house"
+      ],
       "proofLabel": "Photo of a finished roof, on file",
-      "example": "Builder in Negril. Has ownership units."
+      "example": "Builder in Negril. Has ownership units.",
+      "countryId": "jamaica"
     },
     {
       "id": "omar",
@@ -192,7 +377,36 @@
       "skill": "farming",
       "extraSkills": [],
       "proofLabel": "Photo of a harvested field, on file",
-      "example": "Farmer in Christiana. Has ownership units."
+      "example": "Farmer in Christiana. Has ownership units.",
+      "countryId": "jamaica"
+    },
+    {
+      "id": "amina",
+      "name": "Amina Diallo",
+      "role": "investor",
+      "countryId": "kenya",
+      "parishId": null,
+      "townId": "kisumu",
+      "verified": true,
+      "skill": null,
+      "extraSkills": [],
+      "proofLabel": null,
+      "example": "Investor in Kisumu. Has a commitment."
+    },
+    {
+      "id": "kwesi",
+      "name": "Kwesi Mensah",
+      "role": "worker",
+      "countryId": "ghana",
+      "parishId": null,
+      "townId": "tamale",
+      "verified": true,
+      "skill": "water",
+      "extraSkills": [
+        "building"
+      ],
+      "proofLabel": "Photo of a finished pump, on file",
+      "example": "Works on water in Tamale. Has ownership units."
     }
   ],
   "projects": [
@@ -208,12 +422,28 @@
       "committedJmd": 3200000,
       "workStarted": false,
       "organizerName": "Camille Wright",
-      "needs": ["building", "guest-house"],
+      "needs": [
+        "building",
+        "guest-house"
+      ],
       "checks": [
-        { "id": "organizer", "state": "yes" },
-        { "id": "jtb", "state": "yes" },
-        { "id": "site-visit", "state": "yes" }
-      ]
+        {
+          "id": "organizer",
+          "state": "yes"
+        },
+        {
+          "id": "jtb",
+          "state": "yes"
+        },
+        {
+          "id": "site-visit",
+          "state": "yes"
+        }
+      ],
+      "countryId": "jamaica",
+      "workersMatched": 4,
+      "workersNeeded": 8,
+      "weeklyPayout": 32000
     },
     {
       "id": "port-antonio-harbour-rooms",
@@ -227,11 +457,24 @@
       "committedJmd": 1100000,
       "workStarted": false,
       "organizerName": "Devon Palmer",
-      "needs": ["front", "building"],
+      "needs": [
+        "front",
+        "building"
+      ],
       "checks": [
-        { "id": "organizer", "state": "yes" },
-        { "id": "jtb", "state": "review" }
-      ]
+        {
+          "id": "organizer",
+          "state": "yes"
+        },
+        {
+          "id": "jtb",
+          "state": "review"
+        }
+      ],
+      "countryId": "jamaica",
+      "workersMatched": 1,
+      "workersNeeded": 4,
+      "weeklyPayout": 28000
     },
     {
       "id": "ocho-rios-garden-inn",
@@ -245,12 +488,28 @@
       "committedJmd": 9100000,
       "workStarted": true,
       "organizerName": "Nadine Powell",
-      "needs": ["cooking", "guest-house"],
+      "needs": [
+        "cooking",
+        "guest-house"
+      ],
       "checks": [
-        { "id": "organizer", "state": "yes" },
-        { "id": "jtb", "state": "yes" },
-        { "id": "site-visit", "state": "yes" }
-      ]
+        {
+          "id": "organizer",
+          "state": "yes"
+        },
+        {
+          "id": "jtb",
+          "state": "yes"
+        },
+        {
+          "id": "site-visit",
+          "state": "yes"
+        }
+      ],
+      "countryId": "jamaica",
+      "workersMatched": 6,
+      "workersNeeded": 7,
+      "weeklyPayout": 36000
     },
     {
       "id": "treasure-beach-fish-cottages",
@@ -264,12 +523,27 @@
       "committedJmd": 600000,
       "workStarted": false,
       "organizerName": "Linton Gayle",
-      "needs": ["building"],
+      "needs": [
+        "building"
+      ],
       "checks": [
-        { "id": "organizer", "state": "yes" },
-        { "id": "parish-letter", "state": "yes" },
-        { "id": "jtb", "state": "review" }
-      ]
+        {
+          "id": "organizer",
+          "state": "yes"
+        },
+        {
+          "id": "parish-letter",
+          "state": "yes"
+        },
+        {
+          "id": "jtb",
+          "state": "review"
+        }
+      ],
+      "countryId": "jamaica",
+      "workersMatched": 1,
+      "workersNeeded": 5,
+      "weeklyPayout": 30000
     },
     {
       "id": "gordon-town-coffee-shed",
@@ -283,12 +557,28 @@
       "committedJmd": 2000000,
       "workStarted": false,
       "organizerName": "Ionie Blake",
-      "needs": ["farming", "building"],
+      "needs": [
+        "farming",
+        "building"
+      ],
       "checks": [
-        { "id": "organizer", "state": "yes" },
-        { "id": "rada", "state": "yes" },
-        { "id": "site-visit", "state": "yes" }
-      ]
+        {
+          "id": "organizer",
+          "state": "yes"
+        },
+        {
+          "id": "rada",
+          "state": "yes"
+        },
+        {
+          "id": "site-visit",
+          "state": "yes"
+        }
+      ],
+      "countryId": "jamaica",
+      "workersMatched": 3,
+      "workersNeeded": 5,
+      "weeklyPayout": 24000
     },
     {
       "id": "christiana-potato-store",
@@ -302,12 +592,28 @@
       "committedJmd": 2400000,
       "workStarted": false,
       "organizerName": "Basil Reid",
-      "needs": ["building", "farming"],
+      "needs": [
+        "building",
+        "farming"
+      ],
       "checks": [
-        { "id": "organizer", "state": "yes" },
-        { "id": "rada", "state": "yes" },
-        { "id": "site-visit", "state": "yes" }
-      ]
+        {
+          "id": "organizer",
+          "state": "yes"
+        },
+        {
+          "id": "rada",
+          "state": "yes"
+        },
+        {
+          "id": "site-visit",
+          "state": "yes"
+        }
+      ],
+      "countryId": "jamaica",
+      "workersMatched": 2,
+      "workersNeeded": 6,
+      "weeklyPayout": 26000
     },
     {
       "id": "junction-greenhouse",
@@ -321,11 +627,23 @@
       "committedJmd": 2200000,
       "workStarted": true,
       "organizerName": "Pauline Myers",
-      "needs": ["farming"],
+      "needs": [
+        "farming"
+      ],
       "checks": [
-        { "id": "organizer", "state": "yes" },
-        { "id": "rada", "state": "yes" }
-      ]
+        {
+          "id": "organizer",
+          "state": "yes"
+        },
+        {
+          "id": "rada",
+          "state": "yes"
+        }
+      ],
+      "countryId": "jamaica",
+      "workersMatched": 4,
+      "workersNeeded": 4,
+      "weeklyPayout": 22000
     },
     {
       "id": "frankfield-goat-dairy",
@@ -339,11 +657,259 @@
       "committedJmd": 1500000,
       "workStarted": false,
       "organizerName": "Carlton Ellis",
-      "needs": ["farming", "building"],
+      "needs": [
+        "farming",
+        "building"
+      ],
       "checks": [
-        { "id": "organizer", "state": "yes" },
-        { "id": "parish-letter", "state": "yes" },
-        { "id": "public-health", "state": "open" }
+        {
+          "id": "organizer",
+          "state": "yes"
+        },
+        {
+          "id": "parish-letter",
+          "state": "yes"
+        },
+        {
+          "id": "public-health",
+          "state": "open"
+        }
+      ],
+      "countryId": "jamaica",
+      "workersMatched": 2,
+      "workersNeeded": 6,
+      "weeklyPayout": 25000
+    },
+    {
+      "id": "kisumu-clinic-solar",
+      "name": "Kisumu Clinic Solar",
+      "countryId": "kenya",
+      "parishId": null,
+      "townId": "kisumu",
+      "sector": "energy",
+      "summary": "A clinic in Kisumu needs rooftop solar and a battery so the lights and the vaccine fridge stay on after dark.",
+      "whatYouGet": "A part of this clinic power project, recorded as ownership units if the organizer accepts your capital.",
+      "goalJmd": 6500000,
+      "committedJmd": 1800000,
+      "workersMatched": 2,
+      "workersNeeded": 5,
+      "weeklyPayout": 18000,
+      "workStarted": true,
+      "organizerName": "Asha Odhiambo",
+      "needs": [
+        "power"
+      ],
+      "checks": [
+        {
+          "id": "organizer",
+          "state": "yes"
+        },
+        {
+          "id": "engineer",
+          "state": "yes"
+        },
+        {
+          "id": "community",
+          "state": "review"
+        }
+      ]
+    },
+    {
+      "id": "tamale-borehole",
+      "name": "Tamale Borehole",
+      "countryId": "ghana",
+      "parishId": null,
+      "townId": "tamale",
+      "sector": "water",
+      "summary": "A hand pump and a filter for a Tamale neighbourhood. The borehole is drilled. The pump still needs fitting.",
+      "whatYouGet": "A part of this water project, recorded as ownership units if the organizer accepts your capital.",
+      "goalJmd": 920000,
+      "committedJmd": 260000,
+      "workersMatched": 3,
+      "workersNeeded": 4,
+      "weeklyPayout": 1400,
+      "workStarted": true,
+      "organizerName": "Kwame Boateng",
+      "needs": [
+        "water",
+        "building"
+      ],
+      "checks": [
+        {
+          "id": "organizer",
+          "state": "yes"
+        },
+        {
+          "id": "engineer",
+          "state": "yes"
+        },
+        {
+          "id": "community",
+          "state": "yes"
+        }
+      ]
+    },
+    {
+      "id": "ubud-internet-room",
+      "name": "Ubud Internet Room",
+      "countryId": "indonesia",
+      "parishId": null,
+      "townId": "ubud",
+      "sector": "connectivity",
+      "summary": "One room in Ubud with a mesh link, so students and the clinic next door can get online.",
+      "whatYouGet": "A part of this internet room, recorded as ownership units if the organizer accepts your capital.",
+      "goalJmd": 850000000,
+      "committedJmd": 210000000,
+      "workersMatched": 2,
+      "workersNeeded": 4,
+      "weeklyPayout": 2500000,
+      "workStarted": false,
+      "organizerName": "Made Sari",
+      "needs": [
+        "internet",
+        "building"
+      ],
+      "checks": [
+        {
+          "id": "organizer",
+          "state": "yes"
+        },
+        {
+          "id": "community",
+          "state": "review"
+        }
+      ]
+    },
+    {
+      "id": "medellin-classroom",
+      "name": "Medellín Classroom Rebuild",
+      "countryId": "colombia",
+      "parishId": null,
+      "townId": "medellin",
+      "sector": "education",
+      "summary": "A primary classroom in Medellín is being rebuilt, with a small set of screens for lessons.",
+      "whatYouGet": "A part of this classroom, recorded as ownership units if the organizer accepts your capital.",
+      "goalJmd": 220000000,
+      "committedJmd": 70000000,
+      "workersMatched": 3,
+      "workersNeeded": 6,
+      "weeklyPayout": 900000,
+      "workStarted": true,
+      "organizerName": "Luz Herrera",
+      "needs": [
+        "teaching",
+        "building"
+      ],
+      "checks": [
+        {
+          "id": "organizer",
+          "state": "yes"
+        },
+        {
+          "id": "community",
+          "state": "yes"
+        }
+      ]
+    },
+    {
+      "id": "sylhet-vaccine-fridge",
+      "name": "Sylhet Vaccine Fridge",
+      "countryId": "bangladesh",
+      "parishId": null,
+      "townId": "sylhet",
+      "sector": "healthcare",
+      "summary": "A cold box and a steady power line so a Sylhet clinic can keep vaccines cold.",
+      "whatYouGet": "A part of this clinic project, recorded as ownership units if the organizer accepts your capital.",
+      "goalJmd": 4500000,
+      "committedJmd": 1200000,
+      "workersMatched": 1,
+      "workersNeeded": 3,
+      "weeklyPayout": 12000,
+      "workStarted": false,
+      "organizerName": "Farzana Rahman",
+      "needs": [
+        "care",
+        "power"
+      ],
+      "checks": [
+        {
+          "id": "organizer",
+          "state": "yes"
+        },
+        {
+          "id": "engineer",
+          "state": "review"
+        },
+        {
+          "id": "community",
+          "state": "open"
+        }
+      ]
+    },
+    {
+      "id": "amman-roof-tanks",
+      "name": "Amman Roof Tanks",
+      "countryId": "jordan",
+      "parishId": null,
+      "townId": "amman",
+      "sector": "water",
+      "summary": "Roof tanks and a filter for a school in Amman, so rainwater lasts through the dry months.",
+      "whatYouGet": "A part of this water project, recorded as ownership units if the organizer accepts your capital.",
+      "goalJmd": 85000,
+      "committedJmd": 22000,
+      "workersMatched": 2,
+      "workersNeeded": 4,
+      "weeklyPayout": 120,
+      "workStarted": false,
+      "organizerName": "Hana Nasser",
+      "needs": [
+        "water",
+        "building"
+      ],
+      "checks": [
+        {
+          "id": "organizer",
+          "state": "yes"
+        },
+        {
+          "id": "engineer",
+          "state": "yes"
+        },
+        {
+          "id": "community",
+          "state": "review"
+        }
+      ]
+    },
+    {
+      "id": "krakow-classroom",
+      "name": "Kraków Classroom",
+      "countryId": "poland",
+      "parishId": null,
+      "townId": "krakow",
+      "sector": "education",
+      "summary": "A Kraków classroom is being repaired, with a few screens for evening lessons.",
+      "whatYouGet": "A part of this classroom, recorded as ownership units if the organizer accepts your capital.",
+      "goalJmd": 480000,
+      "committedJmd": 140000,
+      "workersMatched": 2,
+      "workersNeeded": 5,
+      "weeklyPayout": 1800,
+      "workStarted": false,
+      "organizerName": "Ania Kowalska",
+      "needs": [
+        "teaching",
+        "building"
+      ],
+      "checks": [
+        {
+          "id": "organizer",
+          "state": "yes"
+        },
+        {
+          "id": "community",
+          "state": "yes"
+        }
       ]
     }
   ],
@@ -371,6 +937,14 @@
       "amountJmd": 150000,
       "status": "pledged",
       "createdAt": "2026-10-18T14:00:00.000Z"
+    },
+    {
+      "id": "amina-kisumu",
+      "userId": "amina",
+      "projectId": "kisumu-clinic-solar",
+      "amountJmd": 400000,
+      "status": "pledged",
+      "createdAt": "2026-03-02"
     }
   ],
   "contributions": [
@@ -409,6 +983,337 @@
       "preset": "day",
       "status": "logged",
       "createdAt": "2026-10-15T14:00:00.000Z"
+    },
+    {
+      "id": "kwesi-tamale",
+      "userId": "kwesi",
+      "projectId": "tamale-borehole",
+      "skill": "water",
+      "preset": "week",
+      "status": "accepted",
+      "createdAt": "2026-03-04"
+    }
+  ],
+  "countries": [
+    {
+      "id": "barbados",
+      "name": "Barbados",
+      "regionId": "caribbean",
+      "currency": "Bds$",
+      "cities": [
+        {
+          "id": "bridgetown",
+          "name": "Bridgetown"
+        },
+        {
+          "id": "speightstown",
+          "name": "Speightstown"
+        }
+      ]
+    },
+    {
+      "id": "trinidad",
+      "name": "Trinidad and Tobago",
+      "regionId": "caribbean",
+      "currency": "TT$",
+      "cities": [
+        {
+          "id": "port-of-spain",
+          "name": "Port of Spain"
+        },
+        {
+          "id": "san-fernando",
+          "name": "San Fernando"
+        }
+      ]
+    },
+    {
+      "id": "kenya",
+      "name": "Kenya",
+      "regionId": "africa",
+      "currency": "KSh",
+      "cities": [
+        {
+          "id": "kisumu",
+          "name": "Kisumu"
+        },
+        {
+          "id": "nairobi",
+          "name": "Nairobi"
+        }
+      ]
+    },
+    {
+      "id": "ghana",
+      "name": "Ghana",
+      "regionId": "africa",
+      "currency": "GH₵",
+      "cities": [
+        {
+          "id": "tamale",
+          "name": "Tamale"
+        },
+        {
+          "id": "accra",
+          "name": "Accra"
+        }
+      ]
+    },
+    {
+      "id": "nigeria",
+      "name": "Nigeria",
+      "regionId": "africa",
+      "currency": "NGN",
+      "cities": [
+        {
+          "id": "lagos",
+          "name": "Lagos"
+        },
+        {
+          "id": "kano",
+          "name": "Kano"
+        }
+      ]
+    },
+    {
+      "id": "colombia",
+      "name": "Colombia",
+      "regionId": "latin-america",
+      "currency": "COL$",
+      "cities": [
+        {
+          "id": "medellin",
+          "name": "Medellín"
+        },
+        {
+          "id": "cartagena",
+          "name": "Cartagena"
+        }
+      ]
+    },
+    {
+      "id": "mexico",
+      "name": "Mexico",
+      "regionId": "latin-america",
+      "currency": "MX$",
+      "cities": [
+        {
+          "id": "oaxaca",
+          "name": "Oaxaca"
+        },
+        {
+          "id": "merida",
+          "name": "Mérida"
+        }
+      ]
+    },
+    {
+      "id": "brazil",
+      "name": "Brazil",
+      "regionId": "latin-america",
+      "currency": "BRL",
+      "cities": [
+        {
+          "id": "salvador",
+          "name": "Salvador"
+        },
+        {
+          "id": "belem",
+          "name": "Belém"
+        }
+      ]
+    },
+    {
+      "id": "jordan",
+      "name": "Jordan",
+      "regionId": "middle-east",
+      "currency": "JOD",
+      "cities": [
+        {
+          "id": "amman",
+          "name": "Amman"
+        },
+        {
+          "id": "irbid",
+          "name": "Irbid"
+        }
+      ]
+    },
+    {
+      "id": "lebanon",
+      "name": "Lebanon",
+      "regionId": "middle-east",
+      "currency": "LBP",
+      "cities": [
+        {
+          "id": "tripoli",
+          "name": "Tripoli"
+        },
+        {
+          "id": "beirut",
+          "name": "Beirut"
+        }
+      ]
+    },
+    {
+      "id": "uae",
+      "name": "United Arab Emirates",
+      "regionId": "middle-east",
+      "currency": "AED",
+      "cities": [
+        {
+          "id": "al-ain",
+          "name": "Al Ain"
+        },
+        {
+          "id": "dubai",
+          "name": "Dubai"
+        }
+      ]
+    },
+    {
+      "id": "poland",
+      "name": "Poland",
+      "regionId": "eastern-europe",
+      "currency": "zł",
+      "cities": [
+        {
+          "id": "krakow",
+          "name": "Kraków"
+        },
+        {
+          "id": "gdansk",
+          "name": "Gdańsk"
+        }
+      ]
+    },
+    {
+      "id": "romania",
+      "name": "Romania",
+      "regionId": "eastern-europe",
+      "currency": "lei",
+      "cities": [
+        {
+          "id": "cluj",
+          "name": "Cluj-Napoca"
+        },
+        {
+          "id": "iasi",
+          "name": "Iași"
+        }
+      ]
+    },
+    {
+      "id": "ukraine",
+      "name": "Ukraine",
+      "regionId": "eastern-europe",
+      "currency": "UAH",
+      "cities": [
+        {
+          "id": "lviv",
+          "name": "Lviv"
+        },
+        {
+          "id": "kyiv",
+          "name": "Kyiv"
+        }
+      ]
+    },
+    {
+      "id": "india",
+      "name": "India",
+      "regionId": "south-asia",
+      "currency": "INR",
+      "cities": [
+        {
+          "id": "jaipur",
+          "name": "Jaipur"
+        },
+        {
+          "id": "kochi",
+          "name": "Kochi"
+        }
+      ]
+    },
+    {
+      "id": "bangladesh",
+      "name": "Bangladesh",
+      "regionId": "south-asia",
+      "currency": "Tk",
+      "cities": [
+        {
+          "id": "sylhet",
+          "name": "Sylhet"
+        },
+        {
+          "id": "dhaka",
+          "name": "Dhaka"
+        }
+      ]
+    },
+    {
+      "id": "nepal",
+      "name": "Nepal",
+      "regionId": "south-asia",
+      "currency": "NPR",
+      "cities": [
+        {
+          "id": "pokhara",
+          "name": "Pokhara"
+        },
+        {
+          "id": "kathmandu",
+          "name": "Kathmandu"
+        }
+      ]
+    },
+    {
+      "id": "indonesia",
+      "name": "Indonesia",
+      "regionId": "southeast-asia",
+      "currency": "Rp",
+      "cities": [
+        {
+          "id": "ubud",
+          "name": "Ubud"
+        },
+        {
+          "id": "denpasar",
+          "name": "Denpasar"
+        }
+      ]
+    },
+    {
+      "id": "philippines",
+      "name": "Philippines",
+      "regionId": "southeast-asia",
+      "currency": "PHP",
+      "cities": [
+        {
+          "id": "cebu",
+          "name": "Cebu"
+        },
+        {
+          "id": "manila",
+          "name": "Manila"
+        }
+      ]
+    },
+    {
+      "id": "vietnam",
+      "name": "Vietnam",
+      "regionId": "southeast-asia",
+      "currency": "VND",
+      "cities": [
+        {
+          "id": "hue",
+          "name": "Hue"
+        },
+        {
+          "id": "hanoi",
+          "name": "Hanoi"
+        }
+      ]
     }
   ]
 }

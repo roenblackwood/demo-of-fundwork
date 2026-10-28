@@ -20,6 +20,11 @@ export function proofTip(skill: Skill): AiNote {
     cooking: "Add a photo of a meal you prepared, or the kitchen you work in.",
     "guest-house": "Add a photo of a room you set up, or a place you look after.",
     front: "Add a photo of you welcoming guests, if you are comfortable sharing one.",
+    power: "Add a photo of a panel, a battery, or a finished install.",
+    water: "Add a photo of a pump, a tank, or a finished tap.",
+    internet: "Add a photo of a hub, a mast, or a room you set up.",
+    teaching: "Add a photo of a classroom you worked on, if you are comfortable sharing one.",
+    care: "Add a photo of a clinic room or a cold box you look after, if you are comfortable sharing one.",
   };
   return { title: "A photo helps", body: tips[skill] };
 }
@@ -82,6 +87,16 @@ const checkLabels: Record<CheckId, Record<CheckState, string>> = {
     review: "Health check in review",
     open: "Health check still open",
   },
+  engineer: {
+    yes: "Engineer visit",
+    review: "Engineer visit in review",
+    open: "Engineer visit still open",
+  },
+  community: {
+    yes: "Community letter",
+    review: "Community letter in review",
+    open: "Community letter still open",
+  },
 };
 
 export function checkLabel(id: CheckId, state: CheckState): string {
@@ -129,6 +144,24 @@ export function checkNote(id: CheckId, state: CheckState): AiNote | null {
     return {
       title: "What the health check means",
       body: "A public health check looks at food safety. For this dairy, that check is still open, so it is not finished.",
+    };
+  }
+  if (id === "engineer") {
+    return {
+      title: "What an engineer visit means",
+      body:
+        state === "yes"
+          ? "An engineer visit means someone who knows the work has looked at the site."
+          : "An engineer visit means someone who knows the work looks at the site. This visit is not finished yet.",
+    };
+  }
+  if (id === "community") {
+    return {
+      title: "What a community letter means",
+      body:
+        state === "yes"
+          ? "A community letter means people who live there have said this project should go ahead."
+          : "A community letter means people who live there say the project should go ahead. This letter is not finished yet.",
     };
   }
   return null;

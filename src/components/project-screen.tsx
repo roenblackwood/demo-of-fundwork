@@ -13,7 +13,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Progress, ProgressLabel } from "@/components/ui/progress";
 import { checkNote, projectNote } from "@/lib/ai";
 import { CAPITAL_LINE } from "@/lib/copy";
-import { skillPhrase } from "@/lib/catalog";
+import { canStillCommit, skillPhrase } from "@/lib/catalog";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
 import { money, moneyShort, placeLine } from "@/lib/format";
@@ -25,7 +25,7 @@ import {
   moneyStillOpen,
   projectCommitted,
 } from "@/lib/ownership";
-import { getProject, placeName } from "@/lib/seed";
+import { currencyOf, getProject, projectPlace } from "@/lib/seed";
 
 export function ProjectScreen({ id }: { id: string }) {
   const demo = useDemo();
@@ -36,7 +36,8 @@ export function ProjectScreen({ id }: { id: string }) {
   }, [demo, project]);
 
   if (!project) return null;
-  const where = placeName(project.parishId, project.townId);
+  const where = projectPlace(project);
+  const currency = currencyOf(project.countryId);
   const committed = projectCommitted(
     project.committedJmd,
     demo.addedCommitments,
@@ -54,7 +55,7 @@ export function ProjectScreen({ id }: { id: string }) {
   const backHref =
     demo.role === "worker" && (demo.flow?.skill || demo.homeSkill)
       ? "/work/matches"
-      : `/invest/${demo.flow?.parishId || project.parishId}/${demo.flow?.townId || project.townId}/${demo.flow?.sector || project.sector}`;
+      : `/invest/${demo.flow?.parishId || demo.flow?.countryId || project.parishId || project.countryId}/${demo.flow?.townId || project.townId}/${demo.flow?.sector || project.sector}`;
   const ownershipLine =
     demo.role === "worker"
       ? "Your work turns into ownership units."
@@ -85,16 +86,24 @@ export function ProjectScreen({ id }: { id: string }) {
       </section>
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">
-          {stillOpen > 0 ? `${moneyShort(stillOpen)} still needed` : "The money they asked for is in"}
+          {stillOpen > 0
+            ? `${moneyShort(stillOpen, currency)} still needed`
+            : "The money they asked for is in"}
         </h2>
         <Progress value={percent} aria-label="Money committed">
           <ProgressLabel className="text-base">
-            {moneyShort(committed)} of {moneyShort(project.goalJmd)}
+            {moneyShort(committed, currency)} of {moneyShort(project.goalJmd, currency)}
           </ProgressLabel>
         </Progress>
         <p className="text-base">
-          Goal {money(project.goalJmd)}. Needs{" "}
+          Goal {money(project.goalJmd, currency)}. Needs{" "}
           {project.needs.map((need) => skillPhrase(need)).join(", ")}.
+        </p>
+        <p className="text-base">
+          {project.workersMatched} of {project.workersNeeded} workers matched.
+        </p>
+        <p className="text-base leading-relaxed">
+          A week of work pays about {money(project.weeklyPayout, currency)} in the stable unit.
         </p>
       </section>
       <section>
@@ -112,7 +121,7 @@ export function ProjectScreen({ id }: { id: string }) {
         Organizer: <span className="font-semibold">{project.organizerName}</span>
       </p>
       <div className="space-y-3">
-        {showInvest && stillOpen >= 50_000 ? (
+        {showInvest && canStillCommit(stillOpen, project.goalJmd, currency) ? (
           <Link
             href={`/projects/${project.id}/commit`}
             className={cn(buttonVariants({ size: "lg" }), "w-full")}
@@ -120,7 +129,7 @@ export function ProjectScreen({ id }: { id: string }) {
             Commit capital
           </Link>
         ) : null}
-        {showInvest && stillOpen < 50_000 ? (
+        {showInvest && !canStillCommit(stillOpen, project.goalJmd, currency) ? (
           <p className="text-lg">The money they asked for is already in.</p>
         ) : null}
         {showWork ? (

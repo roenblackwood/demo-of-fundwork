@@ -1,5 +1,5 @@
-import { ParishStep } from "@/components/place-steps";
+import { CountryStep } from "@/components/place-steps";
 
 export default function Page() {
-  return <ParishStep mode="investor" />;
+  return <CountryStep regionId="caribbean" mode="investor" />;
 }

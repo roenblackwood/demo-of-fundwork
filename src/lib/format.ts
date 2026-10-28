@@ -1,17 +1,22 @@
-export function money(amount: number): string {
-  return `J$${Math.round(amount).toLocaleString("en-US")}`;
+function withCurrency(currency: string, text: string): string {
+  const spaced = /[A-Za-z]$/.test(currency) && !currency.endsWith("$");
+  return spaced ? `${currency} ${text}` : `${currency}${text}`;
 }
 
-export function moneyShort(amount: number): string {
+export function money(amount: number, currency = "J$"): string {
+  return withCurrency(currency, Math.round(amount).toLocaleString("en-US"));
+}
+
+export function moneyShort(amount: number, currency = "J$"): string {
   const abs = Math.abs(amount);
   if (abs >= 1_000_000) {
     const millions = Math.round((amount / 1_000_000) * 10) / 10;
     const text = Number.isInteger(millions)
       ? millions.toFixed(0)
       : millions.toFixed(1);
-    return `J$${text} million`;
+    return withCurrency(currency, `${text} million`);
   }
-  return money(amount);
+  return money(amount, currency);
 }
 
 export function firstName(name: string): string {

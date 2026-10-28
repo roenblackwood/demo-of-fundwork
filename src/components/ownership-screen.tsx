@@ -11,7 +11,7 @@ import {
   workerUnits,
   WORKER_UNITS,
 } from "@/lib/ownership";
-import { getProject } from "@/lib/seed";
+import { currencyOf, getProject } from "@/lib/seed";
 
 export function OwnershipScreen() {
   const demo = useDemo();
@@ -27,7 +27,7 @@ export function OwnershipScreen() {
         name: project.name,
         status: commitment.status,
         units: investorUnits(commitment.amountJmd, project.goalJmd),
-        detail: money(commitment.amountJmd),
+        detail: money(commitment.amountJmd, currencyOf(project.countryId)),
         kind: "capital" as const,
       },
     ];

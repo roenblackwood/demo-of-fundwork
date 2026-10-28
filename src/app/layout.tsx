@@ -5,14 +5,14 @@ import { Shell } from "@/components/shell";
 import "./globals.css";
 
 const nunito = Nunito({
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
   weight: ["400", "600", "700", "800"],
   variable: "--font-nunito",
   display: "swap",
 });
 
 const fraunces = Fraunces({
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
   weight: ["500", "600", "700"],
   variable: "--font-fraunces",
   display: "swap",
@@ -21,7 +21,7 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   title: "Fundwork",
   description:
-    "Fund a Jamaica project with Bitcoin capital, or join the work and get paid in a stable unit.",
+    "Fund a project with Bitcoin capital, or join the work and get paid in a stable unit. Jamaica is the deep demo.",
 };
 
 export const viewport: Viewport = {

@@ -10,30 +10,37 @@ import { SKILLS } from "@/lib/catalog";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
 import { FLOW_STEPS } from "@/lib/regions";
-import { getParish, getTown } from "@/lib/seed";
+import { getCity, getCountry, getParish, getTown } from "@/lib/seed";
 import type { Skill } from "@/lib/types";
 
 export function ProfileStep({
-  parishId,
+  placeId,
   townId,
   skill,
 }: {
-  parishId: string;
+  placeId: string;
   townId: string;
   skill: Skill;
 }) {
   const { ready, updateFlow, flow, proof, proofLabel, setProof } = useDemo();
-  const parish = getParish(parishId);
-  const town = getTown(parishId, townId);
+  const parish = getParish(placeId);
+  const country = parish ? undefined : getCountry(placeId);
+  const town = parish ? getTown(placeId, townId) : getCity(placeId, townId);
   const tip = proofTip(skill);
   const [message, setMessage] = useState("");
+  const areaName = parish?.name ?? country?.name;
 
   useEffect(() => {
-    if (!ready) return;
-    updateFlow({ parishId, townId, skill });
-  }, [ready, parishId, townId, skill, updateFlow]);
+    if (!ready || !town) return;
+    updateFlow({
+      countryId: parish ? "jamaica" : country?.id,
+      parishId: parish?.id,
+      townId,
+      skill,
+    });
+  }, [ready, country?.id, parish, placeId, town, townId, skill, updateFlow]);
 
-  if (!parish || !town) return null;
+  if ((!parish && !country) || !town) return null;
 
   function onFile(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -72,11 +79,11 @@ export function ProfileStep({
   return (
     <div>
       <StepHeader
-        backHref={`/work/${parish.id}/${town.id}`}
-        step={5}
-        total={FLOW_STEPS}
+        backHref={`/work/${placeId}/${town.id}`}
+        step={parish ? 5 : 4}
+        total={parish ? FLOW_STEPS : 4}
         title="Show your work"
-        hint={`${skillTitle(skill)} in ${town.name}`}
+        hint={`${skillTitle(skill)} in ${town.name}${areaName ? `, ${areaName}` : ""}`}
       />
       <div className="space-y-6">
         <p className="text-lg leading-relaxed">

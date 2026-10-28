@@ -1,11 +1,23 @@
-export type Sector = "lodging" | "agriculture";
+export type Sector =
+  | "lodging"
+  | "agriculture"
+  | "energy"
+  | "water"
+  | "connectivity"
+  | "education"
+  | "healthcare";
 
 export type Skill =
   | "building"
   | "guest-house"
   | "farming"
   | "cooking"
-  | "front";
+  | "front"
+  | "power"
+  | "water"
+  | "internet"
+  | "teaching"
+  | "care";
 
 export type CheckId =
   | "organizer"
@@ -13,7 +25,9 @@ export type CheckId =
   | "site-visit"
   | "parish-letter"
   | "rada"
-  | "public-health";
+  | "public-health"
+  | "engineer"
+  | "community";
 
 export type CheckState = "yes" | "review" | "open";
 
@@ -37,11 +51,20 @@ export type Check = {
   state: CheckState;
 };
 
+export type Country = {
+  id: string;
+  name: string;
+  regionId: string;
+  currency: string;
+  cities: Town[];
+};
+
 export type User = {
   id: string;
   name: string;
   role: PathChoice;
-  parishId: string;
+  countryId: string;
+  parishId: string | null;
   townId: string;
   verified: boolean;
   skill: Skill | null;
@@ -53,13 +76,17 @@ export type User = {
 export type Project = {
   id: string;
   name: string;
-  parishId: string;
+  countryId: string;
+  parishId: string | null;
   townId: string;
   sector: Sector;
   summary: string;
   whatYouGet: string;
   goalJmd: number;
   committedJmd: number;
+  workersMatched: number;
+  workersNeeded: number;
+  weeklyPayout: number;
   workStarted: boolean;
   organizerName: string;
   needs: Skill[];
@@ -91,6 +118,7 @@ export type Contribution = {
 
 export type Seed = {
   parishes: Parish[];
+  countries: Country[];
   users: User[];
   projects: Project[];
   commitments: Commitment[];

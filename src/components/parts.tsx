@@ -234,9 +234,29 @@ export function Checklist({
   );
 }
 
+export function OwnershipStrip() {
+  return (
+    <div className="space-y-2">
+      <div
+        className="flex h-3 overflow-hidden rounded-full"
+        role="img"
+        aria-label="Ownership set aside: people who fund it, people who build it, and Fundwork."
+      >
+        <div className="h-full bg-primary" style={{ width: "55%" }} />
+        <div className="h-full bg-work" style={{ width: "35%" }} />
+        <div className="h-full bg-[#5c6b7a]" style={{ width: "10%" }} />
+      </div>
+      <p className="text-sm leading-relaxed text-muted-foreground">
+        People who fund it, people who build it, and Fundwork.
+      </p>
+    </div>
+  );
+}
+
 export function OwnershipSplit() {
   return (
     <>
+      <p>Your work turns into ownership units.</p>
       <p>
         Fundwork keeps a small part. The rest is for people who put in capital and people who do the work.
       </p>
