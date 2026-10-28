@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { LearnMore, StepHeader } from "@/components/parts";
+import { ActionBar, LearnMore, StepHeader } from "@/components/parts";
 import { buttonVariants } from "@/components/ui/button";
 import { proofTip } from "@/lib/ai";
 import { skillTitle } from "@/lib/catalog";
@@ -153,12 +153,14 @@ export function ProfileStep({
             People deciding who to trust look for recent work they can see. A clear photo is enough for this demo. It stays on this phone.
           </p>
         </LearnMore>
-        <Link
-          href="/work/matches"
-          className={cn(buttonVariants({ variant: "work", size: "lg" }), "w-full")}
-        >
-          See projects for me
-        </Link>
+        <ActionBar>
+          <Link
+            href="/work/matches"
+            className={cn(buttonVariants({ variant: "work", size: "lg" }), "w-full")}
+          >
+            See projects for me
+          </Link>
+        </ActionBar>
       </div>
     </div>
   );

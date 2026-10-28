@@ -57,7 +57,7 @@ export function GettingStarted() {
         <Link
           href="/work"
           onClick={() => demo.startPath("worker")}
-          className={cn(buttonVariants({ variant: "work", size: "lg" }), "w-full")}
+          className={cn(buttonVariants({ variant: "workOutline", size: "lg" }), "w-full")}
         >
           I want to work
         </Link>

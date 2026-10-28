@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { PageBusy } from "@/components/busy";
 import { GettingStarted } from "@/components/getting-started";
 import { LearnMore, OwnershipSplit, StatusLabel, StepHeader } from "@/components/parts";
 import { workPresetLabel } from "@/lib/catalog";
@@ -15,7 +16,7 @@ import { currencyOf, getProject } from "@/lib/seed";
 
 export function OwnershipScreen() {
   const demo = useDemo();
-  if (!demo.ready) return <p className="text-lg">One moment.</p>;
+  if (!demo.ready) return <PageBusy />;
 
   const moneyRows = demo.commitments.flatMap((commitment) => {
     const project = getProject(commitment.projectId);

@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import {
+  ActionBar,
   FundingPills,
   LearnMore,
   OwnershipSplit,
@@ -13,7 +14,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Progress, ProgressLabel } from "@/components/ui/progress";
 import { checkNote, projectNote } from "@/lib/ai";
 import { CAPITAL_LINE } from "@/lib/copy";
-import { canStillCommit, skillPhrase } from "@/lib/catalog";
+import { canStillCommit, sectorTitle, skillPhrase } from "@/lib/catalog";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
 import { money, moneyShort, placeLine } from "@/lib/format";
@@ -37,6 +38,7 @@ export function ProjectScreen({ id }: { id: string }) {
 
   if (!project) return null;
   const where = projectPlace(project);
+  const place = where ? placeLine(where.town, where.parish) : "Jamaica";
   const currency = currencyOf(project.countryId);
   const committed = projectCommitted(
     project.committedJmd,
@@ -52,6 +54,7 @@ export function ProjectScreen({ id }: { id: string }) {
   const checksDone = project.checks.filter((check) => check.state === "yes").length;
   const showInvest = demo.role !== "worker";
   const showWork = demo.role !== "investor";
+  const canCommit = showInvest && canStillCommit(stillOpen, project.goalJmd, currency);
   const backHref =
     demo.role === "worker" && (demo.flow?.skill || demo.homeSkill)
       ? "/work/matches"
@@ -68,11 +71,23 @@ export function ProjectScreen({ id }: { id: string }) {
       <StepHeader
         backHref={backHref}
         title={project.name}
-        hint={where ? placeLine(where.town, where.parish) : undefined}
+        hint={`${sectorTitle(project.sector)} · ${place}`}
       />
-      <FundingPills
-        labels={fundingLabels(committed, project.goalJmd, project.workStarted)}
-      />
+      <section className="space-y-3">
+        <h2 className="text-3xl font-semibold leading-tight">
+          {stillOpen > 0
+            ? `${moneyShort(stillOpen, currency)} still needed`
+            : "The money they asked for is in"}
+        </h2>
+        <Progress value={percent} aria-label="Money committed">
+          <ProgressLabel className="text-base">
+            {moneyShort(committed, currency)} of {moneyShort(project.goalJmd, currency)}
+          </ProgressLabel>
+        </Progress>
+        <FundingPills
+          labels={fundingLabels(committed, project.goalJmd, project.workStarted)}
+        />
+      </section>
       <p className="border-l-4 border-primary pl-4 text-lg leading-relaxed">{note.body}</p>
       <p className="text-lg leading-relaxed">{CAPITAL_LINE}</p>
       <section className="space-y-3">
@@ -85,16 +100,6 @@ export function ProjectScreen({ id }: { id: string }) {
         <TrustBadges checks={project.checks} />
       </section>
       <section className="space-y-3">
-        <h2 className="text-xl font-semibold">
-          {stillOpen > 0
-            ? `${moneyShort(stillOpen, currency)} still needed`
-            : "The money they asked for is in"}
-        </h2>
-        <Progress value={percent} aria-label="Money committed">
-          <ProgressLabel className="text-base">
-            {moneyShort(committed, currency)} of {moneyShort(project.goalJmd, currency)}
-          </ProgressLabel>
-        </Progress>
         <p className="text-base">
           Goal {money(project.goalJmd, currency)}. Needs{" "}
           {project.needs.map((need) => skillPhrase(need)).join(", ")}.
@@ -120,27 +125,9 @@ export function ProjectScreen({ id }: { id: string }) {
       <p className="text-base">
         Organizer: <span className="font-semibold">{project.organizerName}</span>
       </p>
-      <div className="space-y-3">
-        {showInvest && canStillCommit(stillOpen, project.goalJmd, currency) ? (
-          <Link
-            href={`/projects/${project.id}/commit`}
-            className={cn(buttonVariants({ size: "lg" }), "w-full")}
-          >
-            Commit capital
-          </Link>
-        ) : null}
-        {showInvest && !canStillCommit(stillOpen, project.goalJmd, currency) ? (
-          <p className="text-lg">The money they asked for is already in.</p>
-        ) : null}
-        {showWork ? (
-          <Link
-            href={`/projects/${project.id}/log`}
-            className={cn(buttonVariants({ variant: "work", size: "lg" }), "w-full")}
-          >
-            Log work
-          </Link>
-        ) : null}
-      </div>
+      {showInvest && !canCommit ? (
+        <p className="text-lg">The money they asked for is already in.</p>
+      ) : null}
       <p className="text-lg font-semibold">{ownershipLine}</p>
       <LearnMore title="Who this belongs to">
         <OwnershipSplit />
@@ -162,6 +149,29 @@ export function ProjectScreen({ id }: { id: string }) {
         </p>
         <p>This demo keeps the numbers on this phone.</p>
       </LearnMore>
+      {canCommit || showWork ? (
+        <ActionBar>
+          {canCommit ? (
+            <Link
+              href={`/projects/${project.id}/commit`}
+              className={cn(buttonVariants({ size: "lg" }), "w-full")}
+            >
+              Commit capital
+            </Link>
+          ) : null}
+          {showWork ? (
+            <Link
+              href={`/projects/${project.id}/log`}
+              className={cn(
+                buttonVariants({ variant: canCommit ? "workOutline" : "work", size: "lg" }),
+                "w-full",
+              )}
+            >
+              Log work
+            </Link>
+          ) : null}
+        </ActionBar>
+      ) : null}
     </div>
   );
 }

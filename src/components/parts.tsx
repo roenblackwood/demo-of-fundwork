@@ -33,7 +33,7 @@ export function StepHeader({
           Step {step} of {total}
         </p>
       ) : null}
-      <h1 className="mt-1 font-display text-4xl leading-tight text-foreground">
+      <h1 className="mt-1 font-display text-3xl leading-tight text-foreground">
         {title}
       </h1>
       {hint ? <p className="mt-2 text-lg text-muted-foreground">{hint}</p> : null}
@@ -231,6 +231,28 @@ export function Checklist({
         </Link>
       ) : null}
     </section>
+  );
+}
+
+export function ActionBar({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <div className="h-40 shrink-0" aria-hidden />
+      <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 border-t border-border bg-background/95 px-5 py-3 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-lg flex-col gap-2">{children}</div>
+      </div>
+    </>
+  );
+}
+
+export function SavedMark({ label }: { label: string }) {
+  return (
+    <p className="flex items-center gap-3 text-lg font-semibold" role="status">
+      <span className="grid size-11 shrink-0 place-items-center rounded-full bg-trust text-trust-foreground">
+        <Check className="size-6" aria-hidden />
+      </span>
+      {label}
+    </p>
   );
 }
 

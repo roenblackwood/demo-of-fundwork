@@ -3,7 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LearnMore, NextSteps, OwnershipSplit, StepHeader } from "@/components/parts";
+import { Check } from "lucide-react";
+import { PageBusy } from "@/components/busy";
+import { ActionBar, LearnMore, NextSteps, OwnershipSplit, SavedMark, StepHeader } from "@/components/parts";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { WORK_PRESETS, workPresetLabel } from "@/lib/catalog";
 import { cn } from "cn";
@@ -23,7 +25,7 @@ export function LogScreen({ id }: { id: string }) {
     project?.needs[0] ||
     "building";
 
-  if (!demo.ready) return <p className="text-lg">One moment.</p>;
+  if (!demo.ready) return <PageBusy />;
   if (!project) return null;
 
   function save() {
@@ -59,13 +61,14 @@ export function LogScreen({ id }: { id: string }) {
               aria-pressed={selected}
               onClick={() => setPreset(item.id)}
               className={cn(
-                "min-h-14 w-full rounded-2xl border-2 px-4 text-left text-lg font-semibold",
+                "flex min-h-14 w-full items-center justify-between gap-3 rounded-2xl border-2 px-4 text-left text-lg font-semibold",
                 selected
-                  ? "border-work bg-wait text-foreground"
+                  ? "border-work bg-work/10 text-foreground"
                   : "border-border bg-card",
               )}
             >
-              {item.label}
+              <span>{item.label}</span>
+              {selected ? <Check className="size-6 shrink-0 text-work" aria-hidden /> : null}
             </button>
           );
         })}
@@ -82,15 +85,6 @@ export function LogScreen({ id }: { id: string }) {
           "If they accept it, it turns into ownership units.",
         ]}
       />
-      <Button
-        size="lg"
-        variant="work"
-        className="w-full"
-        disabled={!preset}
-        onClick={save}
-      >
-        {preset ? "Log this work" : "Choose the work"}
-      </Button>
       <p className="text-base text-muted-foreground">This is a demo. No money moves.</p>
       <LearnMore title="Who this belongs to">
         <OwnershipSplit />
@@ -104,6 +98,17 @@ export function LogScreen({ id }: { id: string }) {
           {WORKER_UNITS.toLocaleString("en-US")} units set aside for people who build the project.
         </p>
       </LearnMore>
+      <ActionBar>
+        <Button
+          size="lg"
+          variant="work"
+          className="w-full"
+          disabled={!preset}
+          onClick={save}
+        >
+          {preset ? "Log this work" : "Choose the work"}
+        </Button>
+      </ActionBar>
     </div>
   );
 }
@@ -113,7 +118,7 @@ export function LoggedScreen({ id }: { id: string }) {
   const project = getProject(id);
   const contribution = demo.contributions.find((item) => item.projectId === id);
 
-  if (!demo.ready) return <p className="text-lg">One moment.</p>;
+  if (!demo.ready) return <PageBusy />;
   if (!project || !contribution) {
     return (
       <div>
@@ -125,14 +130,12 @@ export function LoggedScreen({ id }: { id: string }) {
   return (
     <div className="space-y-6">
       <StepHeader backHref="/you" title="You logged work" hint={project.name} />
+      <SavedMark label="Saved on this phone" />
       <p className="text-3xl font-semibold">{workPresetLabel(contribution.preset)}</p>
       <p className="text-lg leading-relaxed">
         About {workerUnits(contribution.preset)} ownership units, waiting on the organizer.
       </p>
       <p className="text-lg font-semibold">Your work turns into ownership units.</p>
-      <LearnMore title="Who this belongs to">
-        <OwnershipSplit />
-      </LearnMore>
       <NextSteps
         items={[
           "Your work is saved on this phone.",
@@ -140,9 +143,14 @@ export function LoggedScreen({ id }: { id: string }) {
           "If they accept it, it turns into ownership units.",
         ]}
       />
-      <Link href="/you/ownership" className={cn(buttonVariants({ variant: "work", size: "lg" }), "w-full")}>
-        See your ownership units
-      </Link>
+      <LearnMore title="Who this belongs to">
+        <OwnershipSplit />
+      </LearnMore>
+      <ActionBar>
+        <Link href="/you/ownership" className={cn(buttonVariants({ variant: "work", size: "lg" }), "w-full")}>
+          See your ownership units
+        </Link>
+      </ActionBar>
     </div>
   );
 }

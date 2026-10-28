@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { ActionBar } from "@/components/parts";
 import { RegionMap } from "@/components/region-map";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "cn";
@@ -32,9 +33,9 @@ export default function HomePage() {
     country?.id === "jamaica" ? "/work/jamaica" : country ? `/work/${country.id}` : "/work";
 
   return (
-    <div className="flex flex-1 flex-col py-6">
+    <div className="flex flex-1 flex-col">
       <h1 className="font-display text-4xl leading-tight">Where should we look?</h1>
-      <div className="mt-6">
+      <div className={country ? "mt-3" : "mt-6"}>
         <RegionMap
           selected={regionId}
           countryId={countryId}
@@ -59,7 +60,7 @@ export default function HomePage() {
           ))}
         </div>
       ) : (
-        <div className="mt-6 space-y-4">
+        <div className="mt-2 space-y-2">
           <p className="text-lg leading-relaxed">
             {country.id === "jamaica"
               ? "Jamaica is open, parish by parish."
@@ -67,30 +68,28 @@ export default function HomePage() {
                 ? `${featured[0].name} is open in ${country.name}.`
                 : `${country.name} is on the map. The open project in ${region.name} is next door.`}
           </p>
-          <Link
-            href={investHref}
-            onClick={() => startPath("investor")}
-            className={cn(buttonVariants({ size: "lg" }), "w-full")}
-          >
-            I want to invest
-          </Link>
-          <Link
-            href={workHref}
-            onClick={() => startPath("worker")}
-            className={cn(buttonVariants({ variant: "work", size: "lg" }), "w-full")}
-          >
-            I want to work
-          </Link>
-          <button
-            type="button"
-            className="min-h-11 font-semibold text-primary"
-            onClick={() => setCountryId(null)}
-          >
-            See other countries
-          </button>
+          <div className="flex flex-col items-start">
+            <button
+              type="button"
+              className="min-h-11 font-semibold text-primary"
+              onClick={() => setCountryId(null)}
+            >
+              See other countries
+            </button>
+            <button
+              type="button"
+              className="min-h-11 font-semibold text-primary"
+              onClick={() => {
+                setRegionId(null);
+                setCountryId(null);
+              }}
+            >
+              See the whole world
+            </button>
+          </div>
         </div>
       )}
-      {region ? (
+      {region && !country ? (
         <button
           type="button"
           className="mt-4 min-h-11 self-start font-semibold text-primary"
@@ -102,8 +101,28 @@ export default function HomePage() {
           See the whole world
         </button>
       ) : null}
-      <p className="mt-8 text-lg leading-relaxed">{CAPITAL_LINE}</p>
+      <p className={country ? "mt-16 text-lg leading-relaxed" : "mt-8 text-lg leading-relaxed"}>
+        {CAPITAL_LINE}
+      </p>
       <p className="mt-3 text-base text-muted-foreground">A demo. No money moves.</p>
+      {country ? (
+        <ActionBar>
+          <Link
+            href={investHref}
+            onClick={() => startPath("investor")}
+            className={cn(buttonVariants({ size: "lg" }), "w-full")}
+          >
+            I want to invest
+          </Link>
+          <Link
+            href={workHref}
+            onClick={() => startPath("worker")}
+            className={cn(buttonVariants({ variant: "workOutline", size: "lg" }), "w-full")}
+          >
+            I want to work
+          </Link>
+        </ActionBar>
+      ) : null}
     </div>
   );
 }

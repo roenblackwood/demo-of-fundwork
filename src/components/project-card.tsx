@@ -4,12 +4,15 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FundingPills, OwnershipStrip, TrustBadges } from "@/components/parts";
 import { projectNote } from "@/lib/ai";
+import { sectorTitle } from "@/lib/catalog";
 import { CAPITAL_LINE } from "@/lib/copy";
 import { useDemo } from "@/lib/demo-store";
 import { money, moneyShort, placeLine } from "@/lib/format";
 import { fundingLabels, moneyStillOpen, projectCommitted } from "@/lib/ownership";
 import { currencyOf, projectPlace } from "@/lib/seed";
 import type { Project } from "@/lib/types";
+
+// Nice to have: a photo above the title, the way YouTube leads with a thumbnail.
 
 export function ProjectCard({ project }: { project: Project }) {
   const { addedCommitments } = useDemo();
@@ -22,6 +25,7 @@ export function ProjectCard({ project }: { project: Project }) {
   );
   const stillOpen = moneyStillOpen(project.goalJmd, committed);
   const note = projectNote(project);
+  const place = where ? placeLine(where.town, where.parish) : "Jamaica";
 
   return (
     <Link
@@ -30,29 +34,28 @@ export function ProjectCard({ project }: { project: Project }) {
     >
       <Card className="h-full shadow-sm">
         <CardHeader>
-          <CardTitle>{project.name}</CardTitle>
-          <p className="text-base text-muted-foreground">
-            {where ? placeLine(where.town, where.parish) : "Jamaica"}
+          <p className="text-sm font-semibold tracking-wide text-primary uppercase">
+            {sectorTitle(project.sector)}
           </p>
+          <CardTitle>{project.name}</CardTitle>
+          <p className="text-base text-muted-foreground">{place}</p>
         </CardHeader>
         <CardContent className="space-y-3">
-          <FundingPills
-            labels={fundingLabels(committed, project.goalJmd, project.workStarted)}
-          />
-          <p className="text-base leading-relaxed">{note.body}</p>
-          <p className="text-base leading-relaxed">{CAPITAL_LINE}</p>
-          <p className="text-lg font-semibold">
+          <p className="text-2xl leading-tight font-bold tracking-tight">
             {stillOpen > 0
               ? `${moneyShort(stillOpen, currency)} still needed`
               : "The money they asked for is in"}
           </p>
-          <p className="text-base">
-            {project.workersMatched} of {project.workersNeeded} workers matched
-          </p>
+          <FundingPills
+            labels={fundingLabels(committed, project.goalJmd, project.workStarted)}
+          />
+          <p className="line-clamp-2 text-base leading-relaxed">{note.body}</p>
+          <p className="text-base leading-relaxed text-muted-foreground">{CAPITAL_LINE}</p>
           <p className="text-base leading-relaxed">
-            A week of work pays about {money(project.weeklyPayout, currency)} in the stable unit.
+            {project.workersMatched} of {project.workersNeeded} workers matched. A week of work
+            pays about {money(project.weeklyPayout, currency)} in the stable unit.
           </p>
-          <TrustBadges checks={project.checks} />
+          <TrustBadges checks={project.checks} limit={2} />
           <OwnershipStrip />
           <p className="text-base leading-relaxed">Your work turns into ownership units.</p>
         </CardContent>

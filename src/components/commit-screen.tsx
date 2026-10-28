@@ -3,7 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LearnMore, NextSteps, OwnershipSplit, StepHeader } from "@/components/parts";
+import { Check } from "lucide-react";
+import { PageBusy } from "@/components/busy";
+import { ActionBar, LearnMore, NextSteps, OwnershipSplit, SavedMark, StepHeader } from "@/components/parts";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { canStillCommit, commitChoices } from "@/lib/catalog";
 import { COMMIT_LINE } from "@/lib/copy";
@@ -24,7 +26,7 @@ export function CommitScreen({ id }: { id: string }) {
   const project = getProject(id);
   const [amount, setAmount] = useState<number | null>(null);
 
-  if (!demo.ready) return <p className="text-lg">One moment.</p>;
+  if (!demo.ready) return <PageBusy />;
   if (!project) return null;
 
   const committed = projectCommitted(
@@ -74,19 +76,22 @@ export function CommitScreen({ id }: { id: string }) {
                 aria-pressed={selected}
                 onClick={() => setAmount(preset)}
                 className={cn(
-                  "min-h-14 w-full rounded-2xl border-2 px-4 py-3 text-left text-lg font-semibold",
+                  "flex min-h-14 w-full items-center justify-between gap-3 rounded-2xl border-2 px-4 py-3 text-left text-lg font-semibold",
                   selected
                     ? "border-primary bg-secondary text-secondary-foreground"
                     : "border-border bg-card",
                   tooMuch && "opacity-60",
                 )}
               >
-                <span className="block">{money(preset, currency)}</span>
-                {tooMuch ? (
-                  <span className="mt-1 block text-base font-normal">
-                    More than what is still open
-                  </span>
-                ) : null}
+                <span>
+                  <span className="block">{money(preset, currency)}</span>
+                  {tooMuch ? (
+                    <span className="mt-1 block text-base font-normal">
+                      More than what is still open
+                    </span>
+                  ) : null}
+                </span>
+                {selected ? <Check className="size-6 shrink-0 text-primary" aria-hidden /> : null}
               </button>
             );
           })}
@@ -104,11 +109,6 @@ export function CommitScreen({ id }: { id: string }) {
           "If they accept it, it becomes ownership units.",
         ]}
       />
-      {open ? (
-        <Button size="lg" className="w-full" disabled={!amount} onClick={save}>
-          {amount ? `Commit ${money(amount, currency)}` : "Choose an amount"}
-        </Button>
-      ) : null}
       <p className="text-base text-muted-foreground">This is a demo. No money moves.</p>
       <LearnMore title="How the money works">
         <p>
@@ -123,6 +123,13 @@ export function CommitScreen({ id }: { id: string }) {
           This project sets aside {INVESTOR_UNITS.toLocaleString("en-US")} ownership units for people who fund it. Your units are your part of the {moneyShort(project.goalJmd, currency)} goal.
         </p>
       </LearnMore>
+      {open ? (
+        <ActionBar>
+          <Button size="lg" className="w-full" disabled={!amount} onClick={save}>
+            {amount ? `Commit ${money(amount, currency)}` : "Choose an amount"}
+          </Button>
+        </ActionBar>
+      ) : null}
     </div>
   );
 }
@@ -132,7 +139,7 @@ export function CommittedScreen({ id }: { id: string }) {
   const project = getProject(id);
   const commitment = demo.commitments.find((item) => item.projectId === id);
 
-  if (!demo.ready) return <p className="text-lg">One moment.</p>;
+  if (!demo.ready) return <PageBusy />;
   if (!project || !commitment) {
     return (
       <div>
@@ -147,6 +154,7 @@ export function CommittedScreen({ id }: { id: string }) {
   return (
     <div className="space-y-6">
       <StepHeader backHref="/you" title="You committed" hint={project.name} />
+      <SavedMark label="Saved on this phone" />
       <p className="text-lg leading-relaxed">{COMMIT_LINE}</p>
       <p className="text-3xl font-semibold">{money(commitment.amountJmd, currency)}</p>
       <p className="text-lg leading-relaxed">
@@ -159,9 +167,11 @@ export function CommittedScreen({ id }: { id: string }) {
           "If they accept it, it becomes ownership units.",
         ]}
       />
-      <Link href="/you" className={cn(buttonVariants({ size: "lg" }), "w-full")}>
-        See my commitments
-      </Link>
+      <ActionBar>
+        <Link href="/you" className={cn(buttonVariants({ size: "lg" }), "w-full")}>
+          See my commitments
+        </Link>
+      </ActionBar>
     </div>
   );
 }

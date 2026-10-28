@@ -4,8 +4,8 @@ import { cn } from "cn";
 
 export default function NotFound() {
   return (
-    <div className="py-6">
-      <h1 className="font-display text-4xl leading-tight">
+    <div>
+      <h1 className="font-display text-3xl leading-tight">
         We could not find that page.
       </h1>
       <p className="mt-3 text-lg">Start again from the map.</p>

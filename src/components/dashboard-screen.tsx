@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { PageBusy } from "@/components/busy";
 import { GettingStarted } from "@/components/getting-started";
 import { StatusLabel } from "@/components/parts";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +16,7 @@ import { currencyOf, getProject } from "@/lib/seed";
 
 export function DashboardScreen() {
   const demo = useDemo();
-  if (!demo.ready) return <p className="text-lg">One moment.</p>;
+  if (!demo.ready) return <PageBusy />;
 
   const greeting =
     firstName(demo.name) === "You" ? "Hello" : `Hello, ${firstName(demo.name)}`;
@@ -77,7 +78,7 @@ export function DashboardScreen() {
               );
             })}
             {demo.role === "investor" ? (
-              <Link href="/invest" className={cn(buttonVariants({ size: "lg" }), "w-full")}>
+              <Link href="/invest" className={cn(buttonVariants({ variant: "outline", size: "lg" }), "w-full")}>
                 Look for another project
               </Link>
             ) : null}
@@ -141,7 +142,7 @@ export function DashboardScreen() {
         <Link
           href="/you/ownership"
           className={cn(
-            buttonVariants({ variant: demo.role === "worker" ? "work" : "outline", size: "lg" }),
+            buttonVariants({ size: "lg" }),
             "w-full",
           )}
         >

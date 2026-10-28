@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { PageBusy } from "@/components/busy";
 import { StepHeader } from "@/components/parts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +17,7 @@ export function SwitchScreen() {
   const [naming, setNaming] = useState(false);
   const [draft, setDraft] = useState(demo.name === "You" ? "" : demo.name);
 
-  if (!demo.ready) return <p className="text-lg">One moment.</p>;
+  if (!demo.ready) return <PageBusy />;
 
   return (
     <div className="space-y-4">

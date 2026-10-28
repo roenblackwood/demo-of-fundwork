@@ -1,15 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { PageBusy } from "@/components/busy";
 import { StepHeader, TrustBadges } from "@/components/parts";
 import { CAPITAL_LINE } from "@/lib/copy";
+import { sectorTitle } from "@/lib/catalog";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
-import { placeLine } from "@/lib/format";
+import { moneyShort, placeLine } from "@/lib/format";
 import { matchProjects } from "@/lib/match";
-import { projectPlace } from "@/lib/seed";
+import { moneyStillOpen, projectCommitted } from "@/lib/ownership";
+import { currencyOf, projectPlace } from "@/lib/seed";
 import type { Skill } from "@/lib/types";
 
 export function MatchesScreen() {
@@ -30,13 +33,13 @@ export function MatchesScreen() {
       ? matchProjects({ countryId, parishId, townId, skills: uniqueSkills })
       : [];
 
-  if (!demo.ready) return <p className="text-lg">One moment.</p>;
+  if (!demo.ready) return <PageBusy />;
 
   if (!primary || !countryId || !townId) {
     return (
       <div>
         <StepHeader backHref="/work" title="Pick your work first" />
-        <Link href="/work" className={cn(buttonVariants({ size: "lg" }), "w-full")}>
+        <Link href="/work" className={cn(buttonVariants({ variant: "work", size: "lg" }), "w-full")}>
           Choose a region
         </Link>
       </div>
@@ -73,6 +76,13 @@ export function MatchesScreen() {
         <div className="space-y-4">
           {matches.map((match) => {
             const where = projectPlace(match.project);
+            const currency = currencyOf(match.project.countryId);
+            const committed = projectCommitted(
+              match.project.committedJmd,
+              demo.addedCommitments,
+              match.project.id,
+            );
+            const stillOpen = moneyStillOpen(match.project.goalJmd, committed);
             return (
               <Link
                 key={match.project.id}
@@ -81,15 +91,23 @@ export function MatchesScreen() {
               >
                 <Card className="shadow-sm">
                   <CardHeader>
+                    <p className="text-sm font-semibold tracking-wide text-primary uppercase">
+                      {sectorTitle(match.project.sector)}
+                    </p>
                     <CardTitle>{match.project.name}</CardTitle>
                     <p className="text-base text-muted-foreground">
                       {where ? placeLine(where.town, where.parish) : "Jamaica"}
                     </p>
                   </CardHeader>
                   <CardContent className="space-y-3">
+                    <p className="text-2xl leading-tight font-bold tracking-tight">
+                      {stillOpen > 0
+                        ? `${moneyShort(stillOpen, currency)} still needed`
+                        : "The money they asked for is in"}
+                    </p>
                     <p className="text-lg leading-relaxed">{match.note.body}</p>
-                    <p className="text-base leading-relaxed">{CAPITAL_LINE}</p>
-                    <TrustBadges checks={match.project.checks} />
+                    <p className="text-base leading-relaxed text-muted-foreground">{CAPITAL_LINE}</p>
+                    <TrustBadges checks={match.project.checks} limit={2} />
                     <span className="inline-flex min-h-11 items-center font-semibold text-primary">
                       View project
                     </span>

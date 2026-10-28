@@ -2,7 +2,7 @@
 
 A mobile-first demo of a two-sided marketplace. Investors deploy Bitcoin capital. Workers are paid in a stable unit they can spend, and projects sit on the ground: places to stay, farms and food, power, water, internet, schools, and clinics. Jamaica is the deep demo, with all 14 parishes. Underneath, Fundwork keeps a simple ownership record in the same spirit as LaunchLine Equity Units.
 
-This is a demo. No Bitcoin moves, no stable unit is issued, no ID is checked, and nothing is written to LaunchLine. The product name is Fundwork. The project folder is still `parishline`.
+This is a demo. No Bitcoin moves, no stable unit is issued, no ID is checked, and nothing is written to LaunchLine. The product name is Fundwork. This repository is the demo of Fundwork. It is not inside the LaunchLine repository.
 
 ## Run it
 
