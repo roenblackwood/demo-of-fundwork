@@ -71,7 +71,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       </header>
       <div
         id="content"
-        className="mx-auto flex w-full min-w-0 max-w-lg flex-1 flex-col overflow-x-clip px-5 pt-5 pb-[calc(5.5rem+env(safe-area-inset-bottom))] [&>*]:min-w-0"
+        className="mx-auto flex w-full min-w-0 max-w-lg flex-1 flex-col px-5 pt-5 pb-[calc(5.5rem+env(safe-area-inset-bottom))] [&>*]:min-w-0"
       >
         {children}
       </div>

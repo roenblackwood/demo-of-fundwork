@@ -22,7 +22,7 @@ import { firstName, placeLine } from "@/lib/format";
 import { explorerUrl, sameAddress } from "@/lib/money";
 import { investorUnits, workerUnits } from "@/lib/ownership";
 import { acceptedCount, waitingCount } from "@/lib/requests";
-import { currencyOf, getUser, requestPlace } from "@/lib/seed";
+import { currencyOf, requestPlace } from "@/lib/seed";
 import type { Application } from "@/lib/types";
 
 export function DashboardScreen() {
@@ -235,11 +235,6 @@ export function DashboardScreen() {
   );
 }
 
-function personLabel(id: string, youId: string, youName: string): string {
-  if (id === youId) return youName;
-  return getUser(id)?.name ?? "A worker";
-}
-
 function NeedsYou() {
   const demo = useDemo();
   const show = useSnackbar();
@@ -293,7 +288,8 @@ function NeedRow({
   const project = application.projectId
     ? demo.projects.find((item) => item.id === application.projectId)
     : undefined;
-  const person = personLabel(application.workerId, demo.userId, demo.name);
+  const named = demo.displayNameFor(application.workerId);
+  const person = named || "A worker";
   const href = request ? `/requests/${request.id}` : project ? `/projects/${project.id}` : "/you";
   const title = request
     ? `${sectorTitle(request.sector)} request`
@@ -306,7 +302,8 @@ function NeedRow({
   async function accept() {
     if (demo.saving) return;
     if (!(await demo.setApplicationStatus(application.id, "accepted"))) return;
-    show(`${firstName(work ? demo.name : person)} is on the team.`);
+    const who = work ? demo.name : named;
+    show(`${who.trim() && who !== "You" ? firstName(who) : person} is on the team.`);
   }
 
   async function decline() {

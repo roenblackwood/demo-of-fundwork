@@ -72,6 +72,7 @@ type Snapshot = {
   wallets: Wallet[];
   projectWallets: ProjectWallet[];
   payments: Payment[];
+  names: Record<string, string>;
 };
 
 let reloadLive: (() => Promise<void>) | null = null;
@@ -103,6 +104,7 @@ const emptySnapshot: Snapshot = {
   wallets: [],
   projectWallets: [],
   payments: [],
+  names: {},
 };
 
 function textList(value: unknown): string[] {
@@ -184,7 +186,15 @@ async function loadSnapshot(): Promise<Snapshot> {
     return project ? [project] : [];
   });
 
+  const names: Record<string, string> = {};
+  for (const person of people) {
+    if (person.id && person.name.trim()) names[person.id] = person.name.trim();
+  }
+
   const profile = mine.data;
+  if (user?.id && typeof profile?.name === "string" && profile.name.trim() && !names[user.id]) {
+    names[user.id] = profile.name.trim();
+  }
   const role = profile?.role === "investor" || profile?.role === "worker" ? profile.role : null;
   const skill = typeof profile?.skill === "string" && isSkill(profile.skill) ? profile.skill : null;
   const extra = Array.isArray(profile?.extra_skills)
@@ -226,6 +236,7 @@ async function loadSnapshot(): Promise<Snapshot> {
     learningSeen: rowsOf(lessonRows).flatMap((row) =>
       typeof row.lesson_id === "string" && row.seen_at ? [row.lesson_id] : [],
     ),
+    names,
     learningDone: rowsOf(lessonRows).flatMap((row) =>
       typeof row.lesson_id === "string" && row.done_at ? [row.lesson_id] : [],
     ),
@@ -414,6 +425,12 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
         const ok = await saveDisplayName(trimmed);
         if (!ok) notifySaveError();
         else await reload();
+      },
+      displayNameFor: (id: string) => {
+        const named = current.names[id]?.trim() ?? "";
+        if (named) return named;
+        if (id && id === current.userId) return current.name.trim();
+        return "";
       },
       addCommitment: (commitment) => {
         const seen = snapshotRef.current;

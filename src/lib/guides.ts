@@ -7,6 +7,8 @@ export type GuideAgency = {
   name: string;
   does: string;
   checkId: CheckId;
+  /** When set, this line is only for these kinds. Sector-wide lines omit it. */
+  kindIds?: string[];
 };
 
 export type GuideEntry = {

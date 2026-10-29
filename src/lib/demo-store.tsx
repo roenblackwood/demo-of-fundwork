@@ -512,6 +512,7 @@ export type DemoValue = {
   updateFlow: (patch: Partial<Flow>) => void;
   setProof: (proof: Proof | null) => void;
   setDisplayName: (name: string) => void | Promise<void>;
+  displayNameFor: (userId: string) => string;
   addCommitment: (commitment: Commitment) => Promise<boolean>;
   addContribution: (contribution: Contribution) => Promise<boolean>;
   addRequest: (draft: RequestDraft) => Promise<string | null>;
@@ -963,6 +964,10 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         });
       },
       setDisplayName,
+      displayNameFor: (id: string) => {
+        if (id === "you") return session.displayName.trim();
+        return getUser(id)?.name.trim() ?? "";
+      },
       addCommitment,
       addContribution,
       addRequest,

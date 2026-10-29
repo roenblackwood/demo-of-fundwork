@@ -100,6 +100,11 @@ const checkLabels: Record<CheckId, Record<CheckState, string>> = {
     review: "Community letter in review",
     open: "Community letter still open",
   },
+  "business-registration": {
+    yes: "Business name registered",
+    review: "Business name in review",
+    open: "Business name still open",
+  },
 };
 
 export function checkLabel(id: CheckId, state: CheckState): string {
@@ -225,8 +230,9 @@ export const guideLabels: Record<CheckId, string> = {
   "parish-letter": "Parish letter",
   rada: "Farm papers",
   "public-health": "Public health inspection",
-  engineer: "Local specialist",
+  engineer: "Engineer sign-off",
   community: "Local council",
+  "business-registration": "Business name",
 };
 
 const genericRows: Partial<Record<CheckId, { agency: string; why: string }>> = {
@@ -238,6 +244,10 @@ const genericRows: Partial<Record<CheckId, { agency: string; why: string }>> = {
   community: {
     agency: "The local council",
     why: "Ask the local council before you build.",
+  },
+  "business-registration": {
+    agency: "The office that registers businesses",
+    why: "Register a business name before you start.",
   },
 };
 
@@ -300,13 +310,15 @@ export function starterGuide(input: StarterInput): StarterGuide {
       sourceNote: note,
     };
   }
-  const checks = entry.checks.map((id) => {
-    const agency = entry.agencies.find((item) => item.checkId === id);
-    return {
-      label: guideLabels[id],
-      agency: agency?.name ?? "",
-      why: agency?.does ?? "",
-    };
+  const checks = entry.agencies.flatMap((agency) => {
+    if (agency.kindIds && agency.kindIds.length > 0) return [];
+    return [
+      {
+        label: guideLabels[agency.checkId],
+        agency: agency.name,
+        why: agency.does,
+      },
+    ];
   });
   const firstAgency = checks[0]?.agency || "the local office";
   return {

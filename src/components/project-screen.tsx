@@ -41,7 +41,7 @@ import {
   moneyStillOpen,
   projectCommitted,
 } from "@/lib/ownership";
-import { currencyOf, getCountry, getUser, projectPlace, seedCommitments } from "@/lib/seed";
+import { currencyOf, getCountry, projectPlace, seedCommitments } from "@/lib/seed";
 import type { Skill } from "@/lib/types";
 
 export function ProjectScreen({ id }: { id: string }) {
@@ -101,8 +101,9 @@ export function ProjectScreen({ id }: { id: string }) {
         item.status === "pledged",
     )
     .reduce((sum, item) => sum + item.amountJmd, 0);
-  const organizerUser = project.organizerId ? getUser(project.organizerId) : undefined;
-  const organizerFirst = firstName(organizerUser?.name ?? project.organizerName);
+  const organizerShown =
+    (project.organizerId ? demo.displayNameFor(project.organizerId) : "") || project.organizerName;
+  const organizerFirst = organizerShown.trim() ? firstName(organizerShown) : "";
   const hasProjectWallet = demo.projectWallets.some((item) => item.projectId === project.id);
   const myPledge = demo.commitments.find((item) => item.projectId === project.id && item.status === "pledged");
   const ownershipLine =
@@ -178,7 +179,7 @@ export function ProjectScreen({ id }: { id: string }) {
         kindId={project.kind}
         site={project.site}
         readiness={project.readiness}
-        posterName={firstName(project.organizerName)}
+        posterName={organizerShown.trim() ? firstName(organizerShown) : ""}
         canEdit={organizing}
         saving={demo.saving}
         onChange={(next) => {
@@ -198,9 +199,9 @@ export function ProjectScreen({ id }: { id: string }) {
         <p className="text-lg leading-relaxed">{UNITS_PAYOUT_LINE}</p>
       </section>
       <div className="flex items-start gap-3">
-        <Avatar name={project.organizerName} />
+        <Avatar name={organizerShown} />
         <div className="min-w-0">
-          <p className="font-semibold">{project.organizerName}</p>
+          <p className="font-semibold">{organizerShown}</p>
           <p className="text-sm text-muted-foreground">Organizer</p>
           {project.mentorName ? (
             <>
@@ -260,7 +261,8 @@ export function ProjectScreen({ id }: { id: string }) {
             <p className="text-lg">No one has asked to join yet.</p>
           ) : (
             joins.map((application) => {
-              const person = application.workerId === demo.userId ? demo.name : getUser(application.workerId)?.name ?? "A worker";
+              const named = demo.displayNameFor(application.workerId);
+              const person = named || "A worker";
               const waiting = application.status === "waiting";
               return (
                 <article key={application.id} className="space-y-3 rounded-2xl bg-card p-4 ring-1 ring-foreground/10">
@@ -274,7 +276,7 @@ export function ProjectScreen({ id }: { id: string }) {
                         onClick={() => {
                           if (demo.saving) return;
                           void demo.setApplicationStatus(application.id, "accepted").then((ok) => {
-                            if (ok) show(`${firstName(person)} is on the team.`);
+                            if (ok) show(`${named ? firstName(named) : "A worker"} is on the team.`);
                           });
                         }}
                       >

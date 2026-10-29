@@ -298,7 +298,7 @@ try {
       !started.error &&
       memberIds.includes(member.id) &&
       !memberIds.includes(outsider.id) &&
-      checkIds === "organizer,engineer,community" &&
+      checkIds === "organizer,engineer,community,business-registration" &&
       startedRow.data?.kind === "rainwater" &&
       startedRow.data?.site === "own" &&
       startedRow.data?.readiness?.["check:parish-letter"] === "not-yet",

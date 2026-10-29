@@ -12,6 +12,7 @@ export type BlueprintKind = {
   id: string;
   title: string;
   detail: string;
+  shortNeed: string;
   needFirst: string[];
   checks: CheckId[];
   team: TeamBand[];
@@ -53,6 +54,22 @@ export function kindsFor(sector: Sector): BlueprintKind[] {
 export function kindById(sector: Sector, id: string | null | undefined): BlueprintKind | null {
   if (!id) return null;
   return kindsFor(sector).find((kind) => kind.id === id) ?? null;
+}
+
+export function peopleRange(kind: BlueprintKind): { min: number; max: number } {
+  return kind.team.reduce(
+    (range, band) => ({ min: range.min + band.min, max: range.max + band.max }),
+    { min: 0, max: 0 },
+  );
+}
+
+/** One line so kinds can be compared before a person picks. */
+export function kindOptionLine(kind: BlueprintKind): string {
+  const checks = kind.checks.length === 1 ? "1 check" : `${kind.checks.length} checks`;
+  const { min, max } = peopleRange(kind);
+  const people =
+    min === max ? (min === 1 ? "1 person" : `${min} people`) : `${min} to ${max} people`;
+  return `${checks} · ${people} · ${kind.shortNeed}`;
 }
 
 export function defaultCounts(kind: BlueprintKind): Record<string, number> {
@@ -117,6 +134,19 @@ export function readinessFor(
   return next;
 }
 
+/** Sets the site line from the site answer. Call this when the site choice changes. */
+export function applySiteReadiness(
+  kind: BlueprintKind,
+  site: SiteStatus,
+  current: Readiness | null | undefined,
+): Readiness {
+  const next = readinessFor(kind, site, current);
+  const siteNeed = kind.needFirst[0];
+  if (siteNeed) next[`need:${siteNeed}`] = site === "not-yet" ? "not-yet" : "have";
+  if (site === "not-yet") next[`need:${SITE_NEEDED}`] = next[`need:${SITE_NEEDED}`] ?? "not-yet";
+  return next;
+}
+
 export function readyCount(readiness: Readiness): number {
   return Object.values(readiness).filter((state) => state === "have").length;
 }
@@ -125,7 +155,10 @@ export function needsSummary(checks: number, people: number, site: SiteStatus | 
   const checkPart = checks === 1 ? "1 check" : `${checks} checks`;
   const peoplePart = people === 1 ? "1 person" : `${people} people`;
   const parts = [checkPart, peoplePart];
-  if (site === "not-yet") parts.push("site needed");
+  if (site === "own") parts.push("site: you own it");
+  else if (site === "lease") parts.push("site: leased");
+  else if (site === "permission") parts.push("site: written permission");
+  else if (site === "not-yet") parts.push("site needed");
   return parts.join(", ");
 }
 

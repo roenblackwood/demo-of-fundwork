@@ -24,6 +24,7 @@ const CHECK_IDS = [
   "public-health",
   "engineer",
   "community",
+  "business-registration",
 ] as const;
 
 const JAMAICA_ONLY_CHECKS = new Set(["jtb", "rada", "parish-letter"]);

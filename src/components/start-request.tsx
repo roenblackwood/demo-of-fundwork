@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Check } from "lucide-react";
 import { PageBusy } from "@/components/busy";
-import { WhatThisNeeds } from "@/components/needs-panel";
+import { BeforeYouStart, WhatThisNeeds } from "@/components/needs-panel";
 import { ActionBar, CapitalChip, MoneyText, NextSteps, SavedMark, StepHeader } from "@/components/parts";
 import { useSnackbar } from "@/components/snackbar";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -13,16 +13,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { WhatItTakes } from "@/components/guide-card";
 import {
+  applySiteReadiness,
   defaultCounts,
   kindById,
+  kindOptionLine,
   kindsFor,
   peopleCount,
   readinessFor,
   siteLabel,
   SITE_CHOICES,
   skillsFromCounts,
+  teamLine,
 } from "@/lib/blueprints";
-import { SECTORS, SKILLS, isSector, sectorTitle, skillPhrase, skillTitle } from "@/lib/catalog";
+import { SECTORS, SKILLS, isSector, sectorTitle, skillTitle } from "@/lib/catalog";
 import { cn } from "cn";
 import { savedLabel } from "@/lib/copy";
 import { useDemo } from "@/lib/demo-store";
@@ -30,7 +33,7 @@ import { money, placeLine } from "@/lib/format";
 import { priceRange } from "@/lib/guides";
 import { aboutUsd } from "@/lib/rates";
 import { currencyOf, getCity, getCountry, getParish, getTown, requestPlace } from "@/lib/seed";
-import type { Readiness, ReadinessState, Sector, SiteStatus, Skill } from "@/lib/types";
+import type { Readiness, Sector, SiteStatus, Skill } from "@/lib/types";
 
 type Step = "sector" | "kind" | "site" | "team" | "budget" | "note" | "review" | "posted";
 
@@ -55,6 +58,14 @@ function readAmount(text: string): number | null {
   return Math.round(value);
 }
 
+function formatAmountInput(text: string): string {
+  const digits = text.replace(/\D/g, "");
+  if (!digits) return "";
+  return Number(digits).toLocaleString("en-US");
+}
+
+const OPEN_PANEL: Step[] = ["kind", "site", "team", "budget"];
+
 export function StartRequestScreen({ placeId, townId }: { placeId: string; townId: string }) {
   const demo = useDemo();
   const show = useSnackbar();
@@ -76,6 +87,7 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
   const [budgetText, setBudgetText] = useState("");
   const [note, setNote] = useState("");
   const [readiness, setReadiness] = useState<Readiness>({});
+  const [callerName, setCallerName] = useState("");
   const [panelStep, setPanelStep] = useState<Step | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [savedId, setSavedId] = useState<string | null>(null);
@@ -85,19 +97,16 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
   const workersNeeded = peopleCount(counts);
   const skills = skillsFromCounts(counts);
 
-  const panelShown = panelStep === step ? panelOpen : step === "review";
+  const panelDefault = OPEN_PANEL.includes(step);
+  const panelShown = panelStep === step ? panelOpen : panelDefault;
 
   function togglePanel() {
-    const showing = panelStep === step ? panelOpen : step === "review";
+    const showing = panelStep === step ? panelOpen : panelDefault;
     setPanelStep(step);
     setPanelOpen(!showing);
   }
 
   useEffect(() => {
-    if (step === "review") {
-      document.getElementById("review-capital")?.scrollIntoView({ block: "center" });
-      return;
-    }
     window.scrollTo(0, 0);
   }, [step]);
 
@@ -117,6 +126,7 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
     if (!next) return;
     setKindId(id);
     setCounts(defaultCounts(next));
+    setReadiness(site ? applySiteReadiness(next, site, {}) : {});
   }
 
   function setSkillCount(skill: Skill, count: number) {
@@ -134,9 +144,14 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
     else if (workersNeeded < 10) setSkillCount(skill, 1);
   }
 
+  const needsName = !demo.name.trim() || demo.name.trim() === "You";
+
   async function post() {
     if (!sector || !kind || !site || !amount || workersNeeded < 1 || workersNeeded > 10 || skills.length === 0) return;
     if (!note.trim() || demo.saving) return;
+    const called = callerName.trim();
+    if (needsName && !called) return;
+    if (needsName) await Promise.resolve(demo.setDisplayName(called));
     const id = await demo.addRequest({
       countryId,
       parishId,
@@ -185,13 +200,6 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
         counts={counts}
         open={panelShown}
         onToggle={togglePanel}
-        choices={step === "review" ? readinessFor(kind, site, readiness) : null}
-        onChoose={
-          step === "review"
-            ? (key, state: ReadinessState) =>
-                setReadiness((current) => ({ ...readinessFor(kind, site, current), [key]: state }))
-            : undefined
-        }
       />
     ) : null;
 
@@ -226,27 +234,73 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
   if (step === "review" && sector && kind && site && amount && workersNeeded) {
     body = (
       <div className="space-y-6">
-        <p className="text-lg font-semibold text-primary">
-          {sectorTitle(sector)}. {kind.title}
-        </p>
-        <p className="text-lg">{siteLabel(site)}</p>
-        <div>
-          <p className="text-2xl font-bold">
-            <MoneyText amount={amount} currency={currency} showAbout={false} />
+        <section id="review-summary" className="space-y-3 rounded-2xl border bg-card p-4">
+          <p className="text-lg font-semibold text-primary">
+            {sectorTitle(sector)}. {kind.title}
           </p>
-          {about ? <p className="text-base text-muted-foreground">{about}</p> : null}
-        </div>
-        <p className="text-lg">{workersNeeded} workers needed</p>
-        <p className="text-lg">Needs {skills.map((skill) => skillPhrase(skill)).join(", ")}.</p>
-        <p className="text-lg leading-relaxed">{note.trim()}</p>
-        <div id="review-capital">
-          <CapitalChip />
-        </div>
+          <p className="text-lg">{place}</p>
+          <p className="text-lg">{siteLabel(site)}</p>
+          <div>
+            <p className="text-2xl font-bold">
+              <MoneyText amount={amount} currency={currency} showAbout={false} />
+            </p>
+            {about ? <p className="text-base text-muted-foreground">{about}</p> : null}
+          </div>
+          <ul className="space-y-1">
+            {skills.map((skill) => (
+              <li key={skill} className="text-lg">
+                {teamLine(skill, counts[skill] ?? 0)}
+              </li>
+            ))}
+          </ul>
+          <p className="text-lg leading-relaxed">{note.trim()}</p>
+          <div id="review-capital">
+            <CapitalChip />
+          </div>
+        </section>
+        <BeforeYouStart
+          kind={kind}
+          site={site}
+          readiness={readiness}
+          onChoose={(key, state) => setReadiness((current) => ({ ...current, [key]: state }))}
+        />
+        <section className="space-y-2">
+          <h2 className="text-lg font-semibold">Phases</h2>
+          <ol className="list-decimal space-y-1 pl-5 text-lg">
+            {kind.phases.map((phase) => (
+              <li key={phase}>{phase}</li>
+            ))}
+          </ol>
+        </section>
+        <WhatItTakes
+          countryId={countryId}
+          countryName={countryName}
+          sector={sector}
+          placeName={town.name}
+          projects={demo.projects}
+          collapsed
+        />
+        {needsName ? (
+          <div className="space-y-2">
+            <Label htmlFor="caller-name">What should people call you?</Label>
+            <Input
+              id="caller-name"
+              value={callerName}
+              onChange={(event) => setCallerName(event.target.value)}
+            />
+          </div>
+        ) : null}
       </div>
     );
     action = (
       <ActionBar>
-        <Button size="lg" className="w-full" disabled={demo.saving} aria-busy={demo.saving} onClick={() => void post()}>
+        <Button
+          size="lg"
+          className="w-full"
+          disabled={demo.saving || (needsName && !callerName.trim())}
+          aria-busy={demo.saving}
+          onClick={() => void post()}
+        >
           Post this request
         </Button>
       </ActionBar>
@@ -293,14 +347,19 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
           <Label htmlFor="request-budget">Amount in {currency}</Label>
           <Input
             id="request-budget"
-            inputMode="decimal"
+            inputMode="numeric"
             value={budgetText}
-            onChange={(event) => setBudgetText(event.target.value)}
+            onChange={(event) => setBudgetText(formatAmountInput(event.target.value))}
             placeholder="6,000,000"
           />
           {about ? <p className="text-base text-muted-foreground">{about}</p> : null}
         </div>
         {rangeLine ? <p className="text-lg leading-relaxed">{rangeLine}</p> : null}
+        {range && amount && (amount < range.low / 2 || amount > range.high * 2) ? (
+          <p className="text-base text-muted-foreground">
+            This is far from what similar projects asked for. Check your numbers.
+          </p>
+        ) : null}
         <div className="space-y-2">
           <p className="text-lg">Your budget should cover these.</p>
           <ul className="flex flex-wrap gap-2">
@@ -413,7 +472,10 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
               key={choice.id}
               type="button"
               aria-pressed={selected}
-              onClick={() => setSite(choice.id)}
+              onClick={() => {
+                setSite(choice.id);
+                if (kind) setReadiness((current) => applySiteReadiness(kind, choice.id, current));
+              }}
               className={cn(choiceClass, selected ? "border-primary bg-secondary" : "border-border bg-card")}
             >
               <span>{choice.label}</span>
@@ -446,10 +508,12 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
             <span>
               <span className="block">{item.title}</span>
               <span className="mt-1 block text-base font-normal text-muted-foreground">{item.detail}</span>
+              <span className="mt-1 block text-base font-normal text-muted-foreground">{kindOptionLine(item)}</span>
             </span>
           </button>
           );
         })}
+        <p className="text-base text-muted-foreground">Pick one to see everything it needs.</p>
       </div>
     );
     action = (
@@ -518,16 +582,6 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
     <div className="space-y-6">
       {header(title, back)}
       {panel}
-      {step === "review" && sector ? (
-        <WhatItTakes
-          countryId={countryId}
-          countryName={countryName}
-          sector={sector}
-          placeName={town.name}
-          projects={demo.projects}
-          collapsed
-        />
-      ) : null}
       {body}
       {action}
     </div>

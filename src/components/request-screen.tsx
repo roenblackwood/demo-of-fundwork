@@ -23,7 +23,7 @@ import { firstName, money, nameWithInitial, postedDate } from "@/lib/format";
 import { aboutUsd } from "@/lib/rates";
 import { matchWorkers } from "@/lib/match";
 import { acceptedCount } from "@/lib/requests";
-import { currencyOf, getCountry, getUser, requestPlace } from "@/lib/seed";
+import { currencyOf, getCountry, requestPlace } from "@/lib/seed";
 import type { Application } from "@/lib/types";
 
 export function RequestScreen({ id }: { id: string }) {
@@ -51,6 +51,7 @@ export function RequestScreen({ id }: { id: string }) {
   const active = related.find((item) => item.workerId === demo.userId && item.status !== "declined");
   const declined = related.find((item) => item.workerId === demo.userId && item.status === "declined");
   const nearby = isOwner ? matchWorkers(request, demo.availability) : [];
+  const postedBy = demo.displayNameFor(request.userId);
 
   return (
     <div className="space-y-6">
@@ -61,11 +62,11 @@ export function RequestScreen({ id }: { id: string }) {
           {where ? `${sectorTitle(request.sector)} in ${where.town}` : sectorTitle(request.sector)}
         </h1>
         <div className="mt-3 flex items-center gap-3">
-          <Avatar name={posterName(request.userId, demo.userId, demo.name)} />
+          <Avatar name={postedBy} />
           <div>
-            <p className="font-semibold">
-              Posted by {nameWithInitial(posterName(request.userId, demo.userId, demo.name))}
-            </p>
+            {postedBy ? (
+              <p className="font-semibold">Posted by {nameWithInitial(postedBy)}</p>
+            ) : null}
             <p className="text-sm text-muted-foreground">{postedDate(request.createdAt)}</p>
           </div>
         </div>
@@ -196,7 +197,7 @@ export function RequestScreen({ id }: { id: string }) {
         kindId={request.kind}
         site={request.site}
         readiness={request.readiness}
-        posterName={firstName(posterName(request.userId, demo.userId, demo.name))}
+        posterName={postedBy ? firstName(postedBy) : ""}
         canEdit={isOwner}
         saving={demo.saving}
         onChange={(next) => {
@@ -239,15 +240,13 @@ export function RequestScreen({ id }: { id: string }) {
               <ApplicationRow
                 key={application.id}
                 application={application}
-                youId={demo.userId}
-                youName={demo.name}
                 open={request.status === "open"}
                 onStatus={(applicationId, status) => {
-                  const person = personName(application.workerId, demo.userId, demo.name);
+                  const named = demo.displayNameFor(application.workerId);
                   if (demo.saving) return;
                   void demo.setApplicationStatus(applicationId, status).then((ok) => {
                     if (!ok) return;
-                    show(status === "accepted" ? `${firstName(person)} is on the team.` : "Declined.");
+                    show(status === "accepted" ? `${named ? firstName(named) : "A worker"} is on the team.` : "Declined.");
                   });
                 }}
               />
@@ -267,7 +266,7 @@ export function RequestScreen({ id }: { id: string }) {
               const existing = related.find(
                 (item) => item.workerId === post.userId && item.status !== "declined",
               );
-              const name = personName(post.userId, demo.userId, demo.name);
+              const name = demo.displayNameFor(post.userId) || "A worker";
               return (
                 <article key={post.id} className="space-y-3 rounded-2xl bg-card p-4 ring-1 ring-foreground/10">
                   <p className="text-lg font-semibold">{name}</p>
@@ -350,34 +349,21 @@ export function RequestScreen({ id }: { id: string }) {
   );
 }
 
-function posterName(id: string, youId: string, youName: string): string {
-  if (id === youId && youName.trim()) return youName;
-  return getUser(id)?.name ?? "Someone";
-}
-
-function personName(id: string, youId: string, youName: string): string {
-  if (id === youId) return youName;
-  return getUser(id)?.name ?? "A worker";
-}
-
 function ApplicationRow({
   application,
-  youId,
-  youName,
   open,
   onStatus,
 }: {
   application: Application;
-  youId: string;
-  youName: string;
   open: boolean;
   onStatus: (id: string, status: "accepted" | "declined") => void;
 }) {
+  const { saving, displayNameFor } = useDemo();
   const waitingApply = application.origin === "applied" && application.status === "waiting";
-  const { saving } = useDemo();
+  const person = displayNameFor(application.workerId) || "A worker";
   return (
     <article className="space-y-3 rounded-2xl bg-card p-4 ring-1 ring-foreground/10">
-      <p className="text-lg font-semibold">{personName(application.workerId, youId, youName)}</p>
+      <p className="text-lg font-semibold">{person}</p>
       <p className="text-base">{skillTitle(application.skill)}</p>
       {application.message ? <p className="text-base leading-relaxed">{application.message}</p> : null}
       <ApplicationStatusLabel origin={application.origin} status={application.status} viewer="investor" />

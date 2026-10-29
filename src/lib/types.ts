@@ -27,7 +27,8 @@ export type CheckId =
   | "rada"
   | "public-health"
   | "engineer"
-  | "community";
+  | "community"
+  | "business-registration";
 
 export type CheckState = "yes" | "review" | "open";
 

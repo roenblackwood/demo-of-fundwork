@@ -14,7 +14,7 @@ import { skillTitle } from "@/lib/catalog";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
 import { firstName, placeLine } from "@/lib/format";
-import { getCountry, getUser, requestPlace } from "@/lib/seed";
+import { getCountry, requestPlace } from "@/lib/seed";
 import type { Skill } from "@/lib/types";
 
 const choiceClass =
@@ -51,8 +51,8 @@ export function ApplyScreen({ id }: { id: string }) {
   async function send() {
     if (!skill || !request || demo.saving) return;
     if (!(await demo.applyToRequest({ requestId: id, skill, message }))) return;
-    const owner = getUser(request.userId)?.name ?? "the investor";
-    show(`Sent to ${firstName(owner)}.`);
+    const owner = demo.displayNameFor(request.userId);
+    show(owner ? `Sent to ${firstName(owner)}.` : "Sent to the investor.");
     router.push(`/requests/${id}`);
   }
 

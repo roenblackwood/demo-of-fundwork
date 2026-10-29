@@ -36,14 +36,14 @@ export function sectorWeekly(sector: Sector): number {
   return SECTOR_WEEKLY[sector];
 }
 
-// Keep this in sync with start_project in supabase/migrations/0006_payment_sender.sql.
+// Keep this in sync with start_project in supabase/migrations/0007_project_kinds.sql.
 export function openChecks(sector: Sector, jamaica: boolean): Check[] {
   const ids: CheckId[] =
     jamaica && sector === "lodging"
-      ? ["organizer", "jtb", "site-visit"]
+      ? ["organizer", "jtb", "site-visit", "business-registration"]
       : jamaica && sector === "agriculture"
-        ? ["organizer", "rada", "site-visit"]
-        : ["organizer", "engineer", "community"];
+        ? ["organizer", "rada", "site-visit", "business-registration"]
+        : ["organizer", "engineer", "community", "business-registration"];
   return ids.map((id) => ({ id, state: "open" }));
 }
 

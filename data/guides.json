@@ -3,7 +3,12 @@
     {
       "countryId": "jamaica",
       "sector": "lodging",
-      "checks": ["parish-letter", "public-health", "jtb"],
+      "checks": [
+        "parish-letter",
+        "public-health",
+        "jtb",
+        "business-registration"
+      ],
       "agencies": [
         {
           "name": "the parish municipal corporation",
@@ -19,6 +24,16 @@
           "name": "Jamaica Tourist Board",
           "does": "Licenses places to stay.",
           "checkId": "jtb"
+        },
+        {
+          "name": "Tax Administration Jamaica",
+          "does": "A Taxpayer Registration Number, or TRN.",
+          "checkId": "business-registration"
+        },
+        {
+          "name": "Companies Office of Jamaica",
+          "does": "Register a business name.",
+          "checkId": "business-registration"
         }
       ],
       "firstSteps": [
@@ -26,14 +41,22 @@
         "Ask the Ministry of Health for a public health inspection.",
         "Ask the Jamaica Tourist Board about a licence for a place to stay."
       ],
-      "team": ["guest-house", "building"],
+      "team": [
+        "guest-house",
+        "building"
+      ],
       "sourceNote": "Confirm with the parish municipal corporation, the Ministry of Health, and the Jamaica Tourist Board. Ask NEPA if an environmental permit may be needed.",
-      "checkedOn": "2026-10-28"
+      "checkedOn": "2026-10-29"
     },
     {
       "countryId": "jamaica",
       "sector": "agriculture",
-      "checks": ["rada", "parish-letter", "public-health"],
+      "checks": [
+        "rada",
+        "parish-letter",
+        "public-health",
+        "business-registration"
+      ],
       "agencies": [
         {
           "name": "RADA",
@@ -49,6 +72,16 @@
           "name": "Ministry of Health",
           "does": "Public health inspection for food, lodging, clinics, and schools.",
           "checkId": "public-health"
+        },
+        {
+          "name": "Tax Administration Jamaica",
+          "does": "A Taxpayer Registration Number, or TRN.",
+          "checkId": "business-registration"
+        },
+        {
+          "name": "Companies Office of Jamaica",
+          "does": "Register a business name.",
+          "checkId": "business-registration"
         }
       ],
       "firstSteps": [
@@ -56,19 +89,49 @@
         "Ask the parish municipal corporation about building approval and a parish letter.",
         "Ask the Ministry of Health if food will be handled."
       ],
-      "team": ["farming", "building"],
+      "team": [
+        "farming",
+        "building"
+      ],
       "sourceNote": "Confirm with RADA, the parish municipal corporation, and the Ministry of Health. Ask NEPA if an environmental permit may be needed.",
-      "checkedOn": "2026-10-28"
+      "checkedOn": "2026-10-29"
     },
     {
       "countryId": "jamaica",
       "sector": "energy",
-      "checks": ["parish-letter"],
+      "checks": [
+        "parish-letter",
+        "engineer",
+        "business-registration"
+      ],
       "agencies": [
         {
           "name": "the parish municipal corporation",
           "does": "Building approval and the parish letter.",
           "checkId": "parish-letter"
+        },
+        {
+          "name": "An electrician or engineer",
+          "does": "An electrician or engineer signs off the wiring.",
+          "checkId": "engineer"
+        },
+        {
+          "name": "JPS",
+          "does": "Ask JPS before connecting solar to the grid.",
+          "checkId": "engineer",
+          "kindIds": [
+            "solar-few"
+          ]
+        },
+        {
+          "name": "Tax Administration Jamaica",
+          "does": "A Taxpayer Registration Number, or TRN.",
+          "checkId": "business-registration"
+        },
+        {
+          "name": "Companies Office of Jamaica",
+          "does": "Register a business name.",
+          "checkId": "business-registration"
         }
       ],
       "firstSteps": [
@@ -76,19 +139,48 @@
         "Ask JPS before connecting solar to the grid.",
         "Ask NEPA if the site needs an environmental permit."
       ],
-      "team": ["power"],
+      "team": [
+        "power"
+      ],
       "sourceNote": "Confirm with the parish municipal corporation. Ask JPS before connecting solar to the grid. Ask NEPA if an environmental permit may be needed.",
-      "checkedOn": "2026-10-28"
+      "checkedOn": "2026-10-29"
     },
     {
       "countryId": "jamaica",
       "sector": "water",
-      "checks": ["parish-letter"],
+      "checks": [
+        "parish-letter",
+        "business-registration",
+        "public-health"
+      ],
       "agencies": [
         {
           "name": "the parish municipal corporation",
           "does": "Building approval and the parish letter.",
           "checkId": "parish-letter"
+        },
+        {
+          "name": "Ministry of Health",
+          "does": "Public health inspection for drinking water.",
+          "checkId": "public-health"
+        },
+        {
+          "name": "National Water Commission and Water Resources Authority",
+          "does": "Ask the NWC and WRA before you take water from an existing source.",
+          "checkId": "parish-letter",
+          "kindIds": [
+            "pump-pipe"
+          ]
+        },
+        {
+          "name": "Tax Administration Jamaica",
+          "does": "A Taxpayer Registration Number, or TRN.",
+          "checkId": "business-registration"
+        },
+        {
+          "name": "Companies Office of Jamaica",
+          "does": "Register a business name.",
+          "checkId": "business-registration"
         }
       ],
       "firstSteps": [
@@ -96,19 +188,43 @@
         "Ask the National Water Commission and the Water Resources Authority about water supply and wells.",
         "Ask NEPA if the site needs an environmental permit."
       ],
-      "team": ["water", "building"],
+      "team": [
+        "water",
+        "building"
+      ],
       "sourceNote": "Confirm with the parish municipal corporation. Ask the National Water Commission and the Water Resources Authority about water supply and wells. Ask NEPA if an environmental permit may be needed.",
-      "checkedOn": "2026-10-28"
+      "checkedOn": "2026-10-29"
     },
     {
       "countryId": "jamaica",
       "sector": "connectivity",
-      "checks": ["parish-letter"],
+      "checks": [
+        "parish-letter",
+        "business-registration"
+      ],
       "agencies": [
         {
           "name": "the parish municipal corporation",
           "does": "Building approval and the parish letter.",
           "checkId": "parish-letter"
+        },
+        {
+          "name": "Spectrum Management Authority",
+          "does": "Ask the Spectrum Management Authority about radio links.",
+          "checkId": "parish-letter",
+          "kindIds": [
+            "building-links"
+          ]
+        },
+        {
+          "name": "Tax Administration Jamaica",
+          "does": "A Taxpayer Registration Number, or TRN.",
+          "checkId": "business-registration"
+        },
+        {
+          "name": "Companies Office of Jamaica",
+          "does": "Register a business name.",
+          "checkId": "business-registration"
         }
       ],
       "firstSteps": [
@@ -116,14 +232,21 @@
         "Ask the Spectrum Management Authority about radio links for internet.",
         "Ask NEPA if the site needs an environmental permit."
       ],
-      "team": ["internet", "building"],
+      "team": [
+        "internet",
+        "building"
+      ],
       "sourceNote": "Confirm with the parish municipal corporation. Ask the Spectrum Management Authority about radio links for internet. Ask NEPA if an environmental permit may be needed.",
-      "checkedOn": "2026-10-28"
+      "checkedOn": "2026-10-29"
     },
     {
       "countryId": "jamaica",
       "sector": "education",
-      "checks": ["parish-letter", "public-health"],
+      "checks": [
+        "parish-letter",
+        "public-health",
+        "business-registration"
+      ],
       "agencies": [
         {
           "name": "the parish municipal corporation",
@@ -134,6 +257,16 @@
           "name": "Ministry of Health",
           "does": "Public health inspection for food, lodging, clinics, and schools.",
           "checkId": "public-health"
+        },
+        {
+          "name": "Tax Administration Jamaica",
+          "does": "A Taxpayer Registration Number, or TRN.",
+          "checkId": "business-registration"
+        },
+        {
+          "name": "Companies Office of Jamaica",
+          "does": "Register a business name.",
+          "checkId": "business-registration"
         }
       ],
       "firstSteps": [
@@ -141,14 +274,21 @@
         "Ask the Ministry of Education about the school.",
         "Ask the Ministry of Health for a public health inspection."
       ],
-      "team": ["teaching", "building"],
+      "team": [
+        "teaching",
+        "building"
+      ],
       "sourceNote": "Confirm with the parish municipal corporation, the Ministry of Education, and the Ministry of Health. Ask NEPA if an environmental permit may be needed.",
-      "checkedOn": "2026-10-28"
+      "checkedOn": "2026-10-29"
     },
     {
       "countryId": "jamaica",
       "sector": "healthcare",
-      "checks": ["parish-letter", "public-health"],
+      "checks": [
+        "parish-letter",
+        "public-health",
+        "business-registration"
+      ],
       "agencies": [
         {
           "name": "the parish municipal corporation",
@@ -159,6 +299,16 @@
           "name": "Ministry of Health",
           "does": "Public health inspection for food, lodging, clinics, and schools.",
           "checkId": "public-health"
+        },
+        {
+          "name": "Tax Administration Jamaica",
+          "does": "A Taxpayer Registration Number, or TRN.",
+          "checkId": "business-registration"
+        },
+        {
+          "name": "Companies Office of Jamaica",
+          "does": "Register a business name.",
+          "checkId": "business-registration"
         }
       ],
       "firstSteps": [
@@ -166,9 +316,12 @@
         "Ask the Ministry of Health for a public health inspection.",
         "Ask NEPA if the site needs an environmental permit."
       ],
-      "team": ["care", "building"],
+      "team": [
+        "care",
+        "building"
+      ],
       "sourceNote": "Confirm with the parish municipal corporation and the Ministry of Health. Ask NEPA if an environmental permit may be needed.",
-      "checkedOn": "2026-10-28"
+      "checkedOn": "2026-10-29"
     }
   ]
 }

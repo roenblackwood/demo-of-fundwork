@@ -165,6 +165,7 @@ const checkIds = new Set([
   "public-health",
   "engineer",
   "community",
+  "business-registration",
 ]);
 const countryIds = new Set((seed.countries ?? []).map((country) => country.id));
 countryIds.add("jamaica");
@@ -224,15 +225,25 @@ if (!Array.isArray(guides.entries)) {
     for (const checkId of entry.checks ?? []) {
       if (!checkIds.has(checkId)) errors.push(`${where} has an unknown check.`);
     }
-    if (!Array.isArray(entry.agencies) || entry.agencies.length !== (entry.checks ?? []).length) {
-      errors.push(`${where} agencies must match its checks.`);
+    if (!Array.isArray(entry.agencies) || entry.agencies.length === 0) {
+      errors.push(`${where} needs agencies.`);
     }
-    for (let index = 0; index < (entry.agencies ?? []).length; index += 1) {
-      const agency = entry.agencies[index];
-      if (!agency || agency.checkId !== entry.checks[index]) {
-        errors.push(`${where} agency order does not match its checks.`);
-      }
+    const covered = new Set();
+    for (const agency of entry.agencies ?? []) {
       if (!checkIds.has(agency?.checkId)) errors.push(`${where} has an unknown agency check.`);
+      else if (!(entry.checks ?? []).includes(agency.checkId)) {
+        errors.push(`${where} agency uses a check the guide does not list.`);
+      }
+      if (agency?.kindIds == null) {
+        covered.add(agency?.checkId);
+        continue;
+      }
+      if (!Array.isArray(agency.kindIds) || agency.kindIds.length === 0) {
+        errors.push(`${where} kindIds must list kinds.`);
+      }
+    }
+    for (const checkId of entry.checks ?? []) {
+      if (!covered.has(checkId)) errors.push(`${where} check ${checkId} needs an agency.`);
     }
     if (!Array.isArray(entry.firstSteps) || entry.firstSteps.length !== 3) {
       errors.push(`${where} needs three first steps.`);
@@ -300,6 +311,21 @@ if (!blueprints.sectors || typeof blueprints.sectors !== "object") {
       seenIds.add(kind.id);
       shortLine(`${label} title`, kind.title, 60);
       shortLine(`${label} detail`, kind.detail, 140);
+      shortLine(`${label} short need`, kind.shortNeed, 80);
+      const title = String(kind.title ?? "").trim().replace(/\.+$/, "").toLowerCase();
+      const detail = String(kind.detail ?? "").trim().replace(/\.+$/, "").toLowerCase();
+      if (title && (detail === title || detail.startsWith(`${title} `))) {
+        errors.push(`${label} detail repeats its title.`);
+      }
+      if (!(kind.needFirst ?? []).includes("A registered business name")) {
+        errors.push(`${label} needs a registered business name.`);
+      }
+      if (!(kind.checks ?? []).includes("business-registration")) {
+        errors.push(`${label} needs business registration.`);
+      }
+      if (sector === "energy" && !(kind.checks ?? []).includes("engineer")) {
+        errors.push(`${label} needs an engineer check.`);
+      }
       if (!Array.isArray(kind.needFirst) || kind.needFirst.length < 2 || kind.needFirst.length > 4) {
         errors.push(`${label} needs 2 to 4 needFirst lines.`);
       }
@@ -346,6 +372,15 @@ if (!blueprints.sectors || typeof blueprints.sectors !== "object") {
         errors.push(`${label} needs 3 note hints.`);
       }
       for (const hint of kind.noteHints ?? []) shortLine(`${label} hint`, hint, 80);
+    }
+    const kindIds = new Set(kinds.map((kind) => kind?.id));
+    const guide = (guides.entries ?? []).find(
+      (entry) => entry.countryId === "jamaica" && entry.sector === sector,
+    );
+    for (const agency of guide?.agencies ?? []) {
+      for (const id of agency.kindIds ?? []) {
+        if (!kindIds.has(id)) errors.push(`${sector} agency names an unknown kind ${id}.`);
+      }
     }
   }
   for (const sector of Object.keys(blueprints.sectors)) {
