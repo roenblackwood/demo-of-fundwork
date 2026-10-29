@@ -49,6 +49,7 @@ const stamp = `${Date.now().toString(36)}-${randomBytes(3).toString("hex")}`;
 const password = randomBytes(18).toString("base64url");
 const projectA = `live-check-a-${stamp}`;
 const projectB = `live-check-b-${stamp}`;
+const projectC = `live-check-c-${stamp}`;
 const userIds = [];
 let requestId = null;
 let startedProjectId = null;
@@ -89,15 +90,22 @@ async function makeUser(role, name) {
   return { id, client };
 }
 
+function holdHours(row) {
+  return (new Date(row.counts_at).getTime() - new Date(row.created_at).getTime()) / 3600000;
+}
+
 async function cleanup() {
-  const projectIds = [projectA, projectB, startedProjectId].filter(Boolean);
+  const projectIds = [projectA, projectB, projectC, startedProjectId].filter(Boolean);
   if (projectIds.length > 0) {
+    await admin.from("weekly_goals").delete().in("project_id", projectIds);
     await admin.from("contributions").delete().in("project_id", projectIds);
     await admin.from("commitments").delete().in("project_id", projectIds);
     await admin.from("project_members").delete().in("project_id", projectIds);
     await admin.from("applications").delete().in("project_id", projectIds);
   }
   if (userIds.length > 0) {
+    await admin.from("lesson_progress").delete().in("user_id", userIds);
+    await admin.from("weekly_goals").delete().in("user_id", userIds);
     await admin.from("contributions").delete().in("user_id", userIds);
     await admin.from("commitments").delete().in("user_id", userIds);
     await admin.from("applications").delete().in("worker_id", userIds);
@@ -314,6 +322,164 @@ try {
   report(
     seen.data?.name === "Marcia B." && seen.data?.name !== "Marcia Bennett",
     "A signed-in user sees a short public name.",
+  );
+
+  const ada = await makeUser("investor", "Ada Hold");
+  const past = "2000-01-01T00:00:00.000Z";
+  const blockedBasics = await ada.client
+    .from("profiles")
+    .update({ investor_basics_at: past })
+    .eq("id", ada.id);
+  const beforeBasics = await admin.from("profiles").select("investor_basics_at").eq("id", ada.id).single();
+  const refused = await ada.client.from("commitments").insert({
+    user_id: ada.id,
+    project_id: projectA,
+    amount: 10,
+    status: "pledged",
+    counts_at: past,
+  });
+  const passed = await ada.client.rpc("pass_investor_basics");
+  const changedBasics = await ada.client
+    .from("profiles")
+    .update({ investor_basics_at: past })
+    .eq("id", ada.id);
+  const afterBasics = await admin.from("profiles").select("investor_basics_at").eq("id", ada.id).single();
+  const basicsValue = afterBasics.data?.investor_basics_at ? String(afterBasics.data.investor_basics_at) : "";
+  report(
+    Boolean(blockedBasics.error) &&
+      !beforeBasics.data?.investor_basics_at &&
+      Boolean(changedBasics.error) &&
+      Boolean(basicsValue) &&
+      !basicsValue.startsWith("2000-"),
+    "A user cannot set investor_basics_at through a profile update.",
+  );
+
+  const first = await ada.client.from("commitments").insert({
+    user_id: ada.id,
+    project_id: projectA,
+    amount: 10,
+    status: "pledged",
+    counts_at: past,
+  });
+  const second = await ada.client.from("commitments").insert({
+    user_id: ada.id,
+    project_id: projectA,
+    amount: 11,
+    status: "pledged",
+    counts_at: past,
+  });
+  const adaRows = await admin
+    .from("commitments")
+    .select("amount, counts_at, created_at")
+    .eq("user_id", ada.id)
+    .order("amount");
+  const adaFirst = (adaRows.data ?? []).find((row) => Number(row.amount) === 10);
+  const adaSecond = (adaRows.data ?? []).find((row) => Number(row.amount) === 11);
+  report(
+    Boolean(refused.error) && !passed.error && !first.error,
+    "A commitment insert is refused before pass_investor_basics() and allowed after.",
+  );
+  report(
+    !first.error &&
+      !second.error &&
+      Boolean(adaFirst) &&
+      Boolean(adaSecond) &&
+      holdHours(adaFirst) > 23 &&
+      holdHours(adaFirst) < 25 &&
+      Math.abs(holdHours(adaSecond)) < 0.1,
+    "A direct insert with counts_at in the past still gets a 24-hour hold on a first commitment, and no hold on a second.",
+  );
+
+  const ben = await makeUser("investor", "Ben Organizer");
+  const cara = await makeUser("investor", "Cara Funder");
+  const benPass = await ben.client.rpc("pass_investor_basics");
+  const caraPass = await cara.client.rpc("pass_investor_basics");
+  const organized = await admin.from("projects").insert({
+    id: projectC,
+    organizer_id: ben.id,
+    organizer_name: "Ben Organizer",
+    name: "Check project C",
+    country_id: "ghana",
+    parish_id: null,
+    town_id: "tamale",
+    sector: "water",
+    summary: "Check.",
+    what_you_get: "A part of this project.",
+    goal: 1000,
+    workers_needed: 1,
+    weekly_payout: 16000,
+    work_started: false,
+    needs: ["water"],
+    checks: [],
+  });
+  const caraPledge = await cara.client.from("commitments").insert({
+    user_id: cara.id,
+    project_id: projectC,
+    amount: 12,
+    status: "pledged",
+    counts_at: past,
+  });
+  const benPledge = await ben.client.from("commitments").insert({
+    user_id: ben.id,
+    project_id: projectC,
+    amount: 13,
+    status: "pledged",
+    counts_at: past,
+  });
+  const benRow = await admin
+    .from("commitments")
+    .select("counts_at, created_at")
+    .eq("user_id", ben.id)
+    .maybeSingle();
+  report(
+    !organized.error &&
+      !benPass.error &&
+      !caraPass.error &&
+      !caraPledge.error &&
+      !benPledge.error &&
+      Boolean(benRow.data) &&
+      holdHours(benRow.data) > 23 &&
+      holdHours(benRow.data) < 25,
+    "An organizer whose project already has someone else's commitment still gets the hold on their own first one.",
+  );
+
+  const goal = await ben.client
+    .from("weekly_goals")
+    .insert({
+      project_id: projectC,
+      user_id: ben.id,
+      goal: "Count the cash",
+      plan: ["Open the book", "Write the total"],
+      status: "open",
+      note: "",
+      week_of: "2026-10-29",
+    })
+    .select("id")
+    .single();
+  const goalId = goal.data?.id ?? "";
+  const workerRead = await outsider.client.from("weekly_goals").select("id");
+  const leaked = (workerRead.data ?? []).some((row) => row.id === goalId);
+  const workerWrite = await outsider.client.from("weekly_goals").insert({
+    project_id: projectC,
+    user_id: outsider.id,
+    goal: "Not yours",
+    plan: ["One", "Two"],
+    status: "open",
+    note: "",
+    week_of: "2026-10-29",
+  });
+  const workerUpdate = await outsider.client.from("weekly_goals").update({ goal: "Stolen" }).eq("id", goalId).select("id");
+  const kept = goalId
+    ? await admin.from("weekly_goals").select("goal").eq("id", goalId).maybeSingle()
+    : { data: null };
+  report(
+    Boolean(goalId) &&
+      !workerRead.error &&
+      !leaked &&
+      Boolean(workerWrite.error) &&
+      ((workerUpdate.data ?? []).length === 0) &&
+      kept.data?.goal === "Count the cash",
+    "A worker cannot read or write another organizer's weekly_goals.",
   );
 } catch (error) {
   report(false, error instanceof Error ? error.message : "The live check stopped.");

@@ -15,16 +15,7 @@ import {
 } from "@/app/actions/live";
 import { isSkill } from "@/lib/catalog";
 import { investorBasicsIds, stageLessons } from "@/lib/lessons";
-import {
-  closeWeek as closeWeekPlan,
-  emptyProgress,
-  finishLessons,
-  normalizeProgress,
-  openWeek,
-  passBasics,
-  seeLessons,
-  type ProgressState,
-} from "@/lib/progress";
+import type { WeekPlan } from "@/lib/progress";
 import { DemoContext, type AvailabilityDraft, type DemoValue, type Flow, type Proof, type RequestDraft } from "@/lib/demo-store";
 import {
   mapApplication,
@@ -66,6 +57,10 @@ type Snapshot = {
   applications: Application[];
   availability: Availability[];
   projects: Project[];
+  investorBasicsDone: boolean;
+  learningSeen: string[];
+  learningDone: string[];
+  weeks: WeekPlan[];
 };
 
 let reloadLive: (() => Promise<void>) | null = null;
@@ -90,7 +85,35 @@ const emptySnapshot: Snapshot = {
   applications: [],
   availability: [],
   projects: [],
+  investorBasicsDone: false,
+  learningSeen: [],
+  learningDone: [],
+  weeks: [],
 };
+
+function textList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string");
+}
+
+function mapWeek(row: Record<string, unknown>): WeekPlan | null {
+  const id = typeof row.id === "string" ? row.id : "";
+  const projectId = typeof row.project_id === "string" ? row.project_id : "";
+  const goal = typeof row.goal === "string" ? row.goal : "";
+  const status = row.status === "open" || row.status === "done" || row.status === "not-done" ? row.status : null;
+  if (!id || !projectId || !goal || !status) return null;
+  const plan = textList(row.plan);
+  return {
+    id,
+    projectId,
+    goal,
+    stepOne: plan[0] ?? "",
+    stepTwo: plan[1] ?? "",
+    status,
+    happened: typeof row.note === "string" ? row.note : "",
+    createdAt: typeof row.created_at === "string" ? row.created_at : "",
+  };
+}
 
 function rowsOf(value: { data: unknown[] | null }): Record<string, unknown>[] {
   return (value.data ?? []).filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object");
@@ -100,7 +123,7 @@ async function loadSnapshot(): Promise<Snapshot> {
   const supabase = browserSupabase();
   const { data: auth } = await supabase.auth.getUser();
   const user = auth.user;
-  const [projectRows, memberRows, requestRows, applicationRows, availabilityRows, peopleRows, commitmentRows, contributionRows, mine] =
+  const [projectRows, memberRows, requestRows, applicationRows, availabilityRows, peopleRows, commitmentRows, contributionRows, mine, goalRows, lessonRows] =
     await Promise.all([
       supabase.from("projects").select("*"),
       supabase.from("project_members").select("project_id, worker_id"),
@@ -111,8 +134,10 @@ async function loadSnapshot(): Promise<Snapshot> {
       user ? supabase.from("commitments").select("*") : Promise.resolve({ data: [] }),
       user ? supabase.from("contributions").select("*") : Promise.resolve({ data: [] }),
       user
-        ? supabase.from("profiles").select("name, role, country_id, parish_id, town_id, skill, extra_skills").eq("id", user.id).maybeSingle()
+        ? supabase.from("profiles").select("name, role, country_id, parish_id, town_id, skill, extra_skills, investor_basics_at").eq("id", user.id).maybeSingle()
         : Promise.resolve({ data: null }),
+      user ? supabase.from("weekly_goals").select("*") : Promise.resolve({ data: [] }),
+      user ? supabase.from("lesson_progress").select("lesson_id, seen_at, done_at") : Promise.resolve({ data: [] }),
     ]);
 
   const people = rowsOf(peopleRows).flatMap((row) => {
@@ -180,7 +205,40 @@ async function loadSnapshot(): Promise<Snapshot> {
       return item ? [item] : [];
     })),
     projects,
+    investorBasicsDone: typeof profile?.investor_basics_at === "string" && profile.investor_basics_at.length > 0,
+    learningSeen: rowsOf(lessonRows).flatMap((row) =>
+      typeof row.lesson_id === "string" && row.seen_at ? [row.lesson_id] : [],
+    ),
+    learningDone: rowsOf(lessonRows).flatMap((row) =>
+      typeof row.lesson_id === "string" && row.done_at ? [row.lesson_id] : [],
+    ),
+    weeks: rowsOf(goalRows).flatMap((row) => {
+      const week = mapWeek(row);
+      return week ? [week] : [];
+    }),
   };
+}
+
+function withIds(current: string[], ids: string[]): string[] {
+  return [...new Set([...current, ...ids.filter(Boolean)])];
+}
+
+async function saveLessonsSeen(userId: string, ids: string[]): Promise<boolean> {
+  const seenAt = new Date().toISOString();
+  const { error } = await browserSupabase().from("lesson_progress").upsert(
+    ids.map((lessonId) => ({ user_id: userId, lesson_id: lessonId, seen_at: seenAt })),
+    { onConflict: "user_id,lesson_id" },
+  );
+  return !error;
+}
+
+async function saveLessonsDone(userId: string, ids: string[]): Promise<boolean> {
+  const stamp = new Date().toISOString();
+  const { error } = await browserSupabase().from("lesson_progress").upsert(
+    ids.map((lessonId) => ({ user_id: userId, lesson_id: lessonId, seen_at: stamp, done_at: stamp })),
+    { onConflict: "user_id,lesson_id" },
+  );
+  return !error;
 }
 
 export function LiveProvider({ children }: { children: React.ReactNode }) {
@@ -191,8 +249,6 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
   const [path, setPath] = useState<PathChoice | null>(null);
   const [proof, setProofState] = useState<Proof | null>(null);
   const [openedProject, setOpenedProject] = useState(false);
-  const [progress, setProgress] = useState<ProgressState>(emptyProgress);
-  const [progressReady, setProgressReady] = useState(false);
   const snapshotRef = useRef(snapshot);
   const savingRef = useRef(false);
   const flowStarted = useRef(false);
@@ -200,25 +256,6 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     snapshotRef.current = snapshot;
   }, [snapshot]);
-
-  useEffect(() => {
-    // Load this phone's lesson record after mount so the server HTML matches.
-    try {
-      const raw = window.localStorage.getItem("fundwork-progress-v1");
-      if (raw) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setProgress(normalizeProgress(JSON.parse(raw)));
-      }
-    } catch {
-      // Keep the empty record.
-    }
-    setProgressReady(true);
-  }, []);
-
-  useEffect(() => {
-    if (!progressReady) return;
-    window.localStorage.setItem("fundwork-progress-v1", JSON.stringify(progress));
-  }, [progress, progressReady]);
 
   const reload = useCallback(async () => {
     try {
@@ -510,63 +547,107 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
         );
       },
       markOpened: () => setOpenedProject(true),
-      investorBasicsDone: progress.byUser[current.userId]?.basics === true,
-      learningSeen: progress.byUser[current.userId]?.seen ?? [],
-      learningDone: progress.byUser[current.userId]?.done ?? [],
-      weeks: progress.weeks,
+      investorBasicsDone: current.investorBasicsDone,
+      learningSeen: current.learningSeen,
+      learningDone: current.learningDone,
+      weeks: current.weeks,
       markLessonsSeen: (ids) => {
-        const userId = snapshotRef.current.userId;
-        if (!userId) return;
-        setProgress((item) => seeLessons(item, userId, ids));
+        const seen = snapshotRef.current;
+        if (!seen.userId) return;
+        const fresh = ids.filter((id) => id && !seen.learningSeen.includes(id));
+        if (fresh.length === 0) return;
+        setSnapshot((item) => ({ ...item, learningSeen: withIds(item.learningSeen, fresh) }));
+        void saveLessonsSeen(seen.userId, fresh).then((ok) => {
+          if (!ok) notifySaveError();
+        });
       },
       passInvestorBasics: () => {
-        const userId = snapshotRef.current.userId;
-        if (!userId) return;
-        setProgress((item) => passBasics(item, userId, investorBasicsIds()));
+        const seen = snapshotRef.current;
+        if (!seen.userId) return;
+        const ids = investorBasicsIds();
+        setSnapshot((item) => ({
+          ...item,
+          investorBasicsDone: true,
+          learningSeen: withIds(item.learningSeen, ids),
+          learningDone: withIds(item.learningDone, ids),
+        }));
+        void (async () => {
+          const passed = await browserSupabase().rpc("pass_investor_basics");
+          const lessonsOk = passed.error ? false : await saveLessonsDone(seen.userId, ids);
+          if (passed.error || !lessonsOk) notifySaveError();
+          await reload();
+        })();
       },
       saveWeek: (input) => {
         const seen = snapshotRef.current;
         const project = seen.projects.find((item) => item.id === input.projectId);
+        const goal = input.goal.trim().slice(0, 140);
+        const stepOne = input.stepOne.trim();
+        const stepTwo = input.stepTwo.trim();
         if (!seen.userId || !project || project.organizerId !== seen.userId) return false;
-        let saved = false;
-        setProgress((item) => {
-          let next = openWeek(item, {
-            id: crypto.randomUUID(),
-            projectId: input.projectId,
-            goal: input.goal,
-            stepOne: input.stepOne,
-            stepTwo: input.stepTwo,
-            createdAt: new Date().toISOString(),
+        if (!goal || !stepOne || !stepTwo) return false;
+        if (seen.weeks.some((week) => week.projectId === input.projectId && week.status === "open")) return false;
+        const week: WeekPlan = {
+          id: crypto.randomUUID(),
+          projectId: input.projectId,
+          goal,
+          stepOne,
+          stepTwo,
+          status: "open",
+          happened: "",
+          createdAt: new Date().toISOString(),
+        };
+        const match = stageLessons(project.sector, project.workStarted).find((lesson) => lesson.action === goal);
+        setSnapshot((item) => ({
+          ...item,
+          weeks: [...item.weeks, week],
+          learningSeen: match ? withIds(item.learningSeen, [match.id]) : item.learningSeen,
+          learningDone: match ? withIds(item.learningDone, [match.id]) : item.learningDone,
+        }));
+        void (async () => {
+          const { error } = await browserSupabase().from("weekly_goals").insert({
+            id: week.id,
+            project_id: week.projectId,
+            user_id: seen.userId,
+            goal,
+            plan: [stepOne, stepTwo],
+            status: "open",
+            note: "",
+            week_of: week.createdAt.slice(0, 10),
           });
-          if (next === item) return item;
-          saved = true;
-          const match = stageLessons(project.sector, project.workStarted).find(
-            (lesson) => lesson.action === input.goal.trim(),
-          );
-          if (match && seen.userId) next = finishLessons(next, seen.userId, [match.id]);
-          return next;
-        });
-        return saved;
+          const lessonsOk = !error && match ? await saveLessonsDone(seen.userId, [match.id]) : !error;
+          if (error || !lessonsOk) notifySaveError();
+          await reload();
+        })();
+        return true;
       },
       closeWeek: (input) => {
         const seen = snapshotRef.current;
-        const week = progress.weeks.find((item) => item.id === input.id && item.status === "open");
+        const week = seen.weeks.find((item) => item.id === input.id && item.status === "open");
         const project = week ? seen.projects.find((item) => item.id === week.projectId) : undefined;
-        if (!week || !project || project.organizerId !== seen.userId) return false;
-        let saved = false;
-        setProgress((item) => {
-          const next = closeWeekPlan(item, input);
-          if (next === item) return item;
-          saved = true;
-          return next;
-        });
-        return saved;
+        const happened = input.happened.trim().slice(0, 140);
+        if (!week || !project || project.organizerId !== seen.userId || !happened) return false;
+        setSnapshot((item) => ({
+          ...item,
+          weeks: item.weeks.map((entry) =>
+            entry.id === week.id ? { ...entry, status: input.status, happened } : entry,
+          ),
+        }));
+        void (async () => {
+          const { error } = await browserSupabase()
+            .from("weekly_goals")
+            .update({ status: input.status, note: happened })
+            .eq("id", week.id);
+          if (error) notifySaveError();
+          await reload();
+        })();
+        return true;
       },
       useSample: () => {},
       useNewPerson: () => {},
       reset: () => {},
     };
-  }, [commitFlag, commitId, flow, openedProject, path, progress, proof, ready, reload, saving, snapshot]);
+  }, [commitFlag, commitId, flow, openedProject, path, proof, ready, reload, saving, snapshot]);
 
   return <DemoContext.Provider value={value}>{children}</DemoContext.Provider>;
 }

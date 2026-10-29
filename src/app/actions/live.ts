@@ -155,15 +155,12 @@ export async function postCommitment(input: { projectId: string; amount: number 
   const id = await callerId();
   if (!id || !(input.amount > 0) || !input.projectId) return false;
   const supabase = await serverSupabase();
-  const prior = await supabase.from("commitments").select("id", { count: "exact", head: true });
-  const first = !prior.error && (prior.count ?? 0) === 0;
-  const countsAt = new Date(Date.now() + (first ? 24 * 60 * 60 * 1000 : 0)).toISOString();
+  // The database sets counts_at. A first commitment is held for 24 hours.
   const { error } = await supabase.from("commitments").insert({
     user_id: id,
     project_id: input.projectId,
     amount: input.amount,
     status: "pledged",
-    counts_at: countsAt,
   });
   return !error;
 }
