@@ -1,9 +1,10 @@
 "use server";
 
+import { cleanReadiness, isSite, kindById } from "@/lib/blueprints";
 import { isSector, isSkill } from "@/lib/catalog";
 import { askedPlace } from "@/lib/seed";
 import { serverSupabase } from "@/lib/supabase/server";
-import type { PathChoice, Sector, Skill, WorkPreset } from "@/lib/types";
+import type { PathChoice, Readiness, Sector, SiteStatus, Skill, WorkPreset } from "@/lib/types";
 
 async function callerId(): Promise<string | null> {
   const supabase = await serverSupabase();
@@ -66,6 +67,9 @@ export async function postRequest(input: {
   workersNeeded: number;
   skills: Skill[];
   note: string;
+  kind: string;
+  site: SiteStatus;
+  readiness: Readiness;
 }): Promise<string | null> {
   const id = await callerId();
   if (!id) return null;
@@ -74,6 +78,9 @@ export async function postRequest(input: {
   if (!Number.isInteger(input.workersNeeded) || input.workersNeeded < 1 || input.workersNeeded > 10) {
     return null;
   }
+  if (!kindById(input.sector, input.kind) || !isSite(input.site)) return null;
+  const readiness = cleanReadiness(input.readiness);
+  if (!readiness) return null;
   const skills = [...new Set(input.skills.filter((item) => isSkill(item)))];
   if (skills.length === 0) return null;
   const supabase = await serverSupabase();
@@ -91,6 +98,9 @@ export async function postRequest(input: {
       note: input.note.trim().slice(0, 240),
       status: "open",
       project_id: null,
+      kind: input.kind,
+      site: input.site,
+      readiness,
     })
     .select("id")
     .single();
@@ -216,6 +226,24 @@ export async function withdrawApplication(applicationId: string): Promise<boolea
   const supabase = await serverSupabase();
   const { data, error } = await supabase.rpc("withdraw_application", {
     application_id: applicationId,
+  });
+  return !error && data === true;
+}
+
+export async function setReadiness(input: {
+  requestId?: string | null;
+  projectId?: string | null;
+  readiness: Readiness;
+}): Promise<boolean> {
+  const id = await callerId();
+  const readiness = cleanReadiness(input.readiness);
+  if (!id || !readiness) return false;
+  if (!input.requestId && !input.projectId) return false;
+  const supabase = await serverSupabase();
+  const { data, error } = await supabase.rpc("set_readiness", {
+    p_request_id: input.requestId ?? null,
+    p_project_id: input.projectId ?? null,
+    p_readiness: readiness,
   });
   return !error && data === true;
 }

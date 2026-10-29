@@ -15,6 +15,7 @@ import {
 import { useSnackbar } from "@/components/snackbar";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { BeforeYouApply, YourPlan } from "@/components/guide-card";
+import { ReadinessReport } from "@/components/needs-panel";
 import { sectorTitle, sectorWeekly, skillTitle } from "@/lib/catalog";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
@@ -190,6 +191,21 @@ export function RequestScreen({ id }: { id: string }) {
         ))}
       </ul>
       {request.note ? <p className="text-lg leading-relaxed">{request.note}</p> : null}
+      <ReadinessReport
+        sector={request.sector}
+        kindId={request.kind}
+        site={request.site}
+        readiness={request.readiness}
+        posterName={firstName(posterName(request.userId, demo.userId, demo.name))}
+        canEdit={isOwner}
+        saving={demo.saving}
+        onChange={(next) => {
+          if (demo.saving) return;
+          void demo.setReadiness({ requestId: request.id, readiness: next }).then((ok) => {
+            if (ok) show("Ready list saved.");
+          });
+        }}
+      />
       <CapitalChip />
       {isOwner ? (
         <YourPlan

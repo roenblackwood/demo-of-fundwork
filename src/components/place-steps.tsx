@@ -79,8 +79,8 @@ export function RegionStep({
       <StepHeader
         backHref={regionBack(mode, purpose)}
         step={1}
-        total={placeTotal(mode, purpose, true)}
-        title="Where should we look?"
+        total={purpose === "request" ? 8 : placeTotal(mode, purpose, true)}
+        title={purpose === "request" ? "Where will you build?" : "Where should we look?"}
       />
       <RegionMap
         selected={regionId}
@@ -97,7 +97,9 @@ export function RegionStep({
                 ? "Parishes and towns"
                 : projects.length > 0
                   ? projects.map((project) => project.name).join(", ")
-                  : "No project in this demo yet";
+                  : purpose === "request"
+                    ? undefined
+                    : "No project in this demo yet";
             return (
               <ChoiceLink
                 key={country.id}
@@ -199,9 +201,9 @@ export function ParishStep({
     <div>
       <StepHeader
         backHref={root}
-        step={2}
-        total={placeTotal(mode, purpose, true)}
-        title={title}
+        step={purpose === "request" ? 1 : 2}
+        total={purpose === "request" ? 8 : placeTotal(mode, purpose, true)}
+        title={purpose === "request" ? "Where will you build?" : title}
         hint="Caribbean, Jamaica"
       />
       <div className="space-y-3">
@@ -270,9 +272,9 @@ export function TownStep({
     <div>
       <StepHeader
         backHref={`${root}/jamaica`}
-        step={3}
-        total={placeTotal(mode, purpose, true)}
-        title="Which town?"
+        step={purpose === "request" ? 1 : 3}
+        total={purpose === "request" ? 8 : placeTotal(mode, purpose, true)}
+        title={purpose === "request" ? "Where will you build?" : "Which town?"}
         hint={parish.name}
       />
       <div className="space-y-3">
@@ -318,9 +320,15 @@ export function CityStep({
     <div>
       <StepHeader
         backHref={root}
-        step={2}
-        total={placeTotal(mode, purpose, false)}
-        title={mode === "investor" ? "Which city?" : "Where do you want to work?"}
+        step={purpose === "request" ? 1 : 2}
+        total={purpose === "request" ? 8 : placeTotal(mode, purpose, false)}
+        title={
+          purpose === "request"
+            ? "Where will you build?"
+            : mode === "investor"
+              ? "Which city?"
+              : "Where do you want to work?"
+        }
         hint={region ? `${region.name}, ${country.name}` : country.name}
       />
       <div className="space-y-3">

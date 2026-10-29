@@ -34,6 +34,12 @@ export async function recordLook(input: {
     p_chain: input.chain,
     p_tx_id: input.txId,
     p_from_address: input.look.fromAddress,
+    p_from_addresses:
+      input.look.fromAddresses.length > 0
+        ? input.look.fromAddresses
+        : input.look.fromAddress
+          ? [input.look.fromAddress]
+          : [],
     p_to_address: input.look.toAddress,
     p_asset: assetFor(input.chain),
     p_amount: input.look.amount,

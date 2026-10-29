@@ -264,6 +264,95 @@ if (!Array.isArray(guides.entries)) {
   }
 }
 
+const blueprints = JSON.parse(readFileSync(new URL("../data/blueprints.json", import.meta.url), "utf8"));
+const guideChecks = new Map();
+for (const entry of guides.entries ?? []) {
+  if (entry.countryId === "jamaica") guideChecks.set(entry.sector, new Set(entry.checks ?? []));
+}
+
+function shortLine(label, value, limit) {
+  if (typeof value !== "string" || !value.trim()) {
+    errors.push(`${label} needs text.`);
+    return;
+  }
+  if (value.includes("\n")) errors.push(`${label} must be one line.`);
+  if (value.length > limit) errors.push(`${label} is too long.`);
+  if (hasMoneyTalk(value)) errors.push(`${label} mentions money.`);
+}
+
+if (!blueprints.sectors || typeof blueprints.sectors !== "object") {
+  errors.push("blueprints.json needs a sectors object.");
+} else {
+  const seenIds = new Set();
+  for (const sector of sectorsNeeded) {
+    const kinds = blueprints.sectors[sector];
+    if (!Array.isArray(kinds) || kinds.length < 2 || kinds.length > 4) {
+      errors.push(`${sector} needs 2 to 4 kinds.`);
+      continue;
+    }
+    const allowed = guideChecks.get(sector) ?? new Set();
+    for (const kind of kinds) {
+      const label = `${sector}:${kind?.id ?? "?"}`;
+      if (typeof kind.id !== "string" || !/^[a-z0-9-]{1,40}$/.test(kind.id)) {
+        errors.push(`${label} has a bad id.`);
+      }
+      if (seenIds.has(kind.id)) errors.push(`Duplicate kind ${kind.id}.`);
+      seenIds.add(kind.id);
+      shortLine(`${label} title`, kind.title, 60);
+      shortLine(`${label} detail`, kind.detail, 140);
+      if (!Array.isArray(kind.needFirst) || kind.needFirst.length < 2 || kind.needFirst.length > 4) {
+        errors.push(`${label} needs 2 to 4 needFirst lines.`);
+      }
+      for (const line of kind.needFirst ?? []) shortLine(`${label} need`, line, 140);
+      if (!Array.isArray(kind.checks) || kind.checks.length < 1 || kind.checks.length > 6) {
+        errors.push(`${label} needs checks.`);
+      }
+      const checkSet = new Set(kind.checks ?? []);
+      if (checkSet.size !== (kind.checks ?? []).length) errors.push(`${label} repeats a check.`);
+      for (const checkId of kind.checks ?? []) {
+        if (!checkIds.has(checkId)) errors.push(`${label} has an unknown check.`);
+        if (!allowed.has(checkId)) errors.push(`${label} uses a check the Jamaica guide does not list.`);
+      }
+      if (!Array.isArray(kind.team) || kind.team.length < 1 || kind.team.length > 4) {
+        errors.push(`${label} needs a team.`);
+      }
+      const teamSkills = new Set();
+      let minSum = 0;
+      for (const band of kind.team ?? []) {
+        if (!skillIds.has(band?.skill)) errors.push(`${label} has an unknown skill.`);
+        if (teamSkills.has(band?.skill)) errors.push(`${label} repeats a skill.`);
+        teamSkills.add(band?.skill);
+        if (!Number.isInteger(band?.min) || !Number.isInteger(band?.max) || band.min < 1 || band.max < band.min || band.max > 10) {
+          errors.push(`${label} has a bad count range.`);
+        } else {
+          minSum += band.min;
+        }
+      }
+      if (minSum > 10) errors.push(`${label} suggests more than 10 people.`);
+      if (!Array.isArray(kind.phases) || kind.phases.length < 3 || kind.phases.length > 4) {
+        errors.push(`${label} needs 3 or 4 phases.`);
+      }
+      for (const phase of kind.phases ?? []) shortLine(`${label} phase`, phase, 40);
+      if (!Array.isArray(kind.spend) || kind.spend.length < 1 || kind.spend.length > 6) {
+        errors.push(`${label} needs spend categories.`);
+      }
+      const spendSet = new Set();
+      for (const item of kind.spend ?? []) {
+        shortLine(`${label} spend`, item, 24);
+        if (spendSet.has(item)) errors.push(`${label} repeats a spend category.`);
+        spendSet.add(item);
+      }
+      if (!Array.isArray(kind.noteHints) || kind.noteHints.length !== 3) {
+        errors.push(`${label} needs 3 note hints.`);
+      }
+      for (const hint of kind.noteHints ?? []) shortLine(`${label} hint`, hint, 80);
+    }
+  }
+  for (const sector of Object.keys(blueprints.sectors)) {
+    if (!sectorsNeeded.includes(sector)) errors.push(`${sector} is not a real sector.`);
+  }
+}
+
 const lessonsFile = JSON.parse(readFileSync(new URL("../data/lessons.json", import.meta.url), "utf8"));
 const audiences = new Set(["investor", "organizer", "worker"]);
 const moments = new Set(["investor-basics", "first-month", "running", "on-project", "grow-work"]);

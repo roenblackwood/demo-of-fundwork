@@ -95,6 +95,9 @@ export type Project = {
   team: string[];
   /** Experienced organizers mentor new ones, matched by sector and parish. */
   mentorName?: string | null;
+  kind?: string | null;
+  site?: SiteStatus | null;
+  readiness?: Readiness;
 };
 
 export type ChainId = "bitcoin-signet" | "base-sepolia";
@@ -167,6 +170,12 @@ export type Contribution = {
 
 export type RequestStatus = "open" | "team-ready" | "closed";
 
+export type SiteStatus = "own" | "lease" | "permission" | "not-yet";
+
+export type ReadinessState = "have" | "working" | "not-yet";
+
+export type Readiness = Record<string, ReadinessState>;
+
 export type CapitalRequest = {
   id: string;
   userId: string;
@@ -181,6 +190,9 @@ export type CapitalRequest = {
   status: RequestStatus;
   projectId: string | null;
   createdAt: string;
+  kind?: string | null;
+  site?: SiteStatus | null;
+  readiness?: Readiness;
 };
 
 export type ApplicationOrigin = "applied" | "invited";

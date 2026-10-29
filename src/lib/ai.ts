@@ -218,7 +218,7 @@ export type WorkerInput = {
   forProject: boolean;
 };
 
-const guideLabels: Record<CheckId, string> = {
+export const guideLabels: Record<CheckId, string> = {
   organizer: "Organizer",
   jtb: "Tourist licence",
   "site-visit": "Site visit",

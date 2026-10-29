@@ -55,14 +55,16 @@ export function MoneyText({
   currency,
   short = false,
   suffix,
+  showAbout = true,
 }: {
   amount: number;
   currency: string;
   short?: boolean;
   suffix?: string;
+  showAbout?: boolean;
 }) {
   const local = short ? moneyShort(amount, currency) : money(amount, currency);
-  const usd = aboutUsd(amount, currency);
+  const usd = showAbout ? aboutUsd(amount, currency) : "";
   return (
     <span className="inline-flex max-w-full flex-wrap items-baseline gap-x-1">
       <span className="whitespace-nowrap">{suffix ? `${local} ${suffix}` : local}</span>

@@ -233,6 +233,9 @@ try {
       skills: ["water"],
       note: "Check.",
       status: "open",
+      kind: "rainwater",
+      site: "own",
+      readiness: { "check:parish-letter": "not-yet" },
     })
     .select("id")
     .single();
@@ -285,7 +288,7 @@ try {
     : { data: [], error: started.error };
   const memberIds = (members.data ?? []).map((row) => row.worker_id);
   const startedRow = startedProjectId
-    ? await admin.from("projects").select("checks").eq("id", startedProjectId).single()
+    ? await admin.from("projects").select("checks, kind, site, readiness").eq("id", startedProjectId).single()
     : { data: null };
   const checkIds = Array.isArray(startedRow.data?.checks)
     ? startedRow.data.checks.map((item) => item.id).join(",")
@@ -295,8 +298,11 @@ try {
       !started.error &&
       memberIds.includes(member.id) &&
       !memberIds.includes(outsider.id) &&
-      checkIds === "organizer,engineer,community",
-    "start_project works on a team-ready request and adds the members.",
+      checkIds === "organizer,engineer,community" &&
+      startedRow.data?.kind === "rainwater" &&
+      startedRow.data?.site === "own" &&
+      startedRow.data?.readiness?.["check:parish-letter"] === "not-yet",
+    "start_project works on a team-ready request, adds the members, and copies kind, site, and readiness.",
   );
 
   const posted = await admin
@@ -516,6 +522,7 @@ try {
     p_chain: "bitcoin-signet",
     p_tx_id: tx("bb"),
     p_from_address: "tb1qfrom",
+    p_from_addresses: ["tb1qfrom"],
     p_to_address: benAddress,
     p_asset: "BTC",
     p_amount: 12,
@@ -595,13 +602,29 @@ try {
     ? await admin.from("commitments").select("status").eq("id", caraId).maybeSingle()
     : { data: null };
 
-  async function observe(mark, to, amount, confirmations) {
+  const caraAddress = `tb1q${stamp.replace(/[^a-z0-9]/g, "").slice(0, 20)}fundcara`;
+  const caraWallet = await cara.client
+    .from("wallets")
+    .insert({
+      user_id: cara.id,
+      chain: "bitcoin-signet",
+      address: caraAddress,
+      label: "Cara",
+    })
+    .select("id")
+    .single();
+  const caraMarked = caraWallet.data?.id
+    ? await admin.rpc("mark_wallet_checked", { p_wallet_id: caraWallet.data.id, p_owner_id: cara.id })
+    : { error: { message: "no wallet" } };
+
+  async function observe(mark, to, amount, confirmations, from = caraAddress) {
     return admin.rpc("record_observed_payment", {
       p_project_id: projectC,
       p_kind: "capital-in",
       p_chain: "bitcoin-signet",
       p_tx_id: tx(mark),
-      p_from_address: "tb1qfrom",
+      p_from_address: from,
+      p_from_addresses: [from],
       p_to_address: to,
       p_asset: "BTC",
       p_amount: amount,
@@ -619,10 +642,14 @@ try {
   const afterWaiting = await admin.from("commitments").select("status").eq("id", caraId).maybeSingle();
   const short = await observe("c3", benAddress, 11, 3);
   const afterShort = await admin.from("commitments").select("status").eq("id", caraId).maybeSingle();
-  const covered = await observe("c4", benAddress, 12, 3);
+  const stranger = await observe("c5", benAddress, 12, 3, benAddress);
+  const afterStranger = await admin.from("commitments").select("status").eq("id", caraId).maybeSingle();
+  const mixedFrom = `TB1Q${caraAddress.slice(4)}`;
+  const covered = await observe("c4", benAddress, 12, 3, mixedFrom);
   const afterCovered = await admin.from("commitments").select("status").eq("id", caraId).maybeSingle();
   report(
-    !setWallet.error &&
+    !caraMarked.error &&
+      !setWallet.error &&
       Boolean(outsiderWallet.error) &&
       Boolean(hand.error) &&
       stillPledged.data?.status === "pledged" &&
@@ -632,9 +659,56 @@ try {
       afterWaiting.data?.status === "pledged" &&
       short.data?.status === "mismatch" &&
       afterShort.data?.status === "pledged" &&
+      stranger.data?.status === "mismatch" &&
+      stranger.data?.reason === "This was not sent from your checked wallet." &&
+      afterStranger.data?.status === "pledged" &&
       covered.data?.status === "confirmed" &&
+      covered.data?.from_address === caraAddress &&
       afterCovered.data?.status === "accepted",
     "A commitment is accepted only after a confirmed capital-in that covers it, and a payment to the wrong address is a mismatch.",
+  );
+  report(
+    stranger.data?.status === "mismatch" && afterStranger.data?.status === "pledged",
+    "A payment to the project address from someone else's wallet cannot be claimed.",
+  );
+
+  const workerAddress = `tb1q${stamp.replace(/[^a-z0-9]/g, "").slice(0, 18)}fundworker`;
+  const joined = await admin.from("project_members").insert({ project_id: projectC, worker_id: member.id });
+  const workerWallet = await admin
+    .from("wallets")
+    .insert({
+      user_id: member.id,
+      chain: "bitcoin-signet",
+      address: workerAddress,
+      label: "Work",
+    })
+    .select("id")
+    .single();
+  const workerMarked = workerWallet.data?.id
+    ? await admin.rpc("mark_wallet_checked", { p_wallet_id: workerWallet.data.id, p_owner_id: member.id })
+    : { error: { message: "no wallet" } };
+  const payout = await admin.rpc("record_observed_payment", {
+    p_project_id: projectC,
+    p_kind: "pay-out",
+    p_chain: "bitcoin-signet",
+    p_tx_id: tx("c6"),
+    p_from_address: "tb1qnottheproject",
+    p_from_addresses: ["tb1qnottheproject"],
+    p_to_address: workerAddress,
+    p_asset: "BTC",
+    p_amount: 1,
+    p_confirmations: 3,
+    p_commitment_id: null,
+    p_contribution_id: null,
+    p_failed: false,
+    p_ambiguous: false,
+  });
+  report(
+    !joined.error &&
+      !workerMarked.error &&
+      payout.data?.status === "mismatch" &&
+      payout.data?.reason === "This did not come from the project wallet.",
+    "A pay-out from a non-project wallet is a mismatch.",
   );
 } catch (error) {
   report(false, error instanceof Error ? error.message : "The live check stopped.");

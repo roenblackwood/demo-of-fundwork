@@ -36,7 +36,7 @@ export function sectorWeekly(sector: Sector): number {
   return SECTOR_WEEKLY[sector];
 }
 
-// Keep this in sync with start_project in supabase/migrations/0002_fix_rules.sql.
+// Keep this in sync with start_project in supabase/migrations/0006_payment_sender.sql.
 export function openChecks(sector: Sector, jamaica: boolean): Check[] {
   const ids: CheckId[] =
     jamaica && sector === "lodging"

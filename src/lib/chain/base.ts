@@ -31,6 +31,7 @@ export async function readBase(txId: string, candidates: string[]): Promise<Chai
     failed: false,
     ambiguous: false,
     fromAddress: "",
+    fromAddresses: [],
     toAddress: "",
     amount: "0",
     confirmations: 0,
@@ -73,34 +74,51 @@ export async function readBase(txId: string, candidates: string[]): Promise<Chai
   }
   const paid = [...grouped.entries()].filter((entry) => entry[1].value > BigInt(0));
 
+  function sendersFor(candidate: string | null): string[] {
+    const seen: string[] = [];
+    const rows = candidate ? transfers.filter((transfer) => transfer.candidate === candidate) : transfers;
+    for (const transfer of rows) {
+      if (!transfer.from || seen.some((item) => sameAddress(item, transfer.from))) continue;
+      seen.push(transfer.from);
+    }
+    if (seen.length === 0 && receipt.from) seen.push(receipt.from);
+    return seen;
+  }
+
   if (paid.length === 0) {
     const first = transfers[0];
+    const fromAddresses = sendersFor(null);
     return {
       found: true,
       failed,
       ambiguous: false,
       fromAddress: first?.from ?? receipt.from,
+      fromAddresses,
       toAddress: first?.to.toLowerCase() ?? "0x0000000000000000000000000000000000000000",
       amount: first ? formatUnits(first.value, 6) : "0",
       confirmations,
     };
   }
   if (paid.length > 1) {
+    const fromAddresses = sendersFor(paid[0][0]);
     return {
       found: true,
       failed,
       ambiguous: true,
-      fromAddress: paid[0][1].from,
+      fromAddress: fromAddresses[0] ?? paid[0][1].from,
+      fromAddresses,
       toAddress: paid[0][0],
       amount: formatUnits(paid[0][1].value, 6),
       confirmations,
     };
   }
+  const fromAddresses = sendersFor(paid[0][0]);
   return {
     found: true,
     failed,
     ambiguous: false,
-    fromAddress: paid[0][1].from,
+    fromAddress: fromAddresses[0] ?? paid[0][1].from,
+    fromAddresses,
     toAddress: paid[0][0],
     amount: formatUnits(paid[0][1].value, 6),
     confirmations,

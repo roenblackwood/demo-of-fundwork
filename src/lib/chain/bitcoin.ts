@@ -13,6 +13,7 @@ export type ChainLook = {
   failed: boolean;
   ambiguous: boolean;
   fromAddress: string;
+  fromAddresses: string[];
   toAddress: string;
   amount: string;
   confirmations: number;
@@ -50,6 +51,7 @@ export async function readBitcoin(txId: string, candidates: string[]): Promise<C
     failed: false,
     ambiguous: false,
     fromAddress: "",
+    fromAddresses: [],
     toAddress: "",
     amount: "0",
     confirmations: 0,
@@ -81,8 +83,14 @@ export async function readBitcoin(txId: string, candidates: string[]): Promise<C
 
   const paid = [...totals.entries()].filter((entry) => entry[1] > zero);
   const inputs = Array.isArray(body.vin) ? body.vin : [];
-  const firstIn = record(record(inputs[0])?.prevout);
-  const fromAddress = typeof firstIn?.scriptpubkey_address === "string" ? firstIn.scriptpubkey_address : "";
+  const fromAddresses: string[] = [];
+  for (const input of inputs) {
+    const prevout = record(record(input)?.prevout);
+    const address = typeof prevout?.scriptpubkey_address === "string" ? prevout.scriptpubkey_address : "";
+    if (!address || fromAddresses.some((item) => sameAddress(item, address))) continue;
+    fromAddresses.push(address);
+  }
+  const fromAddress = fromAddresses[0] ?? "";
 
   const statusResponse = await readBody(`${TX_URL}${encodeURIComponent(txId)}/status`);
   let confirmations = 0;
@@ -102,6 +110,7 @@ export async function readBitcoin(txId: string, candidates: string[]): Promise<C
       failed: false,
       ambiguous: false,
       fromAddress,
+      fromAddresses,
       toAddress: firstAddress || "unknown",
       amount: btcString(firstAmount),
       confirmations,
@@ -113,6 +122,7 @@ export async function readBitcoin(txId: string, candidates: string[]): Promise<C
       failed: false,
       ambiguous: true,
       fromAddress,
+      fromAddresses,
       toAddress: paid[0][0],
       amount: btcString(paid[0][1]),
       confirmations,
@@ -123,6 +133,7 @@ export async function readBitcoin(txId: string, candidates: string[]): Promise<C
     failed: false,
     ambiguous: false,
     fromAddress,
+    fromAddresses,
     toAddress: paid[0][0],
     amount: btcString(paid[0][1]),
     confirmations,

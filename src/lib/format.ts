@@ -19,6 +19,12 @@ export function moneyShort(amount: number, currency = "J$"): string {
   return money(amount, currency);
 }
 
+export function capitalStart(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+}
+
 export function firstName(name: string): string {
   const trimmed = name.trim();
   if (!trimmed) return "You";

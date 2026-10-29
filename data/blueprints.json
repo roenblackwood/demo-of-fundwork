@@ -1,0 +1,445 @@
+{
+  "sectors": {
+    "lodging": [
+      {
+        "id": "fix-rooms",
+        "title": "Fix up rooms",
+        "detail": "Fix up rooms in a building you have.",
+        "needFirst": [
+          "Land or a building you own, lease, or have written permission to use",
+          "Someone who will run it day to day",
+          "A place to store tools and materials"
+        ],
+        "checks": ["public-health", "jtb"],
+        "team": [
+          { "skill": "building", "min": 2, "max": 4 },
+          { "skill": "guest-house", "min": 1, "max": 2 }
+        ],
+        "phases": ["Get approvals", "Buy materials", "Fix the rooms", "Open"],
+        "spend": ["materials", "labour", "equipment", "approvals"],
+        "noteHints": [
+          "Which rooms need work",
+          "What is already in the building",
+          "Who will look after guests"
+        ]
+      },
+      {
+        "id": "add-rooms",
+        "title": "Add rooms",
+        "detail": "Add rooms to a place that already takes guests.",
+        "needFirst": [
+          "A place that already takes guests",
+          "Someone who will run it day to day",
+          "A place to store tools and materials"
+        ],
+        "checks": ["parish-letter", "public-health", "jtb"],
+        "team": [
+          { "skill": "building", "min": 2, "max": 4 },
+          { "skill": "guest-house", "min": 1, "max": 2 }
+        ],
+        "phases": ["Get approvals", "Buy materials", "Build the rooms", "Open"],
+        "spend": ["materials", "labour", "equipment", "approvals"],
+        "noteHints": [
+          "How many rooms you want to add",
+          "Where the new rooms will go",
+          "Who will look after guests"
+        ]
+      },
+      {
+        "id": "new-guest-house",
+        "title": "Build a new guest house",
+        "detail": "Build a new guest house.",
+        "needFirst": [
+          "Land or a building you own, lease, or have written permission to use",
+          "Someone who will run it day to day",
+          "A place to store tools and materials"
+        ],
+        "checks": ["parish-letter", "public-health", "jtb"],
+        "team": [
+          { "skill": "building", "min": 3, "max": 5 },
+          { "skill": "guest-house", "min": 1, "max": 2 },
+          { "skill": "front", "min": 1, "max": 2 }
+        ],
+        "phases": ["Get approvals", "Buy materials", "Build", "Open"],
+        "spend": ["materials", "labour", "equipment", "approvals"],
+        "noteHints": [
+          "How many guests you want to host",
+          "What the building will include",
+          "Who will look after guests"
+        ]
+      }
+    ],
+    "agriculture": [
+      {
+        "id": "greenhouse",
+        "title": "Greenhouse",
+        "detail": "A greenhouse for crops.",
+        "needFirst": [
+          "Land or a building you own, lease, or have written permission to use",
+          "Someone who will run it day to day",
+          "Water for the plants"
+        ],
+        "checks": ["rada", "parish-letter"],
+        "team": [
+          { "skill": "farming", "min": 1, "max": 3 },
+          { "skill": "building", "min": 1, "max": 3 }
+        ],
+        "phases": ["Get approvals", "Buy materials", "Build", "Open"],
+        "spend": ["materials", "labour", "equipment", "approvals"],
+        "noteHints": [
+          "Which crops you will grow",
+          "Where the greenhouse will sit",
+          "Who will tend the plants"
+        ]
+      },
+      {
+        "id": "storage-shed",
+        "title": "Storage or packing shed",
+        "detail": "A shed to store or pack food.",
+        "needFirst": [
+          "Land or a building you own, lease, or have written permission to use",
+          "Someone who will run it day to day",
+          "A place to store tools and materials"
+        ],
+        "checks": ["rada", "parish-letter", "public-health"],
+        "team": [
+          { "skill": "building", "min": 2, "max": 4 },
+          { "skill": "farming", "min": 1, "max": 2 }
+        ],
+        "phases": ["Get approvals", "Buy materials", "Build", "Open"],
+        "spend": ["materials", "labour", "equipment", "approvals"],
+        "noteHints": [
+          "What you will store or pack",
+          "Where the shed will sit",
+          "Who will run the shed"
+        ]
+      },
+      {
+        "id": "animals",
+        "title": "Animals",
+        "detail": "Goats or poultry.",
+        "needFirst": [
+          "Land or a building you own, lease, or have written permission to use",
+          "Someone who will run it day to day",
+          "A place to store feed"
+        ],
+        "checks": ["rada", "parish-letter", "public-health"],
+        "team": [
+          { "skill": "farming", "min": 1, "max": 3 },
+          { "skill": "building", "min": 1, "max": 2 }
+        ],
+        "phases": ["Get approvals", "Buy materials", "Build", "Open"],
+        "spend": ["materials", "labour", "equipment", "approvals"],
+        "noteHints": [
+          "Goats, poultry, or both",
+          "Where the animals will stay",
+          "Who will look after them"
+        ]
+      },
+      {
+        "id": "processing",
+        "title": "Processing",
+        "detail": "Coffee, juice, or drying.",
+        "needFirst": [
+          "Land or a building you own, lease, or have written permission to use",
+          "Someone who will run it day to day",
+          "A place to store tools and materials"
+        ],
+        "checks": ["rada", "parish-letter", "public-health"],
+        "team": [
+          { "skill": "farming", "min": 1, "max": 2 },
+          { "skill": "cooking", "min": 1, "max": 2 },
+          { "skill": "building", "min": 1, "max": 2 }
+        ],
+        "phases": ["Get approvals", "Buy materials", "Set up", "Open"],
+        "spend": ["materials", "labour", "equipment", "approvals"],
+        "noteHints": [
+          "Coffee, juice, drying, or another crop",
+          "Where the work will happen",
+          "Who will run the processing"
+        ]
+      }
+    ],
+    "energy": [
+      {
+        "id": "solar-one",
+        "title": "Solar for one building",
+        "detail": "Solar for one building.",
+        "needFirst": [
+          "Land or a building you own, lease, or have written permission to use",
+          "Someone who will run it day to day",
+          "A place to store tools and materials"
+        ],
+        "checks": ["parish-letter"],
+        "team": [{ "skill": "power", "min": 1, "max": 2 }],
+        "phases": ["Get approvals", "Buy equipment", "Fit the solar", "Open"],
+        "spend": ["equipment", "labour", "materials", "approvals"],
+        "noteHints": [
+          "Which building will get solar",
+          "What the power will run",
+          "Who will look after the panels"
+        ]
+      },
+      {
+        "id": "battery-backup",
+        "title": "Battery backup",
+        "detail": "Battery backup for a clinic or school.",
+        "needFirst": [
+          "A clinic or school you can use",
+          "Someone who will run it day to day",
+          "A place to store tools and materials"
+        ],
+        "checks": ["parish-letter"],
+        "team": [{ "skill": "power", "min": 1, "max": 2 }],
+        "phases": ["Get approvals", "Buy equipment", "Fit the battery", "Open"],
+        "spend": ["equipment", "labour", "materials", "approvals"],
+        "noteHints": [
+          "Clinic or school",
+          "What must stay on when the grid is down",
+          "Who will look after the battery"
+        ]
+      },
+      {
+        "id": "solar-few",
+        "title": "Solar for a few homes or shops",
+        "detail": "Solar for a few homes or shops.",
+        "needFirst": [
+          "Written permission from each home or shop",
+          "Someone who will run it day to day",
+          "A place to store tools and materials"
+        ],
+        "checks": ["parish-letter"],
+        "team": [
+          { "skill": "power", "min": 2, "max": 4 },
+          { "skill": "building", "min": 1, "max": 2 }
+        ],
+        "phases": ["Get approvals", "Buy equipment", "Fit the solar", "Open"],
+        "spend": ["equipment", "labour", "materials", "approvals"],
+        "noteHints": [
+          "Which homes or shops are included",
+          "What the power will run",
+          "Who will look after the panels"
+        ]
+      }
+    ],
+    "water": [
+      {
+        "id": "rainwater",
+        "title": "Rainwater tanks",
+        "detail": "Rainwater tanks.",
+        "needFirst": [
+          "A roof or a place for the tanks",
+          "Someone who will look after the tanks",
+          "A place to store tools and materials"
+        ],
+        "checks": ["parish-letter"],
+        "team": [
+          { "skill": "water", "min": 1, "max": 2 },
+          { "skill": "building", "min": 1, "max": 2 }
+        ],
+        "phases": ["Get approvals", "Buy materials", "Fit the tanks", "Open"],
+        "spend": ["materials", "equipment", "labour", "approvals"],
+        "noteHints": [
+          "Where the tanks will sit",
+          "What the water will be used for",
+          "Who will look after the tanks"
+        ]
+      },
+      {
+        "id": "pump-pipe",
+        "title": "Pump and pipe",
+        "detail": "A pump and pipe for an existing source.",
+        "needFirst": [
+          "An existing water source",
+          "Written permission to use that source",
+          "Someone who will run it day to day"
+        ],
+        "checks": ["parish-letter"],
+        "team": [
+          { "skill": "water", "min": 1, "max": 3 },
+          { "skill": "building", "min": 1, "max": 2 }
+        ],
+        "phases": ["Get approvals", "Buy materials", "Lay the pipe", "Open"],
+        "spend": ["materials", "equipment", "labour", "approvals"],
+        "noteHints": [
+          "Which source you will use",
+          "Where the water needs to go",
+          "Who will look after the pump"
+        ]
+      },
+      {
+        "id": "drinking-filters",
+        "title": "Filters for drinking water",
+        "detail": "Filters for drinking water.",
+        "needFirst": [
+          "A water source",
+          "Someone who will look after the filters",
+          "A place to store tools and materials"
+        ],
+        "checks": ["parish-letter"],
+        "team": [{ "skill": "water", "min": 1, "max": 2 }],
+        "phases": ["Get approvals", "Buy equipment", "Fit the filters", "Open"],
+        "spend": ["equipment", "materials", "labour", "approvals"],
+        "noteHints": [
+          "Where people will collect water",
+          "What is wrong with the water now",
+          "Who will look after the filters"
+        ]
+      }
+    ],
+    "connectivity": [
+      {
+        "id": "internet-room",
+        "title": "Community internet room",
+        "detail": "A community internet room.",
+        "needFirst": [
+          "A room you can use",
+          "Someone who will run it day to day",
+          "A place to store tools and materials"
+        ],
+        "checks": ["parish-letter"],
+        "team": [
+          { "skill": "internet", "min": 1, "max": 2 },
+          { "skill": "building", "min": 1, "max": 2 }
+        ],
+        "phases": ["Get approvals", "Buy equipment", "Set up the room", "Open"],
+        "spend": ["equipment", "labour", "materials", "approvals"],
+        "noteHints": [
+          "Where the room will be",
+          "Who the room is for",
+          "Who will keep it open"
+        ]
+      },
+      {
+        "id": "building-links",
+        "title": "Links between buildings",
+        "detail": "Links between buildings.",
+        "needFirst": [
+          "Buildings you can link",
+          "Written permission for each building",
+          "Someone who will run it day to day"
+        ],
+        "checks": ["parish-letter"],
+        "team": [
+          { "skill": "internet", "min": 1, "max": 3 },
+          { "skill": "building", "min": 1, "max": 2 }
+        ],
+        "phases": ["Get approvals", "Buy equipment", "Link the buildings", "Open"],
+        "spend": ["equipment", "labour", "materials", "approvals"],
+        "noteHints": [
+          "Which buildings will be linked",
+          "What people need the link for",
+          "Who will look after the link"
+        ]
+      }
+    ],
+    "education": [
+      {
+        "id": "fix-classroom",
+        "title": "Fix up a classroom",
+        "detail": "Fix up a classroom.",
+        "needFirst": [
+          "A classroom you can use",
+          "Someone who will run it day to day",
+          "A place to store tools and materials"
+        ],
+        "checks": ["parish-letter", "public-health"],
+        "team": [
+          { "skill": "building", "min": 2, "max": 4 },
+          { "skill": "teaching", "min": 1, "max": 2 }
+        ],
+        "phases": ["Get approvals", "Buy materials", "Fix the room", "Open"],
+        "spend": ["materials", "labour", "equipment", "approvals"],
+        "noteHints": [
+          "Which room needs work",
+          "What is already in the room",
+          "Who will teach there"
+        ]
+      },
+      {
+        "id": "equip-classroom",
+        "title": "Equip a classroom",
+        "detail": "Equip a classroom.",
+        "needFirst": [
+          "A classroom you can use",
+          "Someone who will teach",
+          "A place to store materials"
+        ],
+        "checks": ["public-health"],
+        "team": [{ "skill": "teaching", "min": 1, "max": 2 }],
+        "phases": ["Get approvals", "Buy materials", "Equip the room", "Open"],
+        "spend": ["materials", "equipment", "labour", "approvals"],
+        "noteHints": [
+          "Which room you will equip",
+          "What the class still needs",
+          "Who will teach there"
+        ]
+      }
+    ],
+    "healthcare": [
+      {
+        "id": "fix-clinic",
+        "title": "Fix up a clinic room",
+        "detail": "Fix up a clinic room.",
+        "needFirst": [
+          "A clinic room you can use",
+          "Someone who will run it day to day",
+          "A place to store tools and materials"
+        ],
+        "checks": ["parish-letter", "public-health"],
+        "team": [
+          { "skill": "building", "min": 2, "max": 4 },
+          { "skill": "care", "min": 1, "max": 2 }
+        ],
+        "phases": ["Get approvals", "Buy materials", "Fix the room", "Open"],
+        "spend": ["materials", "labour", "equipment", "approvals"],
+        "noteHints": [
+          "Which room needs work",
+          "What care will happen there",
+          "Who will run the room"
+        ]
+      },
+      {
+        "id": "cold-box",
+        "title": "Cold box or fridge",
+        "detail": "A cold box or fridge for medicine.",
+        "needFirst": [
+          "A clinic room you can use",
+          "Someone who will look after the medicine",
+          "A place to store tools and materials"
+        ],
+        "checks": ["public-health"],
+        "team": [{ "skill": "care", "min": 1, "max": 2 }],
+        "phases": ["Get approvals", "Buy equipment", "Fit the cold box", "Open"],
+        "spend": ["equipment", "labour", "materials", "approvals"],
+        "noteHints": [
+          "Where the cold box will sit",
+          "What medicine it must hold",
+          "Who will look after it"
+        ]
+      },
+      {
+        "id": "clinic-power",
+        "title": "Power for a clinic",
+        "detail": "Power for a clinic.",
+        "needFirst": [
+          "A clinic you can use",
+          "Someone who will run it day to day",
+          "A place to store tools and materials"
+        ],
+        "checks": ["parish-letter", "public-health"],
+        "team": [
+          { "skill": "power", "min": 1, "max": 2 },
+          { "skill": "care", "min": 1, "max": 1 }
+        ],
+        "phases": ["Get approvals", "Buy equipment", "Fit the power", "Open"],
+        "spend": ["equipment", "labour", "materials", "approvals"],
+        "noteHints": [
+          "Which clinic needs power",
+          "What must stay on",
+          "Who will look after the power"
+        ]
+      }
+    ]
+  }
+}

@@ -13,6 +13,7 @@ import {
   type WorkerGuide,
   type WorkerInput,
 } from "@/lib/ai";
+import { capitalStart } from "@/lib/format";
 import { currencyOf } from "@/lib/seed";
 import type { CapitalRequest, Project, Sector } from "@/lib/types";
 
@@ -99,7 +100,7 @@ function StarterBody({ guide }: { guide: StarterGuide }) {
         {guide.checks.map((check) => (
           <li key={`${check.label}-${check.agency}`}>
             <p className="font-semibold">{check.label}</p>
-            <p>{check.agency}</p>
+            {check.agency ? <p>Ask: {capitalStart(check.agency)}</p> : null}
             <p>{check.why}</p>
           </li>
         ))}
@@ -174,15 +175,32 @@ export function WhatItTakes({
   sector,
   placeName,
   projects,
+  collapsed = false,
 }: {
   countryId: string;
   countryName: string;
   sector: Sector;
   placeName: string;
   projects: Project[];
+  collapsed?: boolean;
 }) {
   const input = { countryId, countryName, sector, placeName, projects };
   const guide = useGuideText(starterGuide(input), starterBody(input));
+  if (collapsed) {
+    return (
+      <details className="rounded-2xl border bg-card">
+        <summary className={summaryClass}>
+          What it takes
+          <span aria-hidden className="text-2xl leading-none text-muted-foreground">
+            +
+          </span>
+        </summary>
+        <div className="space-y-3 px-4 pb-4">
+          <StarterBody guide={guide} />
+        </div>
+      </details>
+    );
+  }
   return (
     <section className="space-y-3 rounded-2xl bg-card p-4 ring-1 ring-foreground/10" aria-label="What it takes">
       <h2 className={sectionTitle}>What it takes</h2>

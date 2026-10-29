@@ -20,6 +20,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { Progress, ProgressLabel } from "@/components/ui/progress";
 import { BeforeYouApply, YourPlan } from "@/components/guide-card";
+import { ProjectPhases, ReadinessReport } from "@/components/needs-panel";
 import { LessonList } from "@/components/lesson-card";
 import { ThisWeekCard } from "@/components/this-week";
 import { checkNote, projectNote } from "@/lib/ai";
@@ -171,6 +172,22 @@ export function ProjectScreen({ id }: { id: string }) {
       </div>
       <TrustBadges checks={project.checks} />
       <p className="border-l-4 border-primary pl-4 text-lg leading-relaxed">{note.body}</p>
+      <ProjectPhases sector={project.sector} kindId={project.kind} />
+      <ReadinessReport
+        sector={project.sector}
+        kindId={project.kind}
+        site={project.site}
+        readiness={project.readiness}
+        posterName={firstName(project.organizerName)}
+        canEdit={organizing}
+        saving={demo.saving}
+        onChange={(next) => {
+          if (demo.saving) return;
+          void demo.setReadiness({ projectId: project.id, readiness: next }).then((ok) => {
+            if (ok) show("Ready list saved.");
+          });
+        }}
+      />
       <section className="space-y-2">
         <h2 className={sectionTitle}>What you get</h2>
         <p className="text-lg leading-relaxed">

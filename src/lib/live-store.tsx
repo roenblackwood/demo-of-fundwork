@@ -9,10 +9,12 @@ import {
   postContribution,
   postRequest,
   saveDisplayName,
+  setReadiness as setReadinessAction,
   setApplicationStatus as setApplicationStatusAction,
   startProject as startProjectAction,
   withdrawApplication as withdrawApplicationAction,
 } from "@/app/actions/live";
+import { cleanReadiness, isSite, kindById } from "@/lib/blueprints";
 import { isSkill } from "@/lib/catalog";
 import { investorBasicsIds, stageLessons } from "@/lib/lessons";
 import type { WeekPlan } from "@/lib/progress";
@@ -449,7 +451,10 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
           Number.isInteger(draft.workersNeeded) &&
           draft.workersNeeded >= 1 &&
           draft.workersNeeded <= 10 &&
-          draft.skills.length > 0;
+          draft.skills.length > 0 &&
+          Boolean(kindById(draft.sector, draft.kind)) &&
+          isSite(draft.site) &&
+          Boolean(cleanReadiness(draft.readiness));
         return commitId(local, () => postRequest(draft));
       },
       applyToRequest: (input) => {
@@ -534,6 +539,16 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
           application && application.status === "waiting" && application.workerId === seen.userId,
         );
         return commitFlag(local, () => withdrawApplicationAction(id));
+      },
+      setReadiness: (input) => {
+        const seen = snapshotRef.current;
+        const readiness = cleanReadiness(input.readiness);
+        const request = input.requestId ? seen.requests.find((item) => item.id === input.requestId) : undefined;
+        const project = input.projectId ? seen.projects.find((item) => item.id === input.projectId) : undefined;
+        const ownsRequest = Boolean(request && request.userId === seen.userId);
+        const ownsProject = Boolean(project && project.organizerId === seen.userId);
+        const local = Boolean(readiness && ((input.requestId && ownsRequest) || (!input.requestId && ownsProject)));
+        return commitFlag(local, () => setReadinessAction(input));
       },
       startProject: async (requestId, name) => {
         const seen = snapshotRef.current;

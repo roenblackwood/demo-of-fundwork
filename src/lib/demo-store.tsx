@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { cleanReadiness, isSite, kindById } from "@/lib/blueprints";
 import { openChecks, sectorWeekly } from "@/lib/catalog";
 import { investorBasicsIds, stageLessons } from "@/lib/lessons";
 import {
@@ -50,12 +51,15 @@ import type {
   Payment,
   Project,
   ProjectWallet,
+  Readiness,
   Sector,
+  SiteStatus,
   Skill,
   Wallet,
 } from "@/lib/types";
 
-const STORAGE_KEY = "fundwork-demo-v3";
+const STORAGE_KEY = "fundwork-demo-v4";
+const V3_KEY = "fundwork-demo-v3";
 const V2_KEY = "fundwork-demo-v2";
 const V1_KEY = "fundwork-demo-v1";
 
@@ -98,7 +102,7 @@ type Session = {
 };
 
 type Persisted = {
-  version: 1 | 2 | 3;
+  version: 1 | 2 | 3 | 4;
   session: Partial<Session>;
 };
 
@@ -111,6 +115,9 @@ export type RequestDraft = {
   workersNeeded: number;
   skills: Skill[];
   note: string;
+  kind: string;
+  site: SiteStatus;
+  readiness: Readiness;
 };
 
 export type AvailabilityDraft = {
@@ -163,7 +170,13 @@ function normalize(input: Partial<Session>): Session {
     commitments: Array.isArray(input.commitments) ? input.commitments : [],
     contributions: Array.isArray(input.contributions) ? input.contributions : [],
     requests: Array.isArray(input.requests)
-      ? input.requests.map((request) => ({ ...request, projectId: request.projectId ?? null }))
+      ? input.requests.map((request) => ({
+          ...request,
+          projectId: request.projectId ?? null,
+          kind: typeof request.kind === "string" ? request.kind : null,
+          site: isSite(request.site) ? request.site : null,
+          readiness: cleanReadiness(request.readiness) ?? {},
+        }))
       : [],
     applications: Array.isArray(input.applications)
       ? input.applications.map((application) => ({
@@ -194,7 +207,7 @@ function readPayload(raw: string | null): Persisted | null {
   const parsed = JSON.parse(raw) as Persisted;
   if (
     !parsed ||
-    (parsed.version !== 1 && parsed.version !== 2 && parsed.version !== 3) ||
+    (parsed.version !== 1 && parsed.version !== 2 && parsed.version !== 3 && parsed.version !== 4) ||
     !isSession(parsed.session)
   ) {
     return null;
@@ -206,8 +219,11 @@ function loadSession(): Session {
   if (typeof window === "undefined") return initialSession;
   try {
     const current = readPayload(window.localStorage.getItem(STORAGE_KEY));
-    if (current?.version === 3) return normalize(current.session);
+    if (current?.version === 4) return normalize(current.session);
     if (window.localStorage.getItem(STORAGE_KEY)) return initialSession;
+    const carried = readPayload(window.localStorage.getItem(V3_KEY));
+    if (carried?.version === 3) return normalize(carried.session);
+    if (window.localStorage.getItem(V3_KEY)) return initialSession;
     const previous = readPayload(window.localStorage.getItem(V2_KEY));
     if (previous?.version === 2) return normalize(previous.session);
     if (window.localStorage.getItem(V2_KEY)) return initialSession;
@@ -233,12 +249,15 @@ function carryOrganizer(
   project: Omit<Project, "organizerId"> & { organizerId?: string | null },
   input: Partial<Session>,
 ): Project {
+  const kind = typeof project.kind === "string" ? project.kind : null;
+  const site = isSite(project.site) ? project.site : null;
+  const readiness = cleanReadiness(project.readiness) ?? {};
   if (project.organizerId === null || typeof project.organizerId === "string") {
-    return { ...project, organizerId: project.organizerId };
+    return { ...project, organizerId: project.organizerId, kind, site, readiness };
   }
   const view: Session = { ...initialSession, ...input };
   const sameName = personName(view) === project.organizerName;
-  return { ...project, organizerId: sameName ? currentUserId(view) : null };
+  return { ...project, organizerId: sameName ? currentUserId(view) : null, kind, site, readiness };
 }
 
 function writeDecision(
@@ -502,6 +521,7 @@ export type DemoValue = {
   addAvailability: (draft: AvailabilityDraft) => Promise<string | null>;
   withdrawApplication: (id: string) => Promise<boolean>;
   startProject: (requestId: string, name: string) => Promise<string | null>;
+  setReadiness: (input: { requestId?: string | null; projectId?: string | null; readiness: Readiness }) => Promise<boolean>;
   askToJoin: (projectId: string) => Promise<boolean>;
   markOpened: () => void;
   useSample: (id: string) => void;
@@ -529,7 +549,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!ready) return;
-    const payload: Persisted = { version: 3, session };
+    const payload: Persisted = { version: 4, session };
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   }, [ready, session]);
 
@@ -581,11 +601,15 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       !Number.isInteger(draft.workersNeeded) ||
       draft.workersNeeded < 1 ||
       draft.workersNeeded > 10 ||
-      draft.skills.length === 0
+      draft.skills.length === 0 ||
+      !kindById(draft.sector, draft.kind) ||
+      !isSite(draft.site) ||
+      !cleanReadiness(draft.readiness)
     ) {
       return null;
     }
     const id = crypto.randomUUID();
+    const readiness = cleanReadiness(draft.readiness) ?? {};
     setSession((current) => {
       if (roleOf(current) === "worker") return current;
       const request: CapitalRequest = {
@@ -602,6 +626,9 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         status: "open",
         projectId: null,
         createdAt: new Date().toISOString(),
+        kind: draft.kind,
+        site: draft.site,
+        readiness,
       };
       return { ...current, requests: [...current.requests, request] };
     });
@@ -704,6 +731,9 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         checks: openChecks(shown.sector, shown.countryId === "jamaica"),
         team: accepted.map((item) => item.workerId),
         mentorName: null,
+        kind: shown.kind ?? null,
+        site: shown.site ?? null,
+        readiness: shown.readiness ?? {},
       };
       const commitment: Commitment = {
         id: crypto.randomUUID(),
@@ -724,6 +754,52 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     });
     return id;
   }, []);
+
+  const setReadiness = useCallback(
+    async (input: { requestId?: string | null; projectId?: string | null; readiness: Readiness }) => {
+      const readiness = cleanReadiness(input.readiness);
+      if (!readiness) return false;
+      const userId = currentUserId(sessionRef.current);
+      const requests = listRequests(sessionRef.current);
+      const projects = listProjects(sessionRef.current);
+      const request = input.requestId ? requests.find((item) => item.id === input.requestId) : undefined;
+      const project = input.projectId
+        ? projects.find((item) => item.id === input.projectId)
+        : request?.projectId
+          ? projects.find((item) => item.id === request.projectId)
+          : undefined;
+      const ownsRequest = Boolean(request && request.userId === userId);
+      const ownsProject = Boolean(project && project.organizerId === userId);
+      if (input.requestId && !ownsRequest) return false;
+      if (!input.requestId && input.projectId && !ownsProject) return false;
+      if (!ownsRequest && !ownsProject) return false;
+      setSession((current) => {
+        const nextRequests = current.requests.map((item) => {
+          const sameRequest = request && item.id === request.id && item.userId === userId;
+          const linked = project && item.projectId === project.id && item.userId === userId;
+          if (!sameRequest && !linked) return item;
+          return { ...item, readiness };
+        });
+        const requestInSession = request ? current.requests.some((item) => item.id === request.id) : true;
+        const addedRequest =
+          request && ownsRequest && !requestInSession
+            ? [...nextRequests, { ...request, readiness }]
+            : nextRequests;
+        const nextProjects = current.projects.map((item) => {
+          if (!project || item.id !== project.id || item.organizerId !== userId) return item;
+          return { ...item, readiness };
+        });
+        const projectInSession = project ? current.projects.some((item) => item.id === project.id) : true;
+        const addedProject =
+          project && ownsProject && !projectInSession
+            ? [...nextProjects, { ...project, readiness }]
+            : nextProjects;
+        return { ...current, requests: addedRequest, projects: addedProject };
+      });
+      return true;
+    },
+    [],
+  );
 
   const askToJoin = useCallback(async (projectId: string) => {
     const stamp = { id: crypto.randomUUID(), createdAt: new Date().toISOString() };
@@ -813,6 +889,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   const reset = useCallback(() => {
     setSession(initialSession);
     window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(V3_KEY);
     window.localStorage.removeItem(V2_KEY);
     window.localStorage.removeItem(V1_KEY);
   }, []);
@@ -895,6 +972,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       addAvailability,
       withdrawApplication,
       startProject,
+      setReadiness,
       askToJoin,
       markOpened,
       useSample,
@@ -921,6 +999,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     setDisplayName,
     startPath,
     startProject,
+    setReadiness,
     updateFlow,
     useNewPerson,
     useSample,

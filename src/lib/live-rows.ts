@@ -1,3 +1,4 @@
+import { cleanReadiness, isSite } from "@/lib/blueprints";
 import { isSector, isSkill } from "@/lib/catalog";
 import type {
   Application,
@@ -90,6 +91,9 @@ export function mapProject(row: Row, team: string[], acceptedJmd: number): Proje
     needs: skills(row.needs),
     checks: checks(row.checks),
     team,
+    kind: text(row.kind),
+    site: isSite(row.site) ? row.site : null,
+    readiness: cleanReadiness(row.readiness) ?? {},
   };
 }
 
@@ -129,6 +133,9 @@ export function mapRequest(row: Row): CapitalRequest | null {
     status,
     projectId: text(row.project_id),
     createdAt: text(row.created_at) ?? "",
+    kind: text(row.kind),
+    site: isSite(row.site) ? row.site : null,
+    readiness: cleanReadiness(row.readiness) ?? {},
   };
 }
 
