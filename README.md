@@ -35,9 +35,9 @@ The service role key stays in the seed script. Do not put it in a `NEXT_PUBLIC_`
 
 ## How to walk through it
 
-The home screen is a world map. Tap a region. The map zooms to that region's countries. Tap a country, then choose invest or work.
+The home screen is a world map with a sheet of open projects and requests. Search a town or country, or tap a region. The map flies there. Markers stand for real projects and requests. On a slow phone the list stays up until you ask for the map.
 
-The regions are the Caribbean, Latin America, Africa, the Middle East, Eastern Europe, South Asia, and Southeast Asia. Each region has two or three countries. Jamaica opens into parishes and towns. Other countries open into one or two cities. The map is Natural Earth, drawn with react-simple-maps from `src/lib/maps/countries-50m.json`. It is not a live GIS service.
+The regions are the Caribbean, Latin America, Africa, the Middle East, Eastern Europe, South Asia, and Southeast Asia. Each region has two or three countries. Jamaica opens into parishes and towns. Other countries open into one or two cities. The basemap is OpenFreeMap. Region shading uses a simplified Natural Earth 110m file, and only at world zoom.
 
 **Jamaica, then I want to invest.** Pick a parish, a town, and either places to stay or farms and food. Open a project, then commit one of the amounts. The commit step says you deploy Bitcoin capital and workers receive a stable unit. Your commitments show under You.
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { RegionMap } from "@/components/region-map";
+import { PlaceScreen } from "@/components/map/place-screen";
 import { StepHeader } from "@/components/parts";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,22 +11,19 @@ import { saveProfile } from "@/app/actions/live";
 import { JAMAICA_SKILLS, SKILLS } from "@/lib/catalog";
 import { cn } from "cn";
 import { safeNext } from "@/lib/guard-paths";
-import { countriesIn, getRegion, type RegionId } from "@/lib/regions";
-import { getCountry, getParish, getParishes } from "@/lib/seed";
 import { refreshLiveStore } from "@/lib/live-store";
 import { browserSupabase } from "@/lib/supabase/browser";
 import type { PathChoice, Skill } from "@/lib/types";
 
 const SAVE_ERROR = "Could not save. Check your connection and try again.";
 
-type Step = "name" | "role" | "region" | "parish" | "town" | "city" | "skill";
+type Step = "name" | "role" | "region" | "skill";
 
 export function OnboardingScreen() {
   const [step, setStep] = useState<Step>("name");
   const [next, setNext] = useState("/you");
   const [name, setName] = useState("");
   const [role, setRole] = useState<PathChoice | null>(null);
-  const [regionId, setRegionId] = useState<RegionId | null>(null);
   const [countryId, setCountryId] = useState<string | null>(null);
   const [parishId, setParishId] = useState<string | null>(null);
   const [townId, setTownId] = useState<string | null>(null);
@@ -53,17 +50,13 @@ export function OnboardingScreen() {
     });
   }, [router]);
 
-  function chooseCountry(id: string) {
-    setCountryId(id);
-    setParishId(null);
-    setTownId(null);
-    setSkill(null);
-    setStep(id === "jamaica" ? "parish" : "city");
-  }
-
-  async function finish(picked: Skill | null, place: { townId: string; parishId: string | null }) {
-    if (!role || !countryId || saving) return;
+  async function finish(
+    picked: Skill | null,
+    place: { townId: string; parishId: string | null; countryId: string },
+  ) {
+    if (!role || saving) return;
     if (role === "worker" && !picked) return;
+    setCountryId(place.countryId);
     setTownId(place.townId);
     setParishId(place.parishId);
     setSaving(true);
@@ -71,7 +64,7 @@ export function OnboardingScreen() {
     const ok = await saveProfile({
       name,
       role,
-      countryId,
+      countryId: place.countryId,
       parishId: place.parishId,
       townId: place.townId,
       skill: role === "worker" ? picked : null,
@@ -87,8 +80,6 @@ export function OnboardingScreen() {
     router.push(dest);
   }
 
-  const parish = parishId ? getParish(parishId) : undefined;
-  const country = countryId ? getCountry(countryId) : undefined;
   const leadSkills = countryId === "jamaica"
     ? SKILLS.filter((item) => JAMAICA_SKILLS.includes(item.id))
     : SKILLS;
@@ -97,9 +88,7 @@ export function OnboardingScreen() {
     setError("");
     if (step === "role") setStep("name");
     else if (step === "region") setStep("role");
-    else if (step === "parish" || step === "city") setStep("region");
-    else if (step === "town") setStep("parish");
-    else if (step === "skill") setStep(countryId === "jamaica" ? "town" : "city");
+    else if (step === "skill") setStep("region");
   }
 
   return (
@@ -157,96 +146,21 @@ export function OnboardingScreen() {
       ) : null}
 
       {step === "region" ? (
-        <div>
-          <StepHeader backHref="/" onBack={back} title="Where should we look?" />
-          <RegionMap
-            selected={regionId}
-            onSelect={(id) => setRegionId(id)}
-            onSelectCountry={chooseCountry}
-          />
-          {regionId ? (
-            <div className="mt-6 space-y-3">
-              <p className="text-lg leading-relaxed">Tap a country in {getRegion(regionId)?.name}.</p>
-              {countriesIn(regionId).map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className="flex min-h-14 w-full items-center rounded-2xl border-2 border-border bg-card px-4 py-3 text-left text-lg font-semibold"
-                  onClick={() => chooseCountry(item.id)}
-                >
-                  {item.name}
-                </button>
-              ))}
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-
-      {step === "parish" ? (
-        <div className="space-y-3">
-          <StepHeader backHref="/" onBack={back} title={role === "worker" ? "Where do you want to work?" : "Which parish?"} hint="Caribbean, Jamaica" />
-          {getParishes().map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className="flex min-h-14 w-full items-center rounded-2xl border-2 border-border bg-card px-4 py-3 text-left text-lg font-semibold"
-              onClick={() => {
-                setParishId(item.id);
-                setCountryId("jamaica");
-                setStep("town");
-              }}
-            >
-              {item.name}
-            </button>
-          ))}
-        </div>
-      ) : null}
-
-      {step === "town" && parish ? (
-        <div className="space-y-3">
-          <StepHeader backHref="/" onBack={back} title="Which town?" hint={parish.name} />
-          {parish.towns.map((town) => (
-            <button
-              key={town.id}
-              type="button"
-              className="flex min-h-14 w-full items-center rounded-2xl border-2 border-border bg-card px-4 py-3 text-left text-lg font-semibold"
-              onClick={() => {
-                if (role === "worker") {
-                  setTownId(town.id);
-                  setStep("skill");
-                  return;
-                }
-                void finish(null, { townId: town.id, parishId: parish.id });
-              }}
-            >
-              {town.name}
-            </button>
-          ))}
-        </div>
-      ) : null}
-
-      {step === "city" && country ? (
-        <div className="space-y-3">
-          <StepHeader backHref="/" onBack={back} title={role === "worker" ? "Where do you want to work?" : "Which city?"} hint={country.name} />
-          {country.cities.map((city) => (
-            <button
-              key={city.id}
-              type="button"
-              className="flex min-h-14 w-full items-center rounded-2xl border-2 border-border bg-card px-4 py-3 text-left text-lg font-semibold"
-              onClick={() => {
-                if (role === "worker") {
-                  setTownId(city.id);
-                  setParishId(null);
-                  setStep("skill");
-                  return;
-                }
-                void finish(null, { townId: city.id, parishId: null });
-              }}
-            >
-              {city.name}
-            </button>
-          ))}
-        </div>
+        <PlaceScreen
+          title="Where should we look?"
+          backHref="/"
+          onBack={back}
+          onTown={(place) => {
+            setCountryId(place.countryId);
+            setParishId(place.parishId);
+            setTownId(place.townId);
+            if (role === "worker") {
+              setStep("skill");
+              return;
+            }
+            void finish(null, place);
+          }}
+        />
       ) : null}
 
       {step === "skill" ? (
@@ -272,8 +186,12 @@ export function OnboardingScreen() {
               disabled={saving}
               aria-busy={saving}
               onClick={() => {
-                if (!townId) return;
-                void finish(skill, { townId, parishId: countryId === "jamaica" ? parishId : null });
+                if (!townId || !countryId) return;
+                void finish(skill, {
+                  townId,
+                  parishId: countryId === "jamaica" ? parishId : null,
+                  countryId,
+                });
               }}
             >
               See work for me

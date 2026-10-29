@@ -46,6 +46,9 @@ function assertSeed(data: Seed): void {
       if (townIds.has(town.id)) {
         throw new Error(`Duplicate town ${town.id} in ${parish.name}.`);
       }
+      if (!Number.isFinite(town.lat) || !Number.isFinite(town.lng)) {
+        throw new Error(`${town.name} needs a point.`);
+      }
       townIds.add(town.id);
     }
     jamaicaTowns.set(parish.id, townIds);
@@ -71,6 +74,9 @@ function assertSeed(data: Seed): void {
     const cityIds = new Set<string>();
     for (const city of country.cities) {
       if (cityIds.has(city.id)) throw new Error(`Duplicate city ${city.id} in ${country.name}.`);
+      if (!Number.isFinite(city.lat) || !Number.isFinite(city.lng)) {
+        throw new Error(`${city.name} needs a point.`);
+      }
       cityIds.add(city.id);
     }
     cities.set(country.id, cityIds);

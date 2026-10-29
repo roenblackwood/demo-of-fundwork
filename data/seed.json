@@ -6,19 +6,27 @@
       "towns": [
         {
           "id": "downtown",
-          "name": "Downtown"
+          "name": "Downtown",
+          "lat": 17.9714,
+          "lng": -76.7936
         },
         {
           "id": "port-royal",
-          "name": "Port Royal"
+          "name": "Port Royal",
+          "lat": 17.937,
+          "lng": -76.841
         },
         {
           "id": "rae-town",
-          "name": "Rae Town"
+          "name": "Rae Town",
+          "lat": 17.9702,
+          "lng": -76.7788
         },
         {
           "id": "allman-town",
-          "name": "Allman Town"
+          "name": "Allman Town",
+          "lat": 17.9776,
+          "lng": -76.7894
         }
       ]
     },
@@ -28,23 +36,33 @@
       "towns": [
         {
           "id": "half-way-tree",
-          "name": "Half Way Tree"
+          "name": "Half Way Tree",
+          "lat": 18.0126,
+          "lng": -76.799
         },
         {
           "id": "liguanea",
-          "name": "Liguanea"
+          "name": "Liguanea",
+          "lat": 18.0175,
+          "lng": -76.7765
         },
         {
           "id": "papine",
-          "name": "Papine"
+          "name": "Papine",
+          "lat": 18.0244,
+          "lng": -76.745
         },
         {
           "id": "gordon-town",
-          "name": "Gordon Town"
+          "name": "Gordon Town",
+          "lat": 18.0365,
+          "lng": -76.7148
         },
         {
           "id": "stony-hill",
-          "name": "Stony Hill"
+          "name": "Stony Hill",
+          "lat": 18.0832,
+          "lng": -76.7846
         }
       ]
     },
@@ -54,23 +72,33 @@
       "towns": [
         {
           "id": "morant-bay",
-          "name": "Morant Bay"
+          "name": "Morant Bay",
+          "lat": 17.8815,
+          "lng": -76.409
         },
         {
           "id": "yallahs",
-          "name": "Yallahs"
+          "name": "Yallahs",
+          "lat": 17.8748,
+          "lng": -76.5624
         },
         {
           "id": "port-morant",
-          "name": "Port Morant"
+          "name": "Port Morant",
+          "lat": 17.887,
+          "lng": -76.3288
         },
         {
           "id": "bath",
-          "name": "Bath"
+          "name": "Bath",
+          "lat": 17.9482,
+          "lng": -76.3482
         },
         {
           "id": "seaforth",
-          "name": "Seaforth"
+          "name": "Seaforth",
+          "lat": 17.9326,
+          "lng": -76.4564
         }
       ]
     },
@@ -80,23 +108,33 @@
       "towns": [
         {
           "id": "port-antonio",
-          "name": "Port Antonio"
+          "name": "Port Antonio",
+          "lat": 18.176,
+          "lng": -76.4509
         },
         {
           "id": "buff-bay",
-          "name": "Buff Bay"
+          "name": "Buff Bay",
+          "lat": 18.2334,
+          "lng": -76.6622
         },
         {
           "id": "hope-bay",
-          "name": "Hope Bay"
+          "name": "Hope Bay",
+          "lat": 18.1992,
+          "lng": -76.556
         },
         {
           "id": "boston",
-          "name": "Boston"
+          "name": "Boston",
+          "lat": 18.1504,
+          "lng": -76.3826
         },
         {
           "id": "manchioneal",
-          "name": "Manchioneal"
+          "name": "Manchioneal",
+          "lat": 18.0448,
+          "lng": -76.2724
         }
       ]
     },
@@ -106,19 +144,27 @@
       "towns": [
         {
           "id": "port-maria",
-          "name": "Port Maria"
+          "name": "Port Maria",
+          "lat": 18.3702,
+          "lng": -76.8904
         },
         {
           "id": "annotto-bay",
-          "name": "Annotto Bay"
+          "name": "Annotto Bay",
+          "lat": 18.2716,
+          "lng": -76.7652
         },
         {
           "id": "oracabessa",
-          "name": "Oracabessa"
+          "name": "Oracabessa",
+          "lat": 18.4034,
+          "lng": -76.9466
         },
         {
           "id": "highgate",
-          "name": "Highgate"
+          "name": "Highgate",
+          "lat": 18.3084,
+          "lng": -76.8822
         }
       ]
     },
@@ -128,19 +174,27 @@
       "towns": [
         {
           "id": "ocho-rios",
-          "name": "Ocho Rios"
+          "name": "Ocho Rios",
+          "lat": 18.4074,
+          "lng": -77.1031
         },
         {
           "id": "st-anns-bay",
-          "name": "St. Ann's Bay"
+          "name": "St. Ann's Bay",
+          "lat": 18.4358,
+          "lng": -77.201
         },
         {
           "id": "runaway-bay",
-          "name": "Runaway Bay"
+          "name": "Runaway Bay",
+          "lat": 18.4596,
+          "lng": -77.3354
         },
         {
           "id": "browns-town",
-          "name": "Brown's Town"
+          "name": "Brown's Town",
+          "lat": 18.3946,
+          "lng": -77.3652
         }
       ]
     },
@@ -150,19 +204,27 @@
       "towns": [
         {
           "id": "falmouth",
-          "name": "Falmouth"
+          "name": "Falmouth",
+          "lat": 18.4936,
+          "lng": -77.6558
         },
         {
           "id": "duncans",
-          "name": "Duncans"
+          "name": "Duncans",
+          "lat": 18.4682,
+          "lng": -77.5342
         },
         {
           "id": "wakefield",
-          "name": "Wakefield"
+          "name": "Wakefield",
+          "lat": 18.4084,
+          "lng": -77.728
         },
         {
           "id": "clarks-town",
-          "name": "Clark's Town"
+          "name": "Clark's Town",
+          "lat": 18.4252,
+          "lng": -77.5484
         }
       ]
     },
@@ -172,19 +234,27 @@
       "towns": [
         {
           "id": "montego-bay",
-          "name": "Montego Bay"
+          "name": "Montego Bay",
+          "lat": 18.4762,
+          "lng": -77.9188
         },
         {
           "id": "cambridge",
-          "name": "Cambridge"
+          "name": "Cambridge",
+          "lat": 18.3102,
+          "lng": -77.9014
         },
         {
           "id": "adelphi",
-          "name": "Adelphi"
+          "name": "Adelphi",
+          "lat": 18.45,
+          "lng": -77.85
         },
         {
           "id": "anchovy",
-          "name": "Anchovy"
+          "name": "Anchovy",
+          "lat": 18.4104,
+          "lng": -77.9332
         }
       ]
     },
@@ -194,19 +264,27 @@
       "towns": [
         {
           "id": "lucea",
-          "name": "Lucea"
+          "name": "Lucea",
+          "lat": 18.451,
+          "lng": -78.1732
         },
         {
           "id": "green-island",
-          "name": "Green Island"
+          "name": "Green Island",
+          "lat": 18.3904,
+          "lng": -78.2674
         },
         {
           "id": "hopewell",
-          "name": "Hopewell"
+          "name": "Hopewell",
+          "lat": 18.4182,
+          "lng": -78.308
         },
         {
           "id": "sandy-bay",
-          "name": "Sandy Bay"
+          "name": "Sandy Bay",
+          "lat": 18.448,
+          "lng": -78.1402
         }
       ]
     },
@@ -216,19 +294,27 @@
       "towns": [
         {
           "id": "savanna-la-mar",
-          "name": "Savanna-la-Mar"
+          "name": "Savanna-la-Mar",
+          "lat": 18.2168,
+          "lng": -78.133
         },
         {
           "id": "negril",
-          "name": "Negril"
+          "name": "Negril",
+          "lat": 18.2684,
+          "lng": -78.3489
         },
         {
           "id": "little-london",
-          "name": "Little London"
+          "name": "Little London",
+          "lat": 18.2922,
+          "lng": -78.2168
         },
         {
           "id": "bluefields",
-          "name": "Bluefields"
+          "name": "Bluefields",
+          "lat": 18.1682,
+          "lng": -78.0326
         }
       ]
     },
@@ -238,19 +324,27 @@
       "towns": [
         {
           "id": "black-river",
-          "name": "Black River"
+          "name": "Black River",
+          "lat": 18.0262,
+          "lng": -77.8512
         },
         {
           "id": "santa-cruz",
-          "name": "Santa Cruz"
+          "name": "Santa Cruz",
+          "lat": 18.0534,
+          "lng": -77.698
         },
         {
           "id": "junction",
-          "name": "Junction"
+          "name": "Junction",
+          "lat": 18.1002,
+          "lng": -77.6504
         },
         {
           "id": "treasure-beach",
-          "name": "Treasure Beach"
+          "name": "Treasure Beach",
+          "lat": 17.8784,
+          "lng": -77.7588
         }
       ]
     },
@@ -260,19 +354,27 @@
       "towns": [
         {
           "id": "mandeville",
-          "name": "Mandeville"
+          "name": "Mandeville",
+          "lat": 18.0418,
+          "lng": -77.507
         },
         {
           "id": "christiana",
-          "name": "Christiana"
+          "name": "Christiana",
+          "lat": 18.1834,
+          "lng": -77.4916
         },
         {
           "id": "porus",
-          "name": "Porus"
+          "name": "Porus",
+          "lat": 18.0332,
+          "lng": -77.4172
         },
         {
           "id": "spaldings",
-          "name": "Spaldings"
+          "name": "Spaldings",
+          "lat": 18.1502,
+          "lng": -77.4504
         }
       ]
     },
@@ -282,19 +384,27 @@
       "towns": [
         {
           "id": "may-pen",
-          "name": "May Pen"
+          "name": "May Pen",
+          "lat": 17.9648,
+          "lng": -77.2452
         },
         {
           "id": "chapelton",
-          "name": "Chapelton"
+          "name": "Chapelton",
+          "lat": 18.0834,
+          "lng": -77.267
         },
         {
           "id": "frankfield",
-          "name": "Frankfield"
+          "name": "Frankfield",
+          "lat": 18.1422,
+          "lng": -77.3584
         },
         {
           "id": "milk-river",
-          "name": "Milk River"
+          "name": "Milk River",
+          "lat": 17.8582,
+          "lng": -77.3502
         }
       ]
     },
@@ -304,23 +414,33 @@
       "towns": [
         {
           "id": "spanish-town",
-          "name": "Spanish Town"
+          "name": "Spanish Town",
+          "lat": 17.9911,
+          "lng": -76.9574
         },
         {
           "id": "portmore",
-          "name": "Portmore"
+          "name": "Portmore",
+          "lat": 17.9502,
+          "lng": -76.8824
         },
         {
           "id": "old-harbour",
-          "name": "Old Harbour"
+          "name": "Old Harbour",
+          "lat": 17.9412,
+          "lng": -77.109
         },
         {
           "id": "linstead",
-          "name": "Linstead"
+          "name": "Linstead",
+          "lat": 18.1368,
+          "lng": -77.0312
         },
         {
           "id": "bog-walk",
-          "name": "Bog Walk"
+          "name": "Bog Walk",
+          "lat": 18.1022,
+          "lng": -77.0054
         }
       ]
     }
@@ -1239,11 +1359,15 @@
       "cities": [
         {
           "id": "bridgetown",
-          "name": "Bridgetown"
+          "name": "Bridgetown",
+          "lat": 13.0975,
+          "lng": -59.6167
         },
         {
           "id": "speightstown",
-          "name": "Speightstown"
+          "name": "Speightstown",
+          "lat": 13.2506,
+          "lng": -59.6418
         }
       ]
     },
@@ -1255,11 +1379,15 @@
       "cities": [
         {
           "id": "port-of-spain",
-          "name": "Port of Spain"
+          "name": "Port of Spain",
+          "lat": 10.6603,
+          "lng": -61.5086
         },
         {
           "id": "san-fernando",
-          "name": "San Fernando"
+          "name": "San Fernando",
+          "lat": 10.2796,
+          "lng": -61.4684
         }
       ]
     },
@@ -1271,11 +1399,15 @@
       "cities": [
         {
           "id": "kisumu",
-          "name": "Kisumu"
+          "name": "Kisumu",
+          "lat": -0.1022,
+          "lng": 34.7617
         },
         {
           "id": "nairobi",
-          "name": "Nairobi"
+          "name": "Nairobi",
+          "lat": -1.2864,
+          "lng": 36.8172
         }
       ]
     },
@@ -1287,11 +1419,15 @@
       "cities": [
         {
           "id": "tamale",
-          "name": "Tamale"
+          "name": "Tamale",
+          "lat": 9.4034,
+          "lng": -0.8393
         },
         {
           "id": "accra",
-          "name": "Accra"
+          "name": "Accra",
+          "lat": 5.6037,
+          "lng": -0.187
         }
       ]
     },
@@ -1303,11 +1439,15 @@
       "cities": [
         {
           "id": "lagos",
-          "name": "Lagos"
+          "name": "Lagos",
+          "lat": 6.4541,
+          "lng": 3.3947
         },
         {
           "id": "kano",
-          "name": "Kano"
+          "name": "Kano",
+          "lat": 12.0022,
+          "lng": 8.592
         }
       ]
     },
@@ -1319,11 +1459,15 @@
       "cities": [
         {
           "id": "medellin",
-          "name": "Medellín"
+          "name": "Medellín",
+          "lat": 6.2476,
+          "lng": -75.5658
         },
         {
           "id": "cartagena",
-          "name": "Cartagena"
+          "name": "Cartagena",
+          "lat": 10.3997,
+          "lng": -75.5144
         }
       ]
     },
@@ -1335,11 +1479,15 @@
       "cities": [
         {
           "id": "oaxaca",
-          "name": "Oaxaca"
+          "name": "Oaxaca",
+          "lat": 17.0732,
+          "lng": -96.7266
         },
         {
           "id": "merida",
-          "name": "Mérida"
+          "name": "Mérida",
+          "lat": 20.9674,
+          "lng": -89.5926
         }
       ]
     },
@@ -1351,11 +1499,15 @@
       "cities": [
         {
           "id": "salvador",
-          "name": "Salvador"
+          "name": "Salvador",
+          "lat": -12.9777,
+          "lng": -38.5016
         },
         {
           "id": "belem",
-          "name": "Belém"
+          "name": "Belém",
+          "lat": -1.4558,
+          "lng": -48.4902
         }
       ]
     },
@@ -1367,11 +1519,15 @@
       "cities": [
         {
           "id": "amman",
-          "name": "Amman"
+          "name": "Amman",
+          "lat": 31.9539,
+          "lng": 35.9106
         },
         {
           "id": "irbid",
-          "name": "Irbid"
+          "name": "Irbid",
+          "lat": 32.5556,
+          "lng": 35.85
         }
       ]
     },
@@ -1383,11 +1539,15 @@
       "cities": [
         {
           "id": "tripoli",
-          "name": "Tripoli"
+          "name": "Tripoli",
+          "lat": 34.4367,
+          "lng": 35.8497
         },
         {
           "id": "beirut",
-          "name": "Beirut"
+          "name": "Beirut",
+          "lat": 33.8938,
+          "lng": 35.5018
         }
       ]
     },
@@ -1399,11 +1559,15 @@
       "cities": [
         {
           "id": "cairo",
-          "name": "Cairo"
+          "name": "Cairo",
+          "lat": 30.0444,
+          "lng": 31.2357
         },
         {
           "id": "alexandria",
-          "name": "Alexandria"
+          "name": "Alexandria",
+          "lat": 31.2001,
+          "lng": 29.9187
         }
       ]
     },
@@ -1415,11 +1579,15 @@
       "cities": [
         {
           "id": "chisinau",
-          "name": "Chișinău"
+          "name": "Chișinău",
+          "lat": 47.0105,
+          "lng": 28.8638
         },
         {
           "id": "balti",
-          "name": "Bălți"
+          "name": "Bălți",
+          "lat": 47.7617,
+          "lng": 27.9289
         }
       ]
     },
@@ -1431,11 +1599,15 @@
       "cities": [
         {
           "id": "cluj",
-          "name": "Cluj-Napoca"
+          "name": "Cluj-Napoca",
+          "lat": 46.7712,
+          "lng": 23.6236
         },
         {
           "id": "iasi",
-          "name": "Iași"
+          "name": "Iași",
+          "lat": 47.1585,
+          "lng": 27.6014
         }
       ]
     },
@@ -1447,11 +1619,15 @@
       "cities": [
         {
           "id": "lviv",
-          "name": "Lviv"
+          "name": "Lviv",
+          "lat": 49.8397,
+          "lng": 24.0297
         },
         {
           "id": "kyiv",
-          "name": "Kyiv"
+          "name": "Kyiv",
+          "lat": 50.4501,
+          "lng": 30.5234
         }
       ]
     },
@@ -1463,11 +1639,15 @@
       "cities": [
         {
           "id": "jaipur",
-          "name": "Jaipur"
+          "name": "Jaipur",
+          "lat": 26.9124,
+          "lng": 75.7873
         },
         {
           "id": "kochi",
-          "name": "Kochi"
+          "name": "Kochi",
+          "lat": 9.9312,
+          "lng": 76.2673
         }
       ]
     },
@@ -1479,11 +1659,15 @@
       "cities": [
         {
           "id": "sylhet",
-          "name": "Sylhet"
+          "name": "Sylhet",
+          "lat": 24.8949,
+          "lng": 91.8687
         },
         {
           "id": "dhaka",
-          "name": "Dhaka"
+          "name": "Dhaka",
+          "lat": 23.8103,
+          "lng": 90.4125
         }
       ]
     },
@@ -1495,11 +1679,15 @@
       "cities": [
         {
           "id": "pokhara",
-          "name": "Pokhara"
+          "name": "Pokhara",
+          "lat": 28.2096,
+          "lng": 83.9856
         },
         {
           "id": "kathmandu",
-          "name": "Kathmandu"
+          "name": "Kathmandu",
+          "lat": 27.7172,
+          "lng": 85.324
         }
       ]
     },
@@ -1511,11 +1699,15 @@
       "cities": [
         {
           "id": "ubud",
-          "name": "Ubud"
+          "name": "Ubud",
+          "lat": -8.5069,
+          "lng": 115.2625
         },
         {
           "id": "denpasar",
-          "name": "Denpasar"
+          "name": "Denpasar",
+          "lat": -8.6705,
+          "lng": 115.2126
         }
       ]
     },
@@ -1527,11 +1719,15 @@
       "cities": [
         {
           "id": "cebu",
-          "name": "Cebu"
+          "name": "Cebu",
+          "lat": 10.3157,
+          "lng": 123.8854
         },
         {
           "id": "manila",
-          "name": "Manila"
+          "name": "Manila",
+          "lat": 14.5995,
+          "lng": 120.9842
         }
       ]
     },
@@ -1543,11 +1739,15 @@
       "cities": [
         {
           "id": "hue",
-          "name": "Hue"
+          "name": "Hue",
+          "lat": 16.4637,
+          "lng": 107.5909
         },
         {
           "id": "hanoi",
-          "name": "Hanoi"
+          "name": "Hanoi",
+          "lat": 21.0278,
+          "lng": 105.8342
         }
       ]
     }

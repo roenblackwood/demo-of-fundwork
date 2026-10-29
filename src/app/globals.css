@@ -106,3 +106,28 @@
     font-size: 106.25%;
   }
 }
+
+.fw-map .maplibregl-ctrl-bottom-right {
+  bottom: calc(var(--fw-sheet, 6rem) + 0.4rem);
+  right: 0.4rem;
+}
+
+.fw-map .maplibregl-ctrl-attrib {
+  background-color: rgb(255 252 247 / 0.94);
+  font-size: 11px;
+}
+
+.fw-map .maplibregl-ctrl-attrib a {
+  color: #1a2330;
+}
+
+.fw-marker:focus-visible {
+  outline: 3px solid #0e5c3a;
+  outline-offset: 2px;
+}
+
+@media (min-width: 768px) {
+  .fw-map .maplibregl-ctrl-top-right {
+    top: 8.5rem;
+  }
+}

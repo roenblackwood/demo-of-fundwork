@@ -39,6 +39,8 @@ export type PathChoice = "investor" | "worker";
 export type Town = {
   id: string;
   name: string;
+  lat: number;
+  lng: number;
 };
 
 export type Parish = {

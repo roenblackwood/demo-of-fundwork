@@ -18,6 +18,57 @@ for (const country of seed.countries ?? []) {
     errors.push(`${country.name} should have 1 or 2 cities.`);
   }
 }
+
+/** [west, east, south, north]. A point outside its country fails the check. */
+const COUNTRY_BOX = {
+  jamaica: [-78.45, -76.15, 17.68, 18.55],
+  barbados: [-59.66, -59.42, 13.04, 13.34],
+  trinidad: [-61.95, -60.5, 10.03, 11.35],
+  colombia: [-79.05, -66.85, -4.23, 12.5],
+  mexico: [-118.4, -86.7, 14.53, 32.72],
+  brazil: [-73.99, -34.7, -33.75, 5.27],
+  kenya: [33.9, 41.91, -4.68, 5.03],
+  ghana: [-3.26, 1.2, 4.54, 11.17],
+  nigeria: [2.67, 14.68, 4.27, 13.89],
+  jordan: [34.96, 39.3, 29.18, 33.37],
+  lebanon: [35.1, 36.64, 33.05, 34.69],
+  egypt: [24.7, 36.9, 21.97, 31.67],
+  moldova: [26.62, 30.16, 45.47, 48.49],
+  romania: [20.26, 29.72, 43.62, 48.27],
+  ukraine: [22.14, 40.23, 44.38, 52.38],
+  india: [68.11, 97.42, 6.75, 35.51],
+  bangladesh: [88.01, 92.67, 20.59, 26.63],
+  nepal: [80.06, 88.2, 26.35, 30.45],
+  indonesia: [95.01, 141.01, -11.01, 6.08],
+  philippines: [116.95, 126.6, 4.59, 21.12],
+  vietnam: [102.14, 109.46, 8.18, 23.39],
+};
+
+function pointInside(box, lat, lng) {
+  return lng >= box[0] && lng <= box[1] && lat >= box[2] && lat <= box[3];
+}
+
+function checkPoint(label, countryId, place) {
+  const box = COUNTRY_BOX[countryId];
+  if (!box) {
+    errors.push(`${label} has no country box.`);
+    return;
+  }
+  if (!Number.isFinite(place.lat) || !Number.isFinite(place.lng)) {
+    errors.push(`${label} needs a point.`);
+    return;
+  }
+  if (!pointInside(box, place.lat, place.lng)) {
+    errors.push(`${label} is outside ${countryId}.`);
+  }
+}
+
+for (const parish of seed.parishes) {
+  for (const town of parish.towns) checkPoint(`${parish.name}, ${town.name}`, "jamaica", town);
+}
+for (const country of seed.countries ?? []) {
+  for (const city of country.cities) checkPoint(`${country.name}, ${city.name}`, country.id, city);
+}
 if (seed.projects.length < 12 || seed.projects.length > 15) {
   errors.push(`Expected 12 to 15 projects, found ${seed.projects.length}.`);
 }

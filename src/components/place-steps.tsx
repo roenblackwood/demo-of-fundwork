@@ -3,8 +3,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { PlaceScreen, type PickedPlace } from "@/components/map/place-screen";
 import { ChoiceLink, StepHeader } from "@/components/parts";
-import { RegionMap } from "@/components/region-map";
 import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,85 +50,32 @@ export function RegionStep({
   purpose?: PlacePurpose;
 }) {
   const router = useRouter();
-  const { updateFlow, projects: allProjects } = useDemo();
-  const [regionId, setRegionId] = useState<RegionId | null>(null);
-  const region = regionId ? getRegion(regionId) : undefined;
-  const countries = regionId ? countriesIn(regionId) : [];
+  const { updateFlow } = useDemo();
 
-  function chooseRegion(id: RegionId) {
-    setRegionId(id);
-    updateFlow({ regionId: id });
-  }
-
-  function chooseCountry(id: string) {
+  function chooseTown(place: PickedPlace) {
     updateFlow({
-      regionId: regionId ?? undefined,
-      countryId: id,
-      parishId: undefined,
-      townId: undefined,
+      regionId: place.regionId as RegionId,
+      countryId: place.countryId,
+      parishId: place.parishId ?? undefined,
+      townId: place.townId,
       sector: undefined,
       skill: undefined,
       extraSkills: [],
     });
     const root = pathRoot(mode, purpose);
-    router.push(id === "jamaica" ? `${root}/jamaica` : `${root}/${id}`);
+    const placeId = place.parishId ?? place.countryId;
+    const done = purpose === "browse" && mode === "investor";
+    router.push(done ? "/invest" : `${root}/${placeId}/${place.townId}`);
   }
 
   return (
-    <div>
-      <StepHeader
-        backHref={regionBack(mode, purpose)}
-        step={1}
-        total={purpose === "request" ? 8 : placeTotal(mode, purpose, true)}
-        title={purpose === "request" ? "Where will you build?" : "Where should we look?"}
-      />
-      <RegionMap
-        selected={regionId}
-        onSelect={chooseRegion}
-        onSelectCountry={chooseCountry}
-      />
-      {region ? (
-        <div className="mt-6 space-y-3">
-          <p className="text-lg leading-relaxed">Tap a country in {region.name}.</p>
-          {countries.map((country) => {
-            const projects = allProjects.filter((project) => project.countryId === country.id);
-            const detail =
-              country.id === "jamaica"
-                ? "Parishes and towns"
-                : projects.length > 0
-                  ? projects.map((project) => project.name).join(", ")
-                  : purpose === "request"
-                    ? undefined
-                    : "No project in this demo yet";
-            return (
-              <ChoiceLink
-                key={country.id}
-                href={
-                  country.id === "jamaica"
-                    ? `${pathRoot(mode, purpose)}/jamaica`
-                    : `${pathRoot(mode, purpose)}/${country.id}`
-                }
-                title={country.name}
-                detail={detail}
-                onClick={() =>
-                  updateFlow({
-                    regionId: regionId ?? undefined,
-                    countryId: country.id,
-                    parishId: undefined,
-                    townId: undefined,
-                    sector: undefined,
-                    skill: undefined,
-                    extraSkills: [],
-                  })
-                }
-              />
-            );
-          })}
-        </div>
-      ) : (
-        <p className="mt-6 text-lg text-muted-foreground">Tap a region.</p>
-      )}
-    </div>
+    <PlaceScreen
+      backHref={regionBack(mode, purpose)}
+      step={1}
+      total={purpose === "request" ? 8 : placeTotal(mode, purpose, true)}
+      title={purpose === "request" ? "Where will you build?" : "Where should we look?"}
+      onTown={chooseTown}
+    />
   );
 }
 
