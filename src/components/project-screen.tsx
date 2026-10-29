@@ -5,19 +5,23 @@ import Link from "next/link";
 import {
   ActionBar,
   ApplicationStatusLabel,
+  Avatar,
   FundingPills,
   LearnMore,
+  MoneyText,
   OwnershipSplit,
   SectorTile,
+  sectionTitle,
   StepHeader,
   TrustBadges,
 } from "@/components/parts";
 import { useSnackbar } from "@/components/snackbar";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Check } from "lucide-react";
 import { Progress, ProgressLabel } from "@/components/ui/progress";
 import { BeforeYouApply, YourPlan } from "@/components/guide-card";
 import { checkNote, projectNote } from "@/lib/ai";
-import { canStillCommit, sectorTitle } from "@/lib/catalog";
+import { canStillCommit } from "@/lib/catalog";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
 import { firstName, money, moneyShort, placeLine } from "@/lib/format";
@@ -103,66 +107,73 @@ export function ProjectScreen({ id }: { id: string }) {
       <SectorTile sector={project.sector} size="page" />
       <div>
         <h1 className="font-display text-3xl leading-tight">{project.name}</h1>
-        <p className="mt-2 text-lg font-semibold text-primary">{sectorTitle(project.sector)}</p>
         <p className="mt-1 text-lg text-muted-foreground">{place}</p>
       </div>
       <section className="space-y-3">
-        <h2 className="text-3xl font-semibold leading-tight">
-          {stillOpen > 0
-            ? `${moneyShort(stillOpen, currency)} still needed`
-            : "The money they asked for is in"}
-        </h2>
+        <p className="min-w-0 text-2xl font-semibold leading-snug">
+          {stillOpen > 0 ? (
+            <MoneyText amount={stillOpen} currency={currency} short suffix="still needed" />
+          ) : (
+            "The money they asked for is in"
+          )}
+        </p>
         <Progress value={percent} aria-label="Money committed">
           <ProgressLabel className="text-base">
-            {moneyShort(committed, currency)} of {moneyShort(project.goalJmd, currency)}
+            {moneyShort(committed, currency)} of{" "}
+            <MoneyText amount={project.goalJmd} currency={currency} short />
           </ProgressLabel>
         </Progress>
         {organizerPledged > 0 ? (
           <p className="text-lg">
-            {money(organizerPledged, currency)} pledged by {organizerFirst}. Waiting on a capital check.
+            <MoneyText amount={organizerPledged} currency={currency} /> pledged by {organizerFirst}. Waiting on a capital check.
           </p>
         ) : null}
         <FundingPills
           labels={fundingLabels(committed, project.goalJmd, project.workStarted)}
         />
       </section>
-      <div className="grid grid-cols-3 gap-2">
-        <div className="rounded-2xl bg-card p-3 ring-1 ring-foreground/10">
-          <p className="text-sm leading-snug text-muted-foreground">Workers</p>
-          <p className="mt-1 text-base font-semibold leading-snug">
+      <div className="grid grid-cols-3 items-stretch gap-2">
+        <div className="flex h-full flex-col rounded-2xl bg-card p-3 ring-1 ring-foreground/10">
+          <p className="text-sm whitespace-nowrap text-muted-foreground">Workers</p>
+          <p className="mt-1 text-base font-semibold whitespace-nowrap">
             {project.workersMatched} of {project.workersNeeded}
           </p>
         </div>
-        <div className="rounded-2xl bg-card p-3 ring-1 ring-foreground/10">
-          <p className="text-sm leading-snug text-muted-foreground">Weekly pay</p>
-          <p className="mt-1 text-base font-semibold leading-snug">
-            {money(project.weeklyPayout, currency)}
-          </p>
-          <p className="text-sm leading-snug text-muted-foreground">Stable unit</p>
+        <div className="flex h-full flex-col rounded-2xl bg-card p-3 ring-1 ring-foreground/10">
+          <p className="text-sm whitespace-nowrap text-muted-foreground">Pay a week</p>
+          <p className="mt-1 text-sm font-semibold whitespace-nowrap">{money(project.weeklyPayout, currency)}</p>
+          <p className="mt-1 text-xs text-muted-foreground">Stable unit</p>
         </div>
-        <div className="rounded-2xl bg-card p-3 ring-1 ring-foreground/10">
-          <p className="text-sm leading-snug text-muted-foreground">Checks</p>
-          <p className="mt-1 text-base font-semibold leading-snug">
+        <div className="flex h-full flex-col rounded-2xl bg-card p-3 ring-1 ring-foreground/10">
+          <p className="text-sm whitespace-nowrap text-muted-foreground">Checks</p>
+          <p className="mt-1 text-base font-semibold whitespace-nowrap">
             {checksDone} of {project.checks.length}
           </p>
         </div>
       </div>
       <TrustBadges checks={project.checks} />
       <p className="border-l-4 border-primary pl-4 text-lg leading-relaxed">{note.body}</p>
-      <section>
-        <h2 className="text-xl font-semibold">What you get</h2>
-        {showInvest ? (
-          <p className="mt-2 text-lg leading-relaxed">{project.whatYouGet}</p>
-        ) : null}
-        {showWork ? (
-          <p className="mt-2 text-lg leading-relaxed">
-            Accepted work here turns into ownership units.
-          </p>
-        ) : null}
+      <section className="space-y-2">
+        <h2 className={sectionTitle}>What you get</h2>
+        <p className="text-lg leading-relaxed">
+          {showInvest ? `${project.whatYouGet} ` : null}
+          {showWork ? "Accepted work here turns into ownership units. " : null}
+          {ownershipLine}
+        </p>
       </section>
-      <p className="text-base">
-        Organizer: <span className="font-semibold">{project.organizerName}</span>
-      </p>
+      <div className="flex items-center gap-3">
+        <Avatar name={project.organizerName} />
+        <div className="min-w-0">
+          <p className="font-semibold">{project.organizerName}</p>
+          <p className="text-sm text-muted-foreground">Organizer</p>
+        </div>
+        {project.checks.some((check) => check.id === "organizer" && check.state === "yes") ? (
+          <span className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-full bg-trust px-2 py-0.5 text-xs font-semibold whitespace-nowrap text-trust-foreground">
+            <Check className="size-3" aria-hidden />
+            Checked
+          </span>
+        ) : null}
+      </div>
       {organizerMissing ? <p className="text-lg">This organizer is not on Fundwork yet.</p> : null}
       {organizing ? (
         <YourPlan
@@ -190,7 +201,7 @@ export function ProjectScreen({ id }: { id: string }) {
       ) : null}
       {organizing ? (
         <section className="space-y-4">
-          <h2 className="text-xl font-semibold">People asking to join</h2>
+          <h2 className={sectionTitle}>People asking to join</h2>
           {joins.length === 0 ? (
             <p className="text-lg">No one has asked to join yet.</p>
           ) : (
@@ -239,7 +250,6 @@ export function ProjectScreen({ id }: { id: string }) {
       {showInvest && !canCommit && stillOpen > 0 ? (
         <p className="text-lg">Almost there. What is left is less than the smallest amount.</p>
       ) : null}
-      <p className="text-lg font-semibold">{ownershipLine}</p>
       <LearnMore title="How it works">
         <div className="space-y-3">
           <h3 className="font-semibold">Who this belongs to</h3>
@@ -261,6 +271,7 @@ export function ProjectScreen({ id }: { id: string }) {
           <h3 className="font-semibold">How the money works</h3>
           <p>Bitcoin is the capital for the project.</p>
           <p>People who do the work are paid in a stable unit.</p>
+          <p>Dollar amounts are rough and fixed in this demo.</p>
           <p>No Bitcoin moves in this demo.</p>
         </div>
         {notes.map((item) => (

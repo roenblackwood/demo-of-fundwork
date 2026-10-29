@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
-import { Checklist } from "@/components/parts";
+import { Checklist, sectionTitle } from "@/components/parts";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
 
@@ -29,7 +29,7 @@ export function GettingStarted() {
   if (!demo.role) {
     return (
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold">What do you want to do?</h2>
+        <h2 className={sectionTitle}>What do you want to do?</h2>
         <Link
           href="/invest"
           onClick={() => demo.startPath("investor")}

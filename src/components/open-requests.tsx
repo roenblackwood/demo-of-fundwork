@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { sectionTitle } from "@/components/parts";
 import { RequestCard } from "@/components/request-card";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "cn";
@@ -42,7 +43,7 @@ export function OpenRequests({
 
   return (
     <section className="space-y-4">
-      <h2 className="text-xl font-semibold">Open requests near you</h2>
+      <h2 className={sectionTitle}>Open requests near you</h2>
       {!countryId || !townId ? (
         <p className="text-lg leading-relaxed">{emptyPlace}</p>
       ) : skills.length === 0 ? (

@@ -3,10 +3,9 @@
 import Link from "next/link";
 import { PageBusy } from "@/components/busy";
 import { GettingStarted } from "@/components/getting-started";
-import { LearnMore, StatusLabel, StepHeader } from "@/components/parts";
+import { LearnMore, MoneyText, StatusLabel, StepHeader, sectionTitle } from "@/components/parts";
 import { workPresetLabel } from "@/lib/catalog";
 import { useDemo } from "@/lib/demo-store";
-import { money } from "@/lib/format";
 import {
   investorUnits,
   workerUnits,
@@ -28,7 +27,8 @@ export function OwnershipScreen() {
         name: project.name,
         status: commitment.status,
         units: investorUnits(commitment.amountJmd, project.goalJmd),
-        detail: money(commitment.amountJmd, currencyOf(project.countryId)),
+        amount: commitment.amountJmd,
+        currency: currencyOf(project.countryId),
         kind: "capital" as const,
       },
     ];
@@ -44,6 +44,8 @@ export function OwnershipScreen() {
         status: contribution.status,
         units: workerUnits(contribution.preset),
         detail: workPresetLabel(contribution.preset),
+        amount: null,
+        currency: null,
         kind: "work" as const,
       },
     ];
@@ -72,7 +74,7 @@ export function OwnershipScreen() {
           </div>
           {moneyRows.length > 0 ? (
             <section className="space-y-3">
-              <h2 className="text-xl font-semibold">From capital you committed</h2>
+              <h2 className={sectionTitle}>From capital you committed</h2>
               {moneyRows.map((row) => (
                 <Row key={row.id} row={row} />
               ))}
@@ -80,7 +82,7 @@ export function OwnershipScreen() {
           ) : null}
           {workRows.length > 0 ? (
             <section className="space-y-3">
-              <h2 className="text-xl font-semibold">From work you logged</h2>
+              <h2 className={sectionTitle}>From work you logged</h2>
               {workRows.map((row) => (
                 <Row key={row.id} row={row} />
               ))}
@@ -110,7 +112,9 @@ function Row({
     status: "pledged" | "accepted" | "logged";
     kind: "capital" | "work";
     units: number;
-    detail: string;
+    detail?: string;
+    amount: number | null;
+    currency: string | null;
   };
 }) {
   return (
@@ -119,7 +123,13 @@ function Row({
       className="block rounded-2xl border bg-card px-4 py-3 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
     >
       <p className="text-lg font-semibold">{row.name}</p>
-      <p className="mt-1 text-base">{row.detail}</p>
+      <p className="mt-1 text-base">
+        {row.amount !== null && row.currency ? (
+          <MoneyText amount={row.amount} currency={row.currency} />
+        ) : (
+          row.detail
+        )}
+      </p>
       <p className="mt-1 text-base font-semibold">
         {row.status === "accepted"
           ? `${row.units} ownership units`

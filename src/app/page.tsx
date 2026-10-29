@@ -2,16 +2,19 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ActionBar } from "@/components/parts";
+import { ActionBar, sectionTitle } from "@/components/parts";
+import { ProjectCard } from "@/components/project-card";
 import { RegionMap } from "@/components/region-map";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "cn";
 import { CAPITAL_LINE } from "@/lib/copy";
 import { useDemo } from "@/lib/demo-store";
-import { countriesIn, getRegion, showcaseById, type RegionId } from "@/lib/regions";
+import { projectCommitted } from "@/lib/ownership";
+import { countriesIn, getRegion, REGIONS, showcaseById, type RegionId } from "@/lib/regions";
+import type { Commitment, Project } from "@/lib/types";
 
 export default function HomePage() {
-  const { startPath, updateFlow, role, projects } = useDemo();
+  const { startPath, updateFlow, role, projects, addedCommitments } = useDemo();
   const [regionId, setRegionId] = useState<RegionId | null>(null);
   const [countryId, setCountryId] = useState<string | null>(null);
   const crumbs = useRef<HTMLElement>(null);
@@ -70,6 +73,25 @@ export default function HomePage() {
           onSelectCountry={setCountryId}
         />
       </div>
+      <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+        {REGIONS.map((item) => {
+          const on = regionId === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              aria-pressed={on}
+              onClick={() => pickRegion(item.id)}
+              className={cn(
+                "inline-flex min-h-11 shrink-0 items-center rounded-full px-3 text-base font-semibold whitespace-nowrap focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring",
+                on ? "bg-primary text-primary-foreground" : "border-2 border-border bg-card",
+              )}
+            >
+              {item.name}
+            </button>
+          );
+        })}
+      </div>
       <nav ref={crumbs} aria-label="Place" className={country ? "mt-2 flex gap-1 overflow-x-auto" : "mt-3 flex gap-1 overflow-x-auto"}>
         {region ? (
           <button
@@ -117,9 +139,7 @@ export default function HomePage() {
           </span>
         ) : null}
       </nav>
-      {!region ? (
-        <p className="mt-6 text-lg text-muted-foreground">Tap a region.</p>
-      ) : !country ? (
+      {!region ? null : !country ? (
         <div className="mt-6 space-y-3">
           <p className="text-lg leading-relaxed">Tap a country in {region.name}.</p>
           {countries.map((item) => (
@@ -144,10 +164,11 @@ export default function HomePage() {
           </p>
         </div>
       )}
-      <p className={country ? "mt-2 text-lg leading-relaxed" : "mt-8 text-lg leading-relaxed"}>
+      <p className={country ? "mt-2 text-lg leading-relaxed" : "mt-4 text-lg leading-relaxed"}>
         {CAPITAL_LINE}
       </p>
-      <p className={country ? "mt-1 text-base text-muted-foreground" : "mt-3 text-base text-muted-foreground"}>A demo. No money moves.</p>
+      <p className="mt-1 text-base text-muted-foreground">A demo. No money moves.</p>
+      <OpenNow projects={projects} commitments={addedCommitments} />
       {country ? (
         <ActionBar>
           {role === "investor" ? (
@@ -223,5 +244,40 @@ export default function HomePage() {
         </ActionBar>
       ) : null}
     </div>
+  );
+}
+
+function OpenNow({ projects, commitments }: { projects: Project[]; commitments: Commitment[] }) {
+  const closest = [...projects]
+    .map((project) => {
+      const committed = projectCommitted(project.committedJmd, commitments, project.id);
+      const ratio = project.goalJmd > 0 ? committed / project.goalJmd : 0;
+      const left = project.goalJmd - committed;
+      return { project, ratio, left };
+    })
+    .sort((a, b) => {
+      const aOpen = a.left > 0 ? 0 : 1;
+      const bOpen = b.left > 0 ? 0 : 1;
+      return aOpen - bOpen || b.ratio - a.ratio || a.left - b.left;
+    })
+    .slice(0, 3)
+    .map((item) => item.project);
+  const count = projects.length === 1 ? "1 project open" : `${projects.length} projects open`;
+
+  return (
+    <section className="mt-4 space-y-3">
+      <h2 className={sectionTitle}>Open now</h2>
+      <p className="text-sm text-muted-foreground">
+        {count} in {REGIONS.length} regions
+      </p>
+      <div className="space-y-2">
+        {closest.map((project) => (
+          <ProjectCard key={project.id} project={project} />
+        ))}
+      </div>
+      <Link href="/invest" className="inline-flex min-h-11 items-center font-semibold text-primary">
+        See all
+      </Link>
+    </section>
   );
 }

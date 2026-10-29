@@ -198,13 +198,13 @@ export const REGION_VIEWS: Record<
   RegionId,
   { center: [number, number]; zoom: number; label: [number, number] }
 > = {
-  caribbean: { center: [-73, 17], zoom: 4, label: [-78, 27] },
-  "latin-america": { center: [-82, 4], zoom: 1.35, label: [-78, -8] },
-  africa: { center: [16, 2], zoom: 1.7, label: [6, 14] },
-  "middle-east": { center: [36, 30], zoom: 2.5, label: [34, 36] },
-  "eastern-europe": { center: [24, 50], zoom: 2.8, label: [14, 56] },
-  "south-asia": { center: [80, 22], zoom: 2.6, label: [68, 30] },
-  "southeast-asia": { center: [112, 4], zoom: 2.5, label: [104, 12] },
+  caribbean: { center: [-73, 17], zoom: 4, label: [-88, 32] },
+  "latin-america": { center: [-82, 4], zoom: 1.35, label: [-64, -18] },
+  africa: { center: [16, 2], zoom: 1.7, label: [8, 2] },
+  "middle-east": { center: [36, 30], zoom: 2.5, label: [46, 38] },
+  "eastern-europe": { center: [24, 50], zoom: 2.8, label: [25, 53] },
+  "south-asia": { center: [80, 22], zoom: 2.6, label: [86, 14] },
+  "southeast-asia": { center: [112, 4], zoom: 2.5, label: [85, -12] },
 };
 
 export const SHOWCASE = [

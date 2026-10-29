@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 import { PageBusy } from "@/components/busy";
-import { ActionBar, NextSteps, SavedMark, StepHeader } from "@/components/parts";
+import { ActionBar, MoneyText, NextSteps, SavedMark, StepHeader } from "@/components/parts";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { canStillCommit, commitChoices } from "@/lib/catalog";
 import { COMMIT_LINE, moneyNote, savedLabel } from "@/lib/copy";
@@ -87,7 +87,9 @@ export function CommitScreen({ id }: { id: string }) {
                 )}
               >
                 <span>
-                  <span className="block">{money(preset, currency)}</span>
+                  <span className="block">
+                    <MoneyText amount={preset} currency={currency} />
+                  </span>
                   {tooMuch ? (
                     <span className="mt-1 block text-base font-normal">
                       More than what is still open
@@ -105,7 +107,7 @@ export function CommitScreen({ id }: { id: string }) {
       ) : null}
       {amount ? (
         <p className="text-lg leading-relaxed">
-          {money(amount, currency)} becomes about {units} ownership units, once the organizer accepts it.
+          <MoneyText amount={amount} currency={currency} /> becomes about {units} ownership units, once the organizer accepts it.
         </p>
       ) : null}
       {open ? (
@@ -140,7 +142,9 @@ export function CommittedScreen({ id }: { id: string }) {
     <div className="space-y-6">
       <StepHeader backHref="/you" title="You committed" hint={project.name} />
       <SavedMark label={savedLabel()} />
-      <p className="text-3xl font-semibold">{money(commitment.amountJmd, currency)}</p>
+      <p className="text-3xl font-semibold">
+        <MoneyText amount={commitment.amountJmd} currency={currency} />
+      </p>
       <p className="text-lg leading-relaxed">
         About {units} ownership units, waiting on the organizer.
       </p>

@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
+import { PageBusy } from "@/components/busy";
 import { StartRequestScreen } from "@/components/start-request";
 import { Pending, Resolved } from "@/components/resolved";
 import { townParams } from "@/lib/params";
@@ -18,7 +20,11 @@ export default function Page({
       <Resolved params={params}>
         {({ parish, town }) => {
           if (!getTown(parish, town) && !getCity(parish, town)) notFound();
-          return <StartRequestScreen placeId={parish} townId={town} />;
+          return (
+            <Suspense fallback={<PageBusy />}>
+              <StartRequestScreen placeId={parish} townId={town} />
+            </Suspense>
+          );
         }}
       </Resolved>
     </Pending>

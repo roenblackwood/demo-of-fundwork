@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PageBusy } from "@/components/busy";
 import { GettingStarted } from "@/components/getting-started";
-import { ApplicationStatusLabel, StatusLabel } from "@/components/parts";
+import { ApplicationStatusLabel, MoneyText, StatusLabel, sectionTitle } from "@/components/parts";
 import { useSnackbar } from "@/components/snackbar";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import { useDemo } from "@/lib/demo-store";
 import { isLive } from "@/lib/mode";
 import { refreshLiveStore } from "@/lib/live-store";
 import { browserSupabase } from "@/lib/supabase/browser";
-import { firstName, money, placeLine } from "@/lib/format";
+import { firstName, placeLine } from "@/lib/format";
 import { investorUnits, workerUnits } from "@/lib/ownership";
 import { acceptedCount, waitingCount } from "@/lib/requests";
 import { currencyOf, getUser, requestPlace } from "@/lib/seed";
@@ -61,7 +61,7 @@ export function DashboardScreen() {
 
       {hasMoney ? (
           <section className="space-y-4">
-            <h2 className="text-xl font-semibold">Your commitments</h2>
+            <h2 className={sectionTitle}>Your commitments</h2>
             {demo.commitments.map((commitment) => {
               const project = demo.projects.find((item) => item.id === commitment.projectId);
               if (!project) return null;
@@ -79,7 +79,7 @@ export function DashboardScreen() {
                     </CardHeader>
                     <CardContent>
                       <p className="text-lg font-semibold">
-                        {money(commitment.amountJmd, currencyOf(project.countryId))}
+                        <MoneyText amount={commitment.amountJmd} currency={currencyOf(project.countryId)} />
                       </p>
                       <p className="mt-1 text-base">
                         {commitment.status === "accepted"
@@ -101,7 +101,7 @@ export function DashboardScreen() {
 
       {hasWork ? (
           <section className="space-y-4">
-            <h2 className="text-xl font-semibold">Your work</h2>
+            <h2 className={sectionTitle}>Your work</h2>
             {demo.proof?.dataUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -181,7 +181,7 @@ export function DashboardScreen() {
         </button>
       ) : (
         <section className="space-y-3">
-          <h2 className="text-xl font-semibold">Demo</h2>
+          <h2 className={sectionTitle}>Demo</h2>
           <Link
             href="/you/switch"
             className="inline-flex min-h-11 items-center font-semibold text-primary"
@@ -223,7 +223,7 @@ function NeedsYou() {
 
   return (
     <section className="space-y-4">
-      <h2 className="text-xl font-semibold">Needs you</h2>
+      <h2 className={sectionTitle}>Needs you</h2>
       {waiting.map((application) => (
         <NeedRow key={application.id} application={application} show={show} />
       ))}
@@ -299,7 +299,7 @@ function YourRequests() {
   const mine = demo.requests.filter((request) => request.userId === demo.userId);
   return (
     <section className="space-y-4">
-      <h2 className="text-xl font-semibold">Your requests</h2>
+      <h2 className={sectionTitle}>Your requests</h2>
       {mine.length === 0 ? (
         <>
           <p className="text-lg">You have not posted a request yet.</p>
@@ -329,7 +329,9 @@ function YourRequests() {
                   </Badge>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-lg font-semibold">{money(request.budget, currencyOf(request.countryId))}</p>
+                  <p className="text-lg font-semibold">
+                    <MoneyText amount={request.budget} currency={currencyOf(request.countryId)} />
+                  </p>
                   <p className="mt-1 text-base">
                     {accepted} of {request.workersNeeded} workers
                   </p>
@@ -349,7 +351,7 @@ function YourApplications() {
   const mine = demo.applications.filter((item) => item.workerId === demo.userId);
   return (
     <section className="space-y-4">
-      <h2 className="text-xl font-semibold">Your applications</h2>
+      <h2 className={sectionTitle}>Your applications</h2>
       {mine.length === 0 ? (
         <>
           <p className="text-lg">You have not applied yet.</p>
@@ -404,7 +406,7 @@ function YourAvailability() {
   const mine = demo.availability.filter((item) => item.userId === demo.userId);
   return (
     <section className="space-y-4">
-      <h2 className="text-xl font-semibold">Your availability</h2>
+      <h2 className={sectionTitle}>Your availability</h2>
       {mine.length === 0 ? (
         <>
           <p className="text-lg">You have not posted that you are available.</p>

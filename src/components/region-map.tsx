@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ComposableMap,
   Geographies,
@@ -38,6 +38,32 @@ function shortName(name: string): string {
   return name;
 }
 
+type Anchor = "start" | "middle" | "end";
+
+/** Screen-space nudges so a label does not sit on a neighbor. Barbados stays east of Jamaica. */
+const LABEL_NUDGE: Record<string, { x: number; y: number; anchor: Anchor }> = {
+  jamaica: { x: -72, y: -8, anchor: "end" },
+  barbados: { x: 64, y: 4, anchor: "start" },
+  trinidad: { x: 56, y: 36, anchor: "start" },
+  jordan: { x: -48, y: 28, anchor: "end" },
+  lebanon: { x: 48, y: -28, anchor: "start" },
+  egypt: { x: 0, y: 40, anchor: "middle" },
+  ghana: { x: -56, y: -8, anchor: "end" },
+  nigeria: { x: 56, y: 28, anchor: "start" },
+  kenya: { x: 48, y: -32, anchor: "start" },
+  moldova: { x: 52, y: -8, anchor: "start" },
+  romania: { x: -56, y: 24, anchor: "end" },
+  ukraine: { x: 40, y: -36, anchor: "start" },
+  india: { x: -64, y: 16, anchor: "end" },
+  nepal: { x: -8, y: -40, anchor: "middle" },
+  bangladesh: { x: 60, y: 12, anchor: "start" },
+  vietnam: { x: -56, y: -12, anchor: "end" },
+  philippines: { x: 60, y: 8, anchor: "start" },
+  indonesia: { x: 0, y: 40, anchor: "middle" },
+};
+
+const DEFAULT_NUDGE = { x: 0, y: -36, anchor: "middle" as Anchor };
+
 export function RegionMap({
   selected,
   countryId,
@@ -49,13 +75,29 @@ export function RegionMap({
   onSelect: (id: RegionId) => void;
   onSelectCountry?: (id: string) => void;
 }) {
+  const box = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<RegionId | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [labelPx, setLabelPx] = useState(30);
   useEffect(() => {
     // Projection pixels differ by a fraction on the server, which mismatches hydration.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const apply = () => {
+      const width = el.clientWidth;
+      if (width <= 0) return;
+      // 13 CSS pixels, in this map's SVG units, at the current width.
+      setLabelPx(Math.max(30, (13 * 800) / width));
+    };
+    apply();
+    const observer = new ResizeObserver(apply);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [mounted]);
   const keepLand = useCallback((features: Feature<Geometry>[]) => {
     return features.filter((feature) => {
       const name = countryName(feature);
@@ -64,22 +106,29 @@ export function RegionMap({
   }, []);
   const view = selected ? REGION_VIEWS[selected] : null;
   const countries = selected ? countriesIn(selected) : [];
+  const mapHeight = selected ? 624 : 520;
+  const zoom = view ? view.zoom : 1;
 
   if (!mounted) {
     return (
       <div
-        className="aspect-[800/520] w-full rounded-3xl bg-[#d7ebe3] ring-1 ring-foreground/10"
+        ref={box}
+        className={
+          selected
+            ? "aspect-[800/624] w-full rounded-3xl bg-[#d7ebe3] ring-1 ring-foreground/10"
+            : "aspect-[800/520] w-full rounded-3xl bg-[#d7ebe3] ring-1 ring-foreground/10"
+        }
         aria-label={selected ? "Region map. Choose a country." : "World map. Choose a region."}
       />
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-3xl bg-[#d7ebe3] ring-1 ring-foreground/10">
+    <div ref={box} className="overflow-hidden rounded-3xl bg-[#d7ebe3] ring-1 ring-foreground/10">
       <ComposableMap
         projection="geoEqualEarth"
         width={800}
-        height={520}
+        height={mapHeight}
         projectionConfig={{ scale: 215, center: [10, 0] }}
         aria-label={selected ? "Region map. Choose a country." : "World map. Choose a region."}
         className="block h-auto w-full"
@@ -159,34 +208,17 @@ export function RegionMap({
                   >
                     <circle r={16} fill="transparent" />
                     <circle
-                      r={7}
+                      r={4}
                       fill={countryId === country.id ? PICKED : PAPER}
                       stroke={countryId === country.id ? PAPER : OPEN}
-                      strokeWidth={2}
+                      strokeWidth={1.5}
                     />
-                    <text
-                      textAnchor="middle"
-                      y={
-                        country.id === "nigeria" ||
-                        country.id === "jordan" ||
-                        country.id === "romania" ||
-                        country.id === "trinidad" ||
-                        country.id === "philippines" ||
-                        country.id === "ukraine" ||
-                        country.id === "bangladesh"
-                          ? 24
-                          : -16
-                      }
-                      fill={INK}
-                      fontSize={13}
-                      fontWeight={700}
-                      fontFamily="var(--font-inter), Inter, sans-serif"
-                      stroke={PAPER}
-                      strokeWidth={4}
-                      paintOrder="stroke"
-                    >
-                      {shortName(country.name)}
-                    </text>
+                    <CountryLabel
+                      id={country.id}
+                      name={shortName(country.name)}
+                      zoom={zoom}
+                      labelPx={labelPx}
+                    />
                   </g>
                 </Marker>
               ))
@@ -205,6 +237,7 @@ export function RegionMap({
                   coordinates={REGION_VIEWS[region.id].label}
                   selected={selected === region.id}
                   onSelect={onSelect}
+                  labelPx={labelPx}
                 />
               ))
             : null}
@@ -214,21 +247,60 @@ export function RegionMap({
   );
 }
 
+function CountryLabel({
+  id,
+  name,
+  zoom,
+  labelPx,
+}: {
+  id: string;
+  name: string;
+  zoom: number;
+  labelPx: number;
+}) {
+  const nudge = LABEL_NUDGE[id] ?? DEFAULT_NUDGE;
+  const lead = Math.abs(nudge.x) > 24 || Math.abs(nudge.y) > 24;
+  return (
+    <g transform={`scale(${1 / zoom})`}>
+      {lead ? (
+        <line x1={0} y1={0} x2={nudge.x} y2={nudge.y} stroke={INK} strokeWidth={2} />
+      ) : null}
+      <text
+        x={nudge.x}
+        y={nudge.y}
+        textAnchor={nudge.anchor}
+        dominantBaseline="middle"
+        fill={INK}
+        fontSize={labelPx}
+        fontWeight={700}
+        fontFamily="var(--font-inter), Inter, sans-serif"
+        stroke={PAPER}
+        strokeWidth={5}
+        paintOrder="stroke"
+      >
+        {name}
+      </text>
+    </g>
+  );
+}
+
 function RegionLabel({
   id,
   name,
   coordinates,
   selected,
   onSelect,
+  labelPx,
 }: {
   id: RegionId;
   name: string;
   coordinates: [number, number];
   selected: boolean;
   onSelect: (id: RegionId) => void;
+  labelPx: number;
 }) {
-  const width = Math.max(108, name.length * 8.4 + 28);
-  const height = 32;
+  const width = Math.max(labelPx * 3.2, name.length * labelPx * 0.52 + labelPx);
+  const height = labelPx * 1.45;
   const fill = selected ? OPEN : PAPER;
   const text = selected ? "#f7fbf8" : INK;
 
@@ -260,9 +332,10 @@ function RegionLabel({
         />
         <text
           textAnchor="middle"
-          y={5}
+          dominantBaseline="central"
+          y={0}
           fill={text}
-          fontSize={15}
+          fontSize={labelPx}
           fontWeight={700}
           fontFamily="var(--font-inter), Inter, sans-serif"
         >

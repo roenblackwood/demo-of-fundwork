@@ -2,18 +2,19 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Check } from "lucide-react";
 import { PageBusy } from "@/components/busy";
-import { ActionBar, CapitalChip, NextSteps, SavedMark, StepHeader } from "@/components/parts";
+import { ActionBar, CapitalChip, MoneyText, NextSteps, SavedMark, StepHeader } from "@/components/parts";
 import { useSnackbar } from "@/components/snackbar";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { WhatItTakes } from "@/components/guide-card";
-import { SECTORS, SKILLS, requestBudgets, sectorTitle, skillPhrase, skillsForSector } from "@/lib/catalog";
+import { SECTORS, SKILLS, isSector, requestBudgets, sectorTitle, skillPhrase, skillsForSector } from "@/lib/catalog";
 import { cn } from "cn";
 import { savedLabel } from "@/lib/copy";
 import { useDemo } from "@/lib/demo-store";
-import { money, placeLine } from "@/lib/format";
+import { placeLine } from "@/lib/format";
 import { currencyOf, getCity, getCountry, getParish, getTown, requestPlace } from "@/lib/seed";
 import type { Sector, Skill } from "@/lib/types";
 
@@ -33,8 +34,10 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
   const place = where ? placeLine(where.town, where.parish) : "";
   const currency = currencyOf(countryId);
   const budgets = requestBudgets(currency);
-  const [step, setStep] = useState<Step>("sector");
-  const [sector, setSector] = useState<Sector | null>(null);
+  const sectorQuery = useSearchParams().get("sector");
+  const presetSector = sectorQuery && isSector(sectorQuery) ? sectorQuery : null;
+  const [step, setStep] = useState<Step>(presetSector ? "budget" : "sector");
+  const [sector, setSector] = useState<Sector | null>(presetSector);
   const [budget, setBudget] = useState<number | null>(null);
   const [workersNeeded, setWorkersNeeded] = useState<number | null>(null);
   const [skills, setSkills] = useState<Skill[]>([]);
@@ -89,7 +92,7 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
         <SavedMark label={savedLabel()} />
         <CapitalChip />
         <p className="text-lg leading-relaxed">
-          {money(budget ?? 0, currency)} for {workersNeeded} workers in {place}.
+          <MoneyText amount={budget ?? 0} currency={currency} /> for {workersNeeded} workers in {place}.
         </p>
         <NextSteps
           items={[
@@ -112,7 +115,9 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
       <div className="space-y-6">
         <StepHeader onBack={() => setStep("note")} backHref={backPlace} title="Review" hint={place} />
         <p className="text-lg font-semibold text-primary">{sectorTitle(sector)}</p>
-        <p className="text-2xl font-bold">{money(budget, currency)}</p>
+        <p className="text-2xl font-bold">
+          <MoneyText amount={budget} currency={currency} />
+        </p>
         <p className="text-lg">{workersNeeded} workers needed</p>
         <p className="text-lg">Needs {skills.map((skill) => skillPhrase(skill)).join(", ")}.</p>
         <p className="text-lg leading-relaxed">{note.trim()}</p>
@@ -251,7 +256,9 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
                 onClick={() => setBudget(amount)}
                 className={cn(choiceClass, selected ? "border-primary bg-secondary" : "border-border bg-card")}
               >
-                <span>{money(amount, currency)}</span>
+                <span>
+                  <MoneyText amount={amount} currency={currency} />
+                </span>
                 {selected ? <Check className="size-6 shrink-0 text-primary" aria-hidden /> : null}
               </button>
             );

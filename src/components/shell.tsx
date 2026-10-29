@@ -5,8 +5,7 @@ import { usePathname } from "next/navigation";
 import { CircleDollarSign, Hammer, Home, UserRound } from "lucide-react";
 import { SnackbarProvider } from "@/components/snackbar";
 import { useDemo } from "@/lib/demo-store";
-import { firstName } from "@/lib/format";
-import { isLive } from "@/lib/mode";
+import { Avatar } from "@/components/parts";
 import { youHasUpdate } from "@/lib/requests";
 import { cn } from "cn";
 
@@ -17,6 +16,7 @@ import { cn } from "cn";
  * - A shared move from a map pin into the country list.
  * - Saved projects, the way Instagram saves a post.
  * - A dark theme checked for the same contrast, not the unused default.
+ * - Real photos instead of sector tiles.
  * - Messages between an investor and a worker.
  * - Push notifications when someone applies, is invited, or accepts.
  * - More than one investor funding the same request.
@@ -39,8 +39,6 @@ const tabs = [
 export function Shell({ children }: { children: React.ReactNode }) {
   const { ready, name, role, userId, requests, applications, projects } = useDemo();
   const pathname = usePathname();
-  const signedOut = isLive() && ready && !userId;
-  const label = signedOut ? "Sign in" : ready ? firstName(name) : "You";
   const current = tabFor(pathname, role);
   const attention = ready && youHasUpdate(role, userId, requests, applications, projects);
 
@@ -60,17 +58,20 @@ export function Shell({ children }: { children: React.ReactNode }) {
           >
             Fundwork
           </Link>
-          <Link
-            href={signedOut ? `/sign-in?next=${encodeURIComponent(pathname || "/")}` : "/you"}
-            className="inline-flex min-h-11 items-center rounded-full border bg-card px-4 font-semibold focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
-          >
-            {label}
-          </Link>
+          {ready && name.trim() && name !== "You" ? (
+            <Link
+              href="/you"
+              aria-label="You"
+              className="grid size-11 place-items-center rounded-full focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
+            >
+              <Avatar name={name} />
+            </Link>
+          ) : null}
         </div>
       </header>
       <div
         id="content"
-        className="mx-auto flex w-full max-w-lg flex-1 flex-col px-5 pt-5 pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
+        className="mx-auto flex w-full min-w-0 max-w-lg flex-1 flex-col overflow-x-clip px-5 pt-5 pb-[calc(5.5rem+env(safe-area-inset-bottom))] [&>*]:min-w-0"
       >
         {children}
       </div>

@@ -1,12 +1,19 @@
 import Link from "next/link";
-import { Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress, ProgressLabel } from "@/components/ui/progress";
 import { checkLabel } from "@/lib/ai";
-import { SECTOR_MARKS } from "@/lib/catalog";
+import { sectorTitle, SECTOR_MARKS } from "@/lib/catalog";
+import { initials, money, moneyShort } from "@/lib/format";
+import { aboutUsd } from "@/lib/rates";
 import { cn } from "cn";
 import type { Check as TrustCheck, CheckState, Sector } from "@/lib/types";
+
+/** Section headings share this size. Pages space them with space-y-6. */
+export const sectionTitle = "text-xl font-semibold";
+
+// Real photos can replace sector tiles later. Not in this pass.
 
 export function SectorTile({
   sector,
@@ -17,12 +24,76 @@ export function SectorTile({
 }) {
   const mark = SECTOR_MARKS[sector];
   const Icon = mark.icon;
+  if (size === "page") {
+    return (
+      <div className={cn("flex h-28 items-center gap-4 rounded-2xl px-4", mark.tile)} aria-hidden>
+        <Icon className="size-12 shrink-0" strokeWidth={1.75} />
+        <p className="text-xl font-semibold">{sectorTitle(sector)}</p>
+      </div>
+    );
+  }
   return (
-    <div
-      className={cn("grid aspect-video place-items-center rounded-2xl", mark.tile)}
+    <div className={cn("grid aspect-video place-items-center rounded-2xl", mark.tile)} aria-hidden>
+      <Icon className="size-12" strokeWidth={1.75} />
+    </div>
+  );
+}
+
+export function Avatar({ name }: { name: string }) {
+  return (
+    <span
+      className="grid size-10 shrink-0 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground"
       aria-hidden
     >
-      <Icon className={size === "page" ? "size-16" : "size-12"} strokeWidth={1.75} />
+      {initials(name)}
+    </span>
+  );
+}
+
+export function MoneyText({
+  amount,
+  currency,
+  short = false,
+  suffix,
+}: {
+  amount: number;
+  currency: string;
+  short?: boolean;
+  suffix?: string;
+}) {
+  const local = short ? moneyShort(amount, currency) : money(amount, currency);
+  const usd = aboutUsd(amount, currency);
+  return (
+    <span className="inline-flex max-w-full flex-wrap items-baseline gap-x-1">
+      <span className="whitespace-nowrap">{suffix ? `${local} ${suffix}` : local}</span>
+      {usd ? <span className="font-normal whitespace-nowrap text-muted-foreground">· {usd}</span> : null}
+    </span>
+  );
+}
+
+export function FloatingAction({
+  href,
+  label,
+  tone,
+}: {
+  href: string;
+  label: string;
+  tone: "primary" | "work";
+}) {
+  return (
+    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20">
+      <div className="mx-auto flex w-full max-w-lg justify-end px-5 pb-3">
+        <Link
+          href={href}
+          className={cn(
+            "pointer-events-auto inline-flex h-14 items-center gap-2 rounded-full px-5 text-base font-semibold whitespace-nowrap shadow-lg focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring",
+            tone === "work" ? "bg-work text-work-foreground" : "bg-primary text-primary-foreground",
+          )}
+        >
+          <Plus className="size-5 shrink-0" aria-hidden />
+          {label}
+        </Link>
+      </div>
     </div>
   );
 }
@@ -205,13 +276,33 @@ function checkTone(state: CheckState): string {
 export function TrustBadges({
   checks,
   limit,
+  compact = false,
 }: {
   checks: TrustCheck[];
   limit?: number;
+  compact?: boolean;
 }) {
   const rank: Record<CheckState, number> = { yes: 0, review: 1, open: 2 };
   const ordered = [...checks].sort((a, b) => rank[a.state] - rank[b.state]);
   const shown = typeof limit === "number" ? ordered.slice(0, limit) : ordered;
+  if (compact) {
+    return (
+      <ul className="flex flex-wrap gap-1">
+        {shown.map((check) => (
+          <li
+            key={check.id}
+            className={cn(
+              "inline-flex items-center gap-0.5 rounded-full px-1.5 py-0 text-[11px] leading-4 font-semibold whitespace-nowrap",
+              checkTone(check.state),
+            )}
+          >
+            {check.state === "yes" ? <Check className="size-3" aria-hidden /> : null}
+            {checkLabel(check.id, check.state)}
+          </li>
+        ))}
+      </ul>
+    );
+  }
   return (
     <ul className="flex flex-wrap gap-2">
       {shown.map((check) => (
@@ -243,7 +334,7 @@ export function FundingPills({ labels }: { labels: string[] }) {
 export function NextSteps({ items }: { items: string[] }) {
   return (
     <section>
-      <h2 className="text-xl font-semibold">What happens next</h2>
+      <h2 className={sectionTitle}>What happens next</h2>
       <ol className="mt-3 space-y-3">
         {items.map((item, index) => (
           <li key={item} className="flex gap-3 text-base leading-relaxed">
@@ -273,7 +364,7 @@ export function Checklist({
 
   return (
     <section className="rounded-2xl bg-card p-5 ring-1 ring-foreground/10">
-      <h2 className="text-xl font-semibold">{title}</h2>
+      <h2 className={sectionTitle}>{title}</h2>
       {hint ? <p className="mt-2 text-base leading-relaxed">{hint}</p> : null}
       <Progress value={value} aria-label={title} className="mt-4">
         <ProgressLabel className="text-base">

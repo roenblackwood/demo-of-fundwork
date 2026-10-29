@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { ChevronDown, MapPin } from "lucide-react";
 import { PageBusy } from "@/components/busy";
-import { ActionBar } from "@/components/parts";
+import { FloatingAction } from "@/components/parts";
 import { ProjectCard } from "@/components/project-card";
 import { RequestCard } from "@/components/request-card";
-import { buttonVariants } from "@/components/ui/button";
 import { SECTORS, SKILLS, isSector, isSkill, skillTitle } from "@/lib/catalog";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
@@ -114,13 +114,18 @@ export function FeedScreen({ mode }: { mode: PathChoice }) {
     router.replace(query ? `${mode === "investor" ? "/invest" : "/work"}?${query}` : mode === "investor" ? "/invest" : "/work");
   }
 
+  const projects = rows.filter((row) => row.kind === "project").length;
+  const requests = rows.filter((row) => row.kind === "request").length;
+
   return (
     <div>
       <h1 className="sr-only">{mode === "investor" ? "Projects" : "Work"}</h1>
-      <Link href={placeHref} className={cn(chipClass, "border-2 border-border bg-card")}>
-        {home?.label ?? "Everywhere"}
-      </Link>
-      <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        <Link href={placeHref} className={cn(chipClass, "gap-1.5 border-2 border-border bg-card")}>
+          <MapPin className="size-4 shrink-0" aria-hidden />
+          {home?.label ?? "Everywhere"}
+          <ChevronDown className="size-4 shrink-0" aria-hidden />
+        </Link>
         {mode === "investor"
           ? SECTORS.map((item) => {
               const on = sector === item.id;
@@ -163,13 +168,16 @@ export function FeedScreen({ mode }: { mode: PathChoice }) {
               }),
             ]}
       </div>
+      <p className="mt-2 text-sm text-muted-foreground">
+        {countPhrase(projects, "project")} and {countPhrase(requests, "request")}
+      </p>
       {!home ? (
-        <article className="mt-4 space-y-3 rounded-2xl bg-card p-4 ring-1 ring-foreground/10">
-          <p className="text-lg leading-relaxed">Pick your place to see what is close to you.</p>
-          <Link href={placeHref} className={cn(buttonVariants({ size: "lg" }), "w-full")}>
+        <p className="mt-3 text-sm leading-snug">
+          Pick your place to see what is close to you.{" "}
+          <Link href={placeHref} className="font-semibold text-primary">
             Pick your place
           </Link>
-        </article>
+        </p>
       ) : null}
       {rows.length === 0 ? (
         <p className="mt-6 text-lg leading-relaxed">
@@ -178,32 +186,27 @@ export function FeedScreen({ mode }: { mode: PathChoice }) {
             : "Nothing open here yet."}
         </p>
       ) : (
-        <div className="mt-4 space-y-4">
+        <div className="mt-2 space-y-1 pb-24">
           {rows.map((row) =>
             row.kind === "project" ? (
-              <ProjectCard key={`project-${row.project.id}`} project={row.project} mark="Project" />
+              <ProjectCard key={`project-${row.project.id}`} project={row.project} />
             ) : (
-              <RequestCard key={`request-${row.request.id}`} request={row.request} mark="Request" />
+              <RequestCard key={`request-${row.request.id}`} request={row.request} />
             ),
           )}
         </div>
       )}
-      <ActionBar>
-        {mode === "investor" ? (
-          <Link href={startHref(home)} className={cn(buttonVariants({ size: "lg" }), "w-full")}>
-            Start a project here
-          </Link>
-        ) : (
-          <Link
-            href={availableHref(home)}
-            className={cn(buttonVariants({ variant: "work", size: "lg" }), "w-full")}
-          >
-            Post that you are available
-          </Link>
-        )}
-      </ActionBar>
+      <FloatingAction
+        href={mode === "investor" ? startHref(home) : availableHref(home)}
+        label={mode === "investor" ? "Start a project" : "I am available"}
+        tone={mode === "investor" ? "primary" : "work"}
+      />
     </div>
   );
+}
+
+function countPhrase(count: number, word: string): string {
+  return `${count} ${word}${count === 1 ? "" : "s"}`;
 }
 
 function workerSkills(demo: ReturnType<typeof useDemo>): Skill[] {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { sectionTitle } from "@/components/parts";
 import { Button } from "@/components/ui/button";
 import { sectorWeekly } from "@/lib/catalog";
 import {
@@ -184,7 +185,7 @@ export function WhatItTakes({
   const guide = useGuideText(starterGuide(input), starterBody(input));
   return (
     <section className="space-y-3 rounded-2xl bg-card p-4 ring-1 ring-foreground/10" aria-label="What it takes">
-      <h2 className="text-xl font-semibold">What it takes</h2>
+      <h2 className={sectionTitle}>What it takes</h2>
       <StarterBody guide={guide} />
     </section>
   );

@@ -5,17 +5,20 @@ import { PageBusy } from "@/components/busy";
 import {
   ActionBar,
   ApplicationStatusLabel,
+  Avatar,
   CapitalChip,
+  MoneyText,
   SectorTile,
+  sectionTitle,
   StepHeader,
 } from "@/components/parts";
 import { useSnackbar } from "@/components/snackbar";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { BeforeYouApply, YourPlan } from "@/components/guide-card";
-import { sectorTitle, sectorWeekly, skillPhrase, skillTitle } from "@/lib/catalog";
+import { sectorTitle, sectorWeekly, skillTitle } from "@/lib/catalog";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
-import { firstName, money, placeLine } from "@/lib/format";
+import { firstName, nameWithInitial, postedDate } from "@/lib/format";
 import { matchWorkers } from "@/lib/match";
 import { acceptedCount } from "@/lib/requests";
 import { currencyOf, getCountry, getUser, requestPlace } from "@/lib/seed";
@@ -37,7 +40,6 @@ export function RequestScreen({ id }: { id: string }) {
   }
 
   const where = requestPlace(request);
-  const place = where ? placeLine(where.town, where.parish) : "This place";
   const currency = currencyOf(request.countryId);
   const related = demo.applications.filter((item) => item.requestId === request.id);
   const accepted = acceptedCount(related, request.id);
@@ -53,13 +55,38 @@ export function RequestScreen({ id }: { id: string }) {
       <StepHeader backHref={backHref} />
       <SectorTile sector={request.sector} size="page" />
       <div>
-        <h1 className="font-display text-3xl leading-tight">{sectorTitle(request.sector)}</h1>
-        <p className="mt-2 text-lg text-muted-foreground">{place}</p>
+        <h1 className="font-display text-3xl leading-tight">
+          {where ? `${sectorTitle(request.sector)} in ${where.town}` : sectorTitle(request.sector)}
+        </h1>
+        <div className="mt-3 flex items-center gap-3">
+          <Avatar name={posterName(request.userId, demo.userId, demo.name)} />
+          <div>
+            <p className="font-semibold">
+              Posted by {nameWithInitial(posterName(request.userId, demo.userId, demo.name))}
+            </p>
+            <p className="text-sm text-muted-foreground">{postedDate(request.createdAt)}</p>
+          </div>
+        </div>
       </div>
-      <p className="text-3xl font-semibold leading-tight">{money(request.budget, currency)}</p>
-      <p className="text-lg font-semibold">
-        {accepted} of {request.workersNeeded} workers
+      <p className="min-w-0 text-2xl font-semibold leading-snug">
+        <MoneyText amount={request.budget} currency={currency} />
       </p>
+      <div className="space-y-2">
+        <p className="text-lg font-semibold">
+          {accepted} of {request.workersNeeded} workers
+        </p>
+        <div className="flex flex-wrap gap-1.5" aria-hidden>
+          {Array.from({ length: request.workersNeeded }, (_, index) => (
+            <span
+              key={index}
+              className={cn(
+                "size-3 rounded-full",
+                index < accepted ? "bg-work" : "border-2 border-border bg-card",
+              )}
+            />
+          ))}
+        </div>
+      </div>
       {request.status === "team-ready" ? <p className="text-lg">The team is ready.</p> : null}
       {request.projectId ? (
         <div className="space-y-2">
@@ -146,7 +173,16 @@ export function RequestScreen({ id }: { id: string }) {
         <ApplicationStatusLabel origin={declined.origin} status={declined.status} viewer="worker" />
       ) : null}
 
-      <p className="text-lg leading-relaxed">Needs {request.skills.map((skill) => skillPhrase(skill)).join(", ")}.</p>
+      <ul className="flex flex-wrap gap-2">
+        {request.skills.map((skill) => (
+          <li
+            key={skill}
+            className="inline-flex min-h-8 items-center rounded-full bg-secondary px-3 text-sm font-semibold whitespace-nowrap text-secondary-foreground"
+          >
+            {skillTitle(skill)}
+          </li>
+        ))}
+      </ul>
       {request.note ? <p className="text-lg leading-relaxed">{request.note}</p> : null}
       <CapitalChip />
       {isOwner ? (
@@ -173,7 +209,7 @@ export function RequestScreen({ id }: { id: string }) {
 
       {isOwner ? (
         <section className="space-y-4">
-          <h2 className="text-xl font-semibold">Applications</h2>
+          <h2 className={sectionTitle}>Applications</h2>
           {related.length === 0 ? (
             <p className="text-lg">No one has applied yet.</p>
           ) : (
@@ -200,7 +236,7 @@ export function RequestScreen({ id }: { id: string }) {
 
       {isOwner ? (
         <section className="space-y-4">
-          <h2 className="text-xl font-semibold">Workers available nearby</h2>
+          <h2 className={sectionTitle}>Workers available nearby</h2>
           {nearby.length === 0 ? (
             <p className="text-lg leading-relaxed">No one has posted availability near this place yet.</p>
           ) : (
@@ -260,8 +296,41 @@ export function RequestScreen({ id }: { id: string }) {
           </Link>
         </ActionBar>
       ) : null}
+      {demo.role === null ? (
+        <ActionBar>
+          {request.status === "open" ? (
+            <Link
+              href={`/requests/${request.id}/apply`}
+              onClick={() => demo.startPath("worker")}
+              className={cn(buttonVariants({ variant: "work", size: "lg" }), "w-full")}
+            >
+              I can do this work
+            </Link>
+          ) : null}
+          <Link
+            href={`/invest/start/${request.parishId ?? request.countryId}/${request.townId}?sector=${request.sector}`}
+            onClick={() => {
+              demo.startPath("investor");
+              demo.updateFlow({
+                countryId: request.countryId,
+                parishId: request.parishId ?? undefined,
+                townId: request.townId,
+                sector: request.sector,
+              });
+            }}
+            className={cn(buttonVariants({ variant: "outline", size: "lg" }), "w-full")}
+          >
+            Start one like this
+          </Link>
+        </ActionBar>
+      ) : null}
     </div>
   );
+}
+
+function posterName(id: string, youId: string, youName: string): string {
+  if (id === youId && youName.trim()) return youName;
+  return getUser(id)?.name ?? "Someone";
 }
 
 function personName(id: string, youId: string, youName: string): string {

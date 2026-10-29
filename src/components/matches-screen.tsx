@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { PageBusy } from "@/components/busy";
-import { StepHeader, TrustBadges } from "@/components/parts";
+import { MoneyText, StepHeader, TrustBadges } from "@/components/parts";
 import { sectorTitle } from "@/lib/catalog";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
-import { moneyShort, placeLine } from "@/lib/format";
+import { placeLine } from "@/lib/format";
 import { matchProjects } from "@/lib/match";
 import { moneyStillOpen, projectCommitted } from "@/lib/ownership";
 import { currencyOf, projectPlace } from "@/lib/seed";
@@ -100,9 +100,11 @@ export function MatchesScreen() {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <p className="text-2xl leading-tight font-bold tracking-tight">
-                      {stillOpen > 0
-                        ? `${moneyShort(stillOpen, currency)} still needed`
-                        : "The money they asked for is in"}
+                      {stillOpen > 0 ? (
+                        <MoneyText amount={stillOpen} currency={currency} short suffix="still needed" />
+                      ) : (
+                        "The money they asked for is in"
+                      )}
                     </p>
                     <p className="text-lg leading-relaxed">{match.note.body}</p>
                     <TrustBadges checks={match.project.checks} limit={2} />

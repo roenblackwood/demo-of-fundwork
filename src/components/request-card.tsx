@@ -1,48 +1,38 @@
 import Link from "next/link";
-import { SectorTile } from "@/components/parts";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { sectorTitle } from "@/lib/catalog";
-import { moneyShort, placeLine } from "@/lib/format";
+import { MoneyText } from "@/components/parts";
+import { sectorTitle, SECTOR_MARKS } from "@/lib/catalog";
+import { placeLine } from "@/lib/format";
 import { currencyOf, requestPlace } from "@/lib/seed";
 import type { CapitalRequest } from "@/lib/types";
+import { cn } from "cn";
 
-export function RequestCard({
-  request,
-  reason,
-  mark,
-}: {
-  request: CapitalRequest;
-  reason?: string;
-  mark?: string;
-}) {
+export function RequestCard({ request, reason }: { request: CapitalRequest; reason?: string }) {
   const where = requestPlace(request);
   const place = where ? placeLine(where.town, where.parish) : "This place";
   const currency = currencyOf(request.countryId);
+  const title = where ? `${sectorTitle(request.sector)} in ${where.town}` : sectorTitle(request.sector);
+  const mark = SECTOR_MARKS[request.sector];
+  const Icon = mark.icon;
 
   return (
     <Link
       href={`/requests/${request.id}`}
-      className="block rounded-2xl focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
+      className="flex items-start gap-2 rounded-2xl bg-card px-2 py-1 ring-1 ring-foreground/10 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
     >
-      <Card className="h-full shadow-sm">
-        <CardHeader>
-          <SectorTile sector={request.sector} />
-          {mark ? (
-            <span className="inline-flex min-h-8 w-fit items-center rounded-full bg-secondary px-3 text-sm font-semibold text-secondary-foreground">
-              {mark}
-            </span>
-          ) : null}
-          <p className="text-base font-semibold text-primary">{sectorTitle(request.sector)}</p>
-          <CardTitle>{place}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <p className="text-2xl leading-tight font-bold tracking-tight">
-            {moneyShort(request.budget, currency)}
-          </p>
-          <p className="text-lg font-semibold">{request.workersNeeded} workers needed</p>
-          {reason ? <p className="text-base leading-relaxed text-muted-foreground">{reason}</p> : null}
-        </CardContent>
-      </Card>
+      <span className={cn("grid size-16 shrink-0 place-items-center rounded-xl", mark.tile)} aria-hidden>
+        <Icon className="size-7" strokeWidth={1.75} />
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="block truncate text-[11px] leading-4 text-muted-foreground">
+          Request · {sectorTitle(request.sector)}
+        </span>
+        <span className="line-clamp-2 text-sm font-semibold leading-4">{title}</span>
+        <span className="block truncate text-[11px] leading-4 text-muted-foreground">{place}</span>
+        <span className="text-[11px] font-semibold leading-4">
+          <MoneyText amount={request.budget} currency={currency} short suffix="needed" />
+        </span>
+        {reason ? <span className="block truncate text-xs leading-4 text-muted-foreground">{reason}</span> : null}
+      </span>
     </Link>
   );
 }

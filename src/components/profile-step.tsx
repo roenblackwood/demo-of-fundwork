@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ActionBar, LearnMore, StepHeader } from "@/components/parts";
+import { ActionBar, LearnMore, StepHeader, sectionTitle } from "@/components/parts";
 import { buttonVariants } from "@/components/ui/button";
 import { proofTip } from "@/lib/ai";
 import { skillTitle } from "@/lib/catalog";
@@ -116,7 +116,7 @@ export function ProfileStep({
           </div>
         </details>
         <section className="space-y-3 rounded-2xl bg-card p-4 ring-1 ring-foreground/10">
-          <h2 className="text-xl font-semibold">{tip.title}</h2>
+          <h2 className={sectionTitle}>{tip.title}</h2>
           <p className="text-base leading-relaxed">{tip.body}</p>
           {proof?.dataUrl ? (
             // eslint-disable-next-line @next/next/no-img-element

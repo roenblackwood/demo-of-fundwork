@@ -25,6 +25,36 @@ export function firstName(name: string): string {
   return trimmed.split(/\s+/)[0] ?? "You";
 }
 
+export function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "";
+  const first = parts[0]?.[0] ?? "";
+  if (parts.length === 1) return first.toUpperCase();
+  const last = parts[parts.length - 1]?.[0] ?? "";
+  return `${first}${last}`.toUpperCase();
+}
+
+/** "Marcia Bennett" becomes "Marcia B." */
+export function nameWithInitial(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "Someone";
+  if (parts.length === 1) return parts[0] ?? "Someone";
+  const last = parts[parts.length - 1]?.[0] ?? "";
+  return `${parts[0]} ${last.toUpperCase()}.`;
+}
+
+export function postedDate(iso: string): string {
+  const value = iso.length === 10 ? `${iso}T00:00:00Z` : iso;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(date);
+}
+
 export function placeLine(town: string, parish: string): string {
   return `${town}, ${parish}`;
 }
