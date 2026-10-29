@@ -64,6 +64,14 @@ Those functions return `{ title, body }`. The words are fixtures in the seed and
 
 Ask for the same short shape. Do not add a global chat box.
 
+## Starter guides
+
+`data/guides.json` is the checked list. It has one entry for each country and sector we have looked up. Jamaica is filled in for places to stay, farms, power, water, internet, schools, and clinics. Other countries have no entry.
+
+`src/lib/ai.ts` writes the card from that list with a template. The demo uses the template. It does not call a model, and it does not put fees or processing times in the list. Amounts on the card, when they show, come from projects already on Fundwork.
+
+If `XAI_API_KEY`, `FUNDWORK_AI_MODEL`, and `NEXT_PUBLIC_FUNDWORK_AI=on` are all set, the browser asks `POST /api/guide` to rewrite the summary and a few lines in plainer words. The key stays on the server. The model cannot add checks, offices, steps, skills, or numbers. If the rewrite is late, empty, or adds a fact, the template stays.
+
 **Money and files.** Commitments and logged work are saved on this phone. A photo under 800KB is kept as a preview. A larger photo keeps the file name only. Jamaica amounts stay in Jamaican dollars. Other countries use their own currency prefix, still as a plain amount. The screen calls the worker payout a stable unit. No Bitcoin is priced, held, or sent.
 
 ## Capital and the stable unit

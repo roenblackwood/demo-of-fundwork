@@ -221,6 +221,24 @@ export function skillPhrase(id: Skill): string {
   return skillPhrases[id];
 }
 
+/** Short, safe tools for a skill. No wiring steps and no mixes. */
+export const SKILL_TOOLS: Record<Skill, string> = {
+  building: "A tape, a hammer, and work gloves.",
+  farming: "A hoe, a fork, and boots.",
+  cooking: "Pots, a knife, and a clean board.",
+  "guest-house": "Clean linen, a broom, and a notepad.",
+  front: "A notebook and a calendar.",
+  power: "A meter and insulated tools. Do not open a live panel.",
+  water: "A wrench and pipe fittings.",
+  internet: "A cable tester and a ladder.",
+  teaching: "A board and paper.",
+  care: "Gloves and a clean cloth.",
+};
+
+export function skillTools(id: Skill): string {
+  return SKILL_TOOLS[id];
+}
+
 export function workPresetLabel(id: WorkPreset): string {
   return WORK_PRESETS.find((preset) => preset.id === id)?.label ?? "Work";
 }

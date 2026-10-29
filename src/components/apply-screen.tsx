@@ -9,11 +9,12 @@ import { ActionBar, StepHeader } from "@/components/parts";
 import { useSnackbar } from "@/components/snackbar";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { UseDraftButton } from "@/components/guide-card";
 import { skillTitle } from "@/lib/catalog";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
 import { firstName, placeLine } from "@/lib/format";
-import { getUser, requestPlace } from "@/lib/seed";
+import { getCountry, getUser, requestPlace } from "@/lib/seed";
 import type { Skill } from "@/lib/types";
 
 const choiceClass =
@@ -90,6 +91,12 @@ export function ApplyScreen({ id }: { id: string }) {
               );
             })}
           </div>
+          <UseDraftButton
+            request={request}
+            placeName={where?.town ?? "this place"}
+            countryName={getCountry(request.countryId)?.name ?? "this country"}
+            onUse={setMessage}
+          />
           <div className="space-y-2">
             <Label htmlFor="apply-message">A message, if you want</Label>
             <textarea

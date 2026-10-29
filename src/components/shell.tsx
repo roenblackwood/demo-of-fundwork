@@ -19,6 +19,9 @@ import { cn } from "cn";
  * - Messages between an investor and a worker.
  * - Push notifications when someone applies, is invited, or accepts.
  * - More than one investor funding the same request.
+ * - Guides in more languages.
+ * - A guide that updates when a check changes.
+ * - Asking a follow-up question.
  */
 
 const tabs = [

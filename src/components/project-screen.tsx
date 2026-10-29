@@ -15,6 +15,7 @@ import {
 import { useSnackbar } from "@/components/snackbar";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Progress, ProgressLabel } from "@/components/ui/progress";
+import { BeforeYouApply, YourPlan } from "@/components/guide-card";
 import { checkNote, projectNote } from "@/lib/ai";
 import { canStillCommit, sectorTitle } from "@/lib/catalog";
 import { cn } from "cn";
@@ -28,7 +29,7 @@ import {
   moneyStillOpen,
   projectCommitted,
 } from "@/lib/ownership";
-import { currencyOf, getUser, projectPlace, seedCommitments } from "@/lib/seed";
+import { currencyOf, getCountry, getUser, projectPlace, seedCommitments } from "@/lib/seed";
 
 export function ProjectScreen({ id }: { id: string }) {
   const demo = useDemo();
@@ -163,6 +164,27 @@ export function ProjectScreen({ id }: { id: string }) {
         Organizer: <span className="font-semibold">{project.organizerName}</span>
       </p>
       {organizerMissing ? <p className="text-lg">This organizer is not on Fundwork yet.</p> : null}
+      {organizing ? (
+        <YourPlan
+          countryId={project.countryId}
+          countryName={getCountry(project.countryId)?.name ?? "this country"}
+          sector={project.sector}
+          placeName={where?.town ?? "this place"}
+          projects={demo.projects}
+        />
+      ) : null}
+      {demo.role === "worker" && !onTeam && !organizing ? (
+        <BeforeYouApply
+          projectId={project.id}
+          countryId={project.countryId}
+          countryName={getCountry(project.countryId)?.name ?? "this country"}
+          sector={project.sector}
+          placeName={where?.town ?? "this place"}
+          skills={project.needs}
+          weekly={project.weeklyPayout}
+          currency={currency}
+        />
+      ) : null}
       {askJoin && join ? (
         <ApplicationStatusLabel origin={join.origin} status={join.status} viewer="worker" />
       ) : null}

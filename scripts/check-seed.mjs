@@ -155,6 +155,115 @@ for (const post of seed.availability ?? []) {
   }
 }
 
+const guides = JSON.parse(readFileSync(new URL("../data/guides.json", import.meta.url), "utf8"));
+const checkIds = new Set([
+  "organizer",
+  "jtb",
+  "site-visit",
+  "parish-letter",
+  "rada",
+  "public-health",
+  "engineer",
+  "community",
+]);
+const countryIds = new Set((seed.countries ?? []).map((country) => country.id));
+countryIds.add("jamaica");
+const currencyCodes = new Set(["JMD", "USD", "EUR", "GBP", "KES", "GHS"]);
+for (const country of seed.countries ?? []) {
+  const letters = String(country.currency ?? "").replace(/[^A-Za-z]/g, "");
+  if (letters.length >= 2) currencyCodes.add(letters);
+}
+
+function hasMoneyTalk(text) {
+  if (/[$€£¥₵]/.test(text)) return true;
+  for (const code of currencyCodes) {
+    const pattern = new RegExp(`(?:\\d\\s*${code}\\b|\\b${code}\\s*\\d)`, "i");
+    if (pattern.test(text)) return true;
+  }
+  return false;
+}
+
+function scanText(label, value) {
+  if (typeof value !== "string" || !value.trim()) {
+    errors.push(`${label} needs text.`);
+    return;
+  }
+  if (hasMoneyTalk(value)) errors.push(`${label} mentions money.`);
+}
+
+function walkText(label, value, key) {
+  if (key === "checkedOn") return;
+  if (typeof value === "string") {
+    scanText(label, value);
+    return;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) walkText(label, item);
+    return;
+  }
+  if (value && typeof value === "object") {
+    for (const [childKey, child] of Object.entries(value)) walkText(label, child, childKey);
+  }
+}
+
+if (!Array.isArray(guides.entries)) {
+  errors.push("guides.json needs an entries list.");
+} else {
+  const seen = new Set();
+  for (const entry of guides.entries) {
+    const where = `${entry?.countryId ?? "?"}:${entry?.sector ?? "?"}`;
+    if (!countryIds.has(entry.countryId)) errors.push(`${where} is not a real country.`);
+    if (!sectorsNeeded.includes(entry.sector)) errors.push(`${where} is not a real sector.`);
+    if (seen.has(where)) errors.push(`Duplicate guide ${where}.`);
+    seen.add(where);
+    if (!Array.isArray(entry.checks) || entry.checks.length === 0) {
+      errors.push(`${where} needs checks.`);
+    } else if (new Set(entry.checks).size !== entry.checks.length) {
+      errors.push(`${where} repeats a check.`);
+    }
+    for (const checkId of entry.checks ?? []) {
+      if (!checkIds.has(checkId)) errors.push(`${where} has an unknown check.`);
+    }
+    if (!Array.isArray(entry.agencies) || entry.agencies.length !== (entry.checks ?? []).length) {
+      errors.push(`${where} agencies must match its checks.`);
+    }
+    for (let index = 0; index < (entry.agencies ?? []).length; index += 1) {
+      const agency = entry.agencies[index];
+      if (!agency || agency.checkId !== entry.checks[index]) {
+        errors.push(`${where} agency order does not match its checks.`);
+      }
+      if (!checkIds.has(agency?.checkId)) errors.push(`${where} has an unknown agency check.`);
+    }
+    if (!Array.isArray(entry.firstSteps) || entry.firstSteps.length !== 3) {
+      errors.push(`${where} needs three first steps.`);
+    }
+    if (!Array.isArray(entry.team) || entry.team.length === 0) errors.push(`${where} needs a team.`);
+    for (const skill of entry.team ?? []) {
+      if (!skillIds.has(skill)) errors.push(`${where} has an unknown skill.`);
+    }
+    if (typeof entry.sourceNote !== "string" || !entry.sourceNote.trim()) {
+      errors.push(`${where} needs a source note.`);
+    }
+    walkText(where, entry);
+    if (typeof entry.checkedOn !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(entry.checkedOn)) {
+      errors.push(`${where} needs a checkedOn date.`);
+    } else {
+      const [year, month, day] = entry.checkedOn.split("-").map(Number);
+      const date = new Date(Date.UTC(year, month - 1, day));
+      if (
+        date.getUTCFullYear() !== year ||
+        date.getUTCMonth() !== month - 1 ||
+        date.getUTCDate() !== day
+      ) {
+        errors.push(`${where} has a bad checkedOn date.`);
+      }
+    }
+  }
+  for (const sector of sectorsNeeded) {
+    if (!seen.has(`jamaica:${sector}`)) errors.push(`Missing a Jamaica ${sector} guide.`);
+  }
+}
+
 if (errors.length) {
   console.error(errors.join("\n"));
   process.exit(1);

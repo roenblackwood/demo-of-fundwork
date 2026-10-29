@@ -11,13 +11,14 @@ import {
 } from "@/components/parts";
 import { useSnackbar } from "@/components/snackbar";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { sectorTitle, skillPhrase, skillTitle } from "@/lib/catalog";
+import { BeforeYouApply, YourPlan } from "@/components/guide-card";
+import { sectorTitle, sectorWeekly, skillPhrase, skillTitle } from "@/lib/catalog";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
 import { firstName, money, placeLine } from "@/lib/format";
 import { matchWorkers } from "@/lib/match";
 import { acceptedCount } from "@/lib/requests";
-import { currencyOf, getUser, requestPlace } from "@/lib/seed";
+import { currencyOf, getCountry, getUser, requestPlace } from "@/lib/seed";
 import type { Application } from "@/lib/types";
 
 export function RequestScreen({ id }: { id: string }) {
@@ -130,6 +131,27 @@ export function RequestScreen({ id }: { id: string }) {
       <p className="text-lg leading-relaxed">Needs {request.skills.map((skill) => skillPhrase(skill)).join(", ")}.</p>
       {request.note ? <p className="text-lg leading-relaxed">{request.note}</p> : null}
       <CapitalChip />
+      {isOwner ? (
+        <YourPlan
+          countryId={request.countryId}
+          countryName={getCountry(request.countryId)?.name ?? "this country"}
+          sector={request.sector}
+          placeName={where?.town ?? "this place"}
+          projects={demo.projects}
+        />
+      ) : null}
+      {isWorker && !related.some((item) => item.workerId === demo.userId && item.status === "accepted") ? (
+        <BeforeYouApply
+          requestId={request.id}
+          countryId={request.countryId}
+          countryName={getCountry(request.countryId)?.name ?? "this country"}
+          sector={request.sector}
+          placeName={where?.town ?? "this place"}
+          skills={request.skills}
+          weekly={sectorWeekly(request.sector)}
+          currency={currency}
+        />
+      ) : null}
 
       {isOwner ? (
         <section className="space-y-4">

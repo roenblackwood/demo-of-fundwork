@@ -1,3 +1,9 @@
+/**
+ * Later, not in this pass:
+ * - Guides in more languages.
+ * - A guide that updates when a check changes.
+ * - Asking a follow-up question.
+ */
 import { getProjects, seedApplications, seedAvailability, seedRequests } from "@/lib/seed";
 import type {
   Application,

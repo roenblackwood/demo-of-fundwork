@@ -8,11 +8,12 @@ import { ActionBar, CapitalChip, NextSteps, SavedMark, StepHeader } from "@/comp
 import { useSnackbar } from "@/components/snackbar";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { WhatItTakes } from "@/components/guide-card";
 import { SECTORS, SKILLS, requestBudgets, sectorTitle, skillPhrase, skillsForSector } from "@/lib/catalog";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
 import { money, placeLine } from "@/lib/format";
-import { currencyOf, getCity, getParish, getTown, requestPlace } from "@/lib/seed";
+import { currencyOf, getCity, getCountry, getParish, getTown, requestPlace } from "@/lib/seed";
 import type { Sector, Skill } from "@/lib/types";
 
 type Step = "sector" | "budget" | "workers" | "skills" | "note" | "review" | "posted";
@@ -117,6 +118,13 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
         <div id="review-capital">
           <CapitalChip />
         </div>
+        <WhatItTakes
+          countryId={countryId}
+          countryName={getCountry(countryId)?.name ?? "this country"}
+          sector={sector}
+          placeName={town.name}
+          projects={demo.projects}
+        />
         <ActionBar>
           <Button size="lg" className="w-full" onClick={post}>
             Post this request
