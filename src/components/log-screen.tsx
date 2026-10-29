@@ -9,6 +9,7 @@ import { ActionBar, NextSteps, SavedMark, StepHeader } from "@/components/parts"
 import { Button, buttonVariants } from "@/components/ui/button";
 import { WORK_PRESETS, workPresetLabel } from "@/lib/catalog";
 import { cn } from "cn";
+import { savedLabel } from "@/lib/copy";
 import { useDemo } from "@/lib/demo-store";
 import { workerUnits } from "@/lib/ownership";
 import type { Skill, WorkPreset } from "@/lib/types";
@@ -40,9 +41,9 @@ export function LogScreen({ id }: { id: string }) {
   }
   if (!project.team.includes(demo.userId)) return <PageBusy />;
 
-  function save() {
-    if (!project || !preset) return;
-    demo.addContribution({
+  async function save() {
+    if (!project || !preset || demo.saving) return;
+    const ok = await demo.addContribution({
       id: crypto.randomUUID(),
       userId: demo.userId,
       projectId: project.id,
@@ -51,6 +52,7 @@ export function LogScreen({ id }: { id: string }) {
       status: "logged",
       createdAt: new Date().toISOString(),
     });
+    if (!ok) return;
     router.push(`/projects/${project.id}/logged`);
   }
 
@@ -94,8 +96,9 @@ export function LogScreen({ id }: { id: string }) {
           size="lg"
           variant="work"
           className="w-full"
-          disabled={!preset}
-          onClick={save}
+          disabled={!preset || demo.saving}
+          aria-busy={demo.saving}
+          onClick={() => void save()}
         >
           {preset ? "Log this work" : "Choose the work"}
         </Button>
@@ -121,7 +124,7 @@ export function LoggedScreen({ id }: { id: string }) {
   return (
     <div className="space-y-6">
       <StepHeader backHref="/you" title="You logged work" hint={project.name} />
-      <SavedMark label="Saved on this phone" />
+      <SavedMark label={savedLabel()} />
       <p className="text-3xl font-semibold">{workPresetLabel(contribution.preset)}</p>
       <p className="text-lg leading-relaxed">
         About {workerUnits(contribution.preset)} ownership units, waiting on the organizer.

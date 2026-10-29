@@ -79,8 +79,13 @@ export function RequestScreen({ id }: { id: string }) {
             <button
               type="button"
               className="inline-flex min-h-11 items-center font-semibold text-primary"
+              disabled={demo.saving}
+              aria-busy={demo.saving}
               onClick={() => {
-                if (demo.withdrawApplication(active.id)) show("Application withdrawn.");
+                if (demo.saving) return;
+                void demo.withdrawApplication(active.id).then((ok) => {
+                  if (ok) show("Application withdrawn.");
+                });
               }}
             >
               Withdraw
@@ -90,18 +95,26 @@ export function RequestScreen({ id }: { id: string }) {
             <div className="flex flex-col gap-2">
               <Button
                 variant="work"
+                disabled={demo.saving}
+                aria-busy={demo.saving}
                 onClick={() => {
-                  if (demo.setApplicationStatus(active.id, "accepted")) {
-                    show(`${firstName(demo.name)} is on the team.`);
-                  }
+                  if (demo.saving) return;
+                  void demo.setApplicationStatus(active.id, "accepted").then((ok) => {
+                    if (ok) show(`${firstName(demo.name)} is on the team.`);
+                  });
                 }}
               >
                 Accept
               </Button>
               <Button
                 variant="outline"
+                disabled={demo.saving}
+                aria-busy={demo.saving}
                 onClick={() => {
-                  if (demo.setApplicationStatus(active.id, "declined")) show("Declined.");
+                  if (demo.saving) return;
+                  void demo.setApplicationStatus(active.id, "declined").then((ok) => {
+                    if (ok) show("Declined.");
+                  });
                 }}
               >
                 Decline
@@ -113,8 +126,13 @@ export function RequestScreen({ id }: { id: string }) {
               <p className="text-lg">The team is full.</p>
               <Button
                 variant="outline"
+                disabled={demo.saving}
+                aria-busy={demo.saving}
                 onClick={() => {
-                  if (demo.setApplicationStatus(active.id, "declined")) show("Declined.");
+                  if (demo.saving) return;
+                  void demo.setApplicationStatus(active.id, "declined").then((ok) => {
+                    if (ok) show("Declined.");
+                  });
                 }}
               >
                 Decline
@@ -168,8 +186,11 @@ export function RequestScreen({ id }: { id: string }) {
                 open={request.status === "open"}
                 onStatus={(applicationId, status) => {
                   const person = personName(application.workerId, demo.userId, demo.name);
-                  if (!demo.setApplicationStatus(applicationId, status)) return;
-                  show(status === "accepted" ? `${firstName(person)} is on the team.` : "Declined.");
+                  if (demo.saving) return;
+                  void demo.setApplicationStatus(applicationId, status).then((ok) => {
+                    if (!ok) return;
+                    show(status === "accepted" ? `${firstName(person)} is on the team.` : "Declined.");
+                  });
                 }}
               />
             ))
@@ -203,10 +224,13 @@ export function RequestScreen({ id }: { id: string }) {
                     <Button
                       variant="outline"
                       className="w-full"
+                      disabled={demo.saving}
+                      aria-busy={demo.saving}
                       onClick={() => {
-                        if (demo.inviteWorker(request.id, post.userId)) {
-                          show(`Invited ${firstName(name)}.`);
-                        }
+                        if (demo.saving) return;
+                        void demo.inviteWorker(request.id, post.userId).then((ok) => {
+                          if (ok) show(`Invited ${firstName(name)}.`);
+                        });
                       }}
                     >
                       Invite
@@ -259,6 +283,7 @@ function ApplicationRow({
   onStatus: (id: string, status: "accepted" | "declined") => void;
 }) {
   const waitingApply = application.origin === "applied" && application.status === "waiting";
+  const { saving } = useDemo();
   return (
     <article className="space-y-3 rounded-2xl bg-card p-4 ring-1 ring-foreground/10">
       <p className="text-lg font-semibold">{personName(application.workerId, youId, youName)}</p>
@@ -267,8 +292,8 @@ function ApplicationRow({
       <ApplicationStatusLabel origin={application.origin} status={application.status} viewer="investor" />
       {waitingApply && open ? (
         <div className="flex flex-col gap-2">
-          <Button onClick={() => onStatus(application.id, "accepted")}>Accept</Button>
-          <Button variant="outline" onClick={() => onStatus(application.id, "declined")}>
+          <Button disabled={saving} aria-busy={saving} onClick={() => onStatus(application.id, "accepted")}>Accept</Button>
+          <Button variant="outline" disabled={saving} aria-busy={saving} onClick={() => onStatus(application.id, "declined")}>
             Not this time
           </Button>
         </div>
@@ -276,7 +301,7 @@ function ApplicationRow({
       {waitingApply && !open ? (
         <div className="space-y-3">
           <p className="text-lg">The team is full.</p>
-          <Button variant="outline" onClick={() => onStatus(application.id, "declined")}>
+          <Button variant="outline" disabled={saving} aria-busy={saving} onClick={() => onStatus(application.id, "declined")}>
             Not this time
           </Button>
         </div>

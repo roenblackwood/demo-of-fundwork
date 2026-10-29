@@ -1,6 +1,7 @@
 import raw from "../../data/seed.json";
 import { isSector, isSkill } from "@/lib/catalog";
 import { getRegion } from "@/lib/regions";
+import { isLive } from "@/lib/mode";
 import type {
   Application,
   Availability,
@@ -314,11 +315,35 @@ export function getUsers(): User[] {
   return seed.users;
 }
 
+const livePeople = new Map<string, User>();
+
+export function rememberLivePeople(
+  people: Array<Pick<User, "id" | "name" | "role" | "countryId" | "parishId" | "townId">>,
+) {
+  livePeople.clear();
+  for (const person of people) {
+    livePeople.set(person.id, {
+      id: person.id,
+      name: person.name,
+      role: person.role,
+      countryId: person.countryId,
+      parishId: person.parishId,
+      townId: person.townId,
+      verified: false,
+      skill: null,
+      extraSkills: [],
+      proofLabel: null,
+      example: "",
+    });
+  }
+}
+
 export function getUser(id: string): User | undefined {
-  return seed.users.find((user) => user.id === id);
+  return seed.users.find((user) => user.id === id) ?? livePeople.get(id);
 }
 
 export function seedCommitments(): Commitment[] {
+  if (isLive()) return [];
   return seed.commitments;
 }
 

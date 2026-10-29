@@ -6,6 +6,7 @@ import { CircleDollarSign, Hammer, Home, UserRound } from "lucide-react";
 import { SnackbarProvider } from "@/components/snackbar";
 import { useDemo } from "@/lib/demo-store";
 import { firstName } from "@/lib/format";
+import { isLive } from "@/lib/mode";
 import { youHasUpdate } from "@/lib/requests";
 import { cn } from "cn";
 
@@ -22,6 +23,10 @@ import { cn } from "cn";
  * - Guides in more languages.
  * - A guide that updates when a check changes.
  * - Asking a follow-up question.
+ * - Phone and WhatsApp sign-in.
+ * - Organizers accepting commitments and logged work.
+ * - Wallet connection.
+ * - Email when someone applies.
  */
 
 const tabs = [
@@ -34,7 +39,8 @@ const tabs = [
 export function Shell({ children }: { children: React.ReactNode }) {
   const { ready, name, role, userId, requests, applications, projects } = useDemo();
   const pathname = usePathname();
-  const label = ready ? firstName(name) : "You";
+  const signedOut = isLive() && ready && !userId;
+  const label = signedOut ? "Sign in" : ready ? firstName(name) : "You";
   const current = tabFor(pathname, role);
   const attention = ready && youHasUpdate(role, userId, requests, applications, projects);
 
@@ -55,7 +61,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             Fundwork
           </Link>
           <Link
-            href="/you"
+            href={signedOut ? `/sign-in?next=${encodeURIComponent(pathname || "/")}` : "/you"}
             className="inline-flex min-h-11 items-center rounded-full border bg-card px-4 font-semibold focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
           >
             {label}

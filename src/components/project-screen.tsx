@@ -204,18 +204,26 @@ export function ProjectScreen({ id }: { id: string }) {
                   {waiting ? (
                     <div className="flex flex-col gap-2">
                       <Button
+                        disabled={demo.saving}
+                        aria-busy={demo.saving}
                         onClick={() => {
-                          if (demo.setApplicationStatus(application.id, "accepted")) {
-                            show(`${firstName(person)} is on the team.`);
-                          }
+                          if (demo.saving) return;
+                          void demo.setApplicationStatus(application.id, "accepted").then((ok) => {
+                            if (ok) show(`${firstName(person)} is on the team.`);
+                          });
                         }}
                       >
                         Accept
                       </Button>
                       <Button
                         variant="outline"
+                        disabled={demo.saving}
+                        aria-busy={demo.saving}
                         onClick={() => {
-                          if (demo.setApplicationStatus(application.id, "declined")) show("Declined.");
+                          if (demo.saving) return;
+                          void demo.setApplicationStatus(application.id, "declined").then((ok) => {
+                            if (ok) show("Declined.");
+                          });
                         }}
                       >
                         Not this time
@@ -288,8 +296,13 @@ export function ProjectScreen({ id }: { id: string }) {
               variant="work"
               size="lg"
               className="w-full"
+              disabled={demo.saving}
+              aria-busy={demo.saving}
               onClick={() => {
-                if (demo.askToJoin(project.id)) show("Asked to join.");
+                if (demo.saving) return;
+                void demo.askToJoin(project.id).then((ok) => {
+                  if (ok) show("Asked to join.");
+                });
               }}
             >
               Ask to join

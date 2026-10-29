@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { PageBusy } from "@/components/busy";
 import { GettingStarted } from "@/components/getting-started";
 import { ApplicationStatusLabel, StatusLabel } from "@/components/parts";
@@ -11,6 +12,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { sectorTitle, skillTitle, workPresetLabel } from "@/lib/catalog";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
+import { isLive } from "@/lib/mode";
+import { refreshLiveStore } from "@/lib/live-store";
+import { browserSupabase } from "@/lib/supabase/browser";
 import { firstName, money, placeLine } from "@/lib/format";
 import { investorUnits, workerUnits } from "@/lib/ownership";
 import { acceptedCount, waitingCount } from "@/lib/requests";
@@ -19,6 +23,7 @@ import type { Application } from "@/lib/types";
 
 export function DashboardScreen() {
   const demo = useDemo();
+  const router = useRouter();
   if (!demo.ready) return <PageBusy />;
 
   const greeting =
@@ -161,15 +166,30 @@ export function DashboardScreen() {
 
       <GettingStarted />
 
-      <section className="space-y-3">
-        <h2 className="text-xl font-semibold">Demo</h2>
-        <Link
-          href="/you/switch"
-          className="inline-flex min-h-11 items-center font-semibold text-primary"
+      {isLive() ? (
+        <button
+          type="button"
+          className="min-h-11 font-semibold text-primary"
+          onClick={() => {
+            void browserSupabase().auth.signOut().then(async () => {
+              await refreshLiveStore();
+              router.push("/");
+            });
+          }}
         >
-          See an example person
-        </Link>
-      </section>
+          Sign out
+        </button>
+      ) : (
+        <section className="space-y-3">
+          <h2 className="text-xl font-semibold">Demo</h2>
+          <Link
+            href="/you/switch"
+            className="inline-flex min-h-11 items-center font-semibold text-primary"
+          >
+            See an example person
+          </Link>
+        </section>
+      )}
     </div>
   );
 }
@@ -235,13 +255,15 @@ function NeedRow({
   const open = request ? request.status === "open" : true;
   const work = demo.role === "worker";
 
-  function accept() {
-    if (!demo.setApplicationStatus(application.id, "accepted")) return;
+  async function accept() {
+    if (demo.saving) return;
+    if (!(await demo.setApplicationStatus(application.id, "accepted"))) return;
     show(`${firstName(work ? demo.name : person)} is on the team.`);
   }
 
-  function decline() {
-    if (!demo.setApplicationStatus(application.id, "declined")) return;
+  async function decline() {
+    if (demo.saving) return;
+    if (!(await demo.setApplicationStatus(application.id, "declined"))) return;
     show("Declined.");
   }
 
@@ -253,17 +275,17 @@ function NeedRow({
       <p className="text-base">{work ? "Invited. Waiting on you." : title}</p>
       {open ? (
         <div className="flex flex-col gap-2">
-          <Button variant={work ? "work" : "default"} onClick={accept}>
+          <Button variant={work ? "work" : "default"} disabled={demo.saving} aria-busy={demo.saving} onClick={() => void accept()}>
             Accept
           </Button>
-          <Button variant="outline" onClick={decline}>
+          <Button variant="outline" disabled={demo.saving} aria-busy={demo.saving} onClick={() => void decline()}>
             {work ? "Decline" : "Not this time"}
           </Button>
         </div>
       ) : (
         <div className="space-y-3">
           <p className="text-lg">The team is full.</p>
-          <Button variant="outline" onClick={decline}>
+          <Button variant="outline" disabled={demo.saving} aria-busy={demo.saving} onClick={() => void decline()}>
             {work ? "Decline" : "Not this time"}
           </Button>
         </div>

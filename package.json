@@ -7,10 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "check:seed": "node scripts/check-seed.mjs"
+    "check:seed": "node scripts/check-seed.mjs",
+    "seed:live": "node scripts/seed-supabase.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.118.0",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.0",
     "lucide-react": "^1.62.0",

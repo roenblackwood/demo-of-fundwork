@@ -18,6 +18,21 @@ npm run check:seed
 npm run build
 ```
 
+## Run it live
+
+Demo mode needs none of this. With no Supabase keys, the app stays on this phone.
+
+To use real accounts and a shared database:
+
+1. Create a Supabase project.
+2. Copy `.env.example` to `.env.local`. Fill in `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`.
+3. In Supabase, add your site URL, and add `http://localhost:3000/auth/callback` to the redirect list. Add the Vercel URL the same way when you deploy.
+4. Run the migration with `supabase db push`, or paste `supabase/migrations/0001_init.sql` into the SQL editor.
+5. Run `npm run seed:live`. That upserts the sample projects only. It does not create users.
+6. Add the same three variables in Vercel.
+
+The service role key stays in the seed script. Do not put it in a `NEXT_PUBLIC_` variable. Do not commit `.env.local`.
+
 ## How to walk through it
 
 The home screen is a world map. Tap a region. The map zooms to that region's countries. Tap a country, then choose invest or work.

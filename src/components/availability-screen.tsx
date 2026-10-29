@@ -10,6 +10,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { SKILLS, skillPhrase } from "@/lib/catalog";
 import { cn } from "cn";
+import { savedLabel } from "@/lib/copy";
 import { useDemo } from "@/lib/demo-store";
 import { placeLine } from "@/lib/format";
 import { getCity, getParish, getTown, requestPlace } from "@/lib/seed";
@@ -58,9 +59,9 @@ export function AvailabilityScreen({ placeId, townId }: { placeId: string; townI
     });
   }
 
-  function post() {
-    if (skills.length === 0) return;
-    const id = demo.addAvailability({
+  async function post() {
+    if (skills.length === 0 || demo.saving) return;
+    const id = await demo.addAvailability({
       countryId,
       parishId,
       townId,
@@ -77,7 +78,7 @@ export function AvailabilityScreen({ placeId, townId }: { placeId: string; townI
     return (
       <div className="space-y-6">
         <StepHeader backHref="/you" title="You are available" hint={place} />
-        <SavedMark label="Saved on this phone" />
+        <SavedMark label={savedLabel()} />
         <p className="text-lg leading-relaxed">
           You can do {skills.map((skill) => skillPhrase(skill)).join(", ")} in {place}.
         </p>
@@ -112,7 +113,7 @@ export function AvailabilityScreen({ placeId, townId }: { placeId: string; townI
           <p className="text-base text-muted-foreground">{note.length} of 240</p>
         </div>
         <ActionBar>
-          <Button variant="work" size="lg" className="w-full" onClick={post}>
+          <Button variant="work" size="lg" className="w-full" disabled={demo.saving} aria-busy={demo.saving} onClick={() => void post()}>
             Post
           </Button>
         </ActionBar>

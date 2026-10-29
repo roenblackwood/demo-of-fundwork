@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { WhatItTakes } from "@/components/guide-card";
 import { SECTORS, SKILLS, requestBudgets, sectorTitle, skillPhrase, skillsForSector } from "@/lib/catalog";
 import { cn } from "cn";
+import { savedLabel } from "@/lib/copy";
 import { useDemo } from "@/lib/demo-store";
 import { money, placeLine } from "@/lib/format";
 import { currencyOf, getCity, getCountry, getParish, getTown, requestPlace } from "@/lib/seed";
@@ -63,9 +64,9 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
     });
   }
 
-  function post() {
-    if (!sector || !budget || !workersNeeded || skills.length === 0 || !note.trim()) return;
-    const id = demo.addRequest({
+  async function post() {
+    if (!sector || !budget || !workersNeeded || skills.length === 0 || !note.trim() || demo.saving) return;
+    const id = await demo.addRequest({
       countryId,
       parishId,
       townId,
@@ -85,7 +86,7 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
     return (
       <div className="space-y-6">
         <StepHeader backHref={`/requests/${savedId}`} title="You posted a request" hint={place} />
-        <SavedMark label="Saved on this phone" />
+        <SavedMark label={savedLabel()} />
         <CapitalChip />
         <p className="text-lg leading-relaxed">
           {money(budget ?? 0, currency)} for {workersNeeded} workers in {place}.
@@ -126,7 +127,7 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
           projects={demo.projects}
         />
         <ActionBar>
-          <Button size="lg" className="w-full" onClick={post}>
+          <Button size="lg" className="w-full" disabled={demo.saving} aria-busy={demo.saving} onClick={() => void post()}>
             Post this request
           </Button>
         </ActionBar>

@@ -3,6 +3,10 @@
  * - Guides in more languages.
  * - A guide that updates when a check changes.
  * - Asking a follow-up question.
+ * - Phone and WhatsApp sign-in.
+ * - Organizers accepting commitments and logged work.
+ * - Wallet connection.
+ * - Email when someone applies.
  */
 import { getProjects, seedApplications, seedAvailability, seedRequests } from "@/lib/seed";
 import type {

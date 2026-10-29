@@ -59,10 +59,10 @@ export function StartProjectScreen({ id }: { id: string }) {
     );
   }
 
-  function start() {
+  async function start() {
     const trimmed = value.trim();
-    if (!trimmed || !request) return;
-    const projectId = demo.startProject(request.id, trimmed);
+    if (!trimmed || !request || demo.saving) return;
+    const projectId = await demo.startProject(request.id, trimmed);
     if (!projectId) return;
     show(`${trimmed} is now a project.`);
     router.push(`/projects/${projectId}`);
@@ -81,7 +81,7 @@ export function StartProjectScreen({ id }: { id: string }) {
         />
       </div>
       <ActionBar>
-        <Button size="lg" className="w-full" disabled={!value.trim()} onClick={start}>
+        <Button size="lg" className="w-full" disabled={!value.trim() || demo.saving} aria-busy={demo.saving} onClick={() => void start()}>
           Start the project
         </Button>
       </ActionBar>

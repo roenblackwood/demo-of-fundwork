@@ -4,6 +4,27 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 
 const SnackbarContext = createContext<(text: string) => void>(() => {});
 
+const SAVE_ERROR = "Could not save. Check your connection and try again.";
+
+let reportSaveError: () => void = () => {};
+
+export function setSaveErrorHandler(handler: () => void) {
+  reportSaveError = handler;
+}
+
+export function notifySaveError() {
+  reportSaveError();
+}
+
+function SaveErrorBridge() {
+  const show = useContext(SnackbarContext);
+  useEffect(() => {
+    setSaveErrorHandler(() => show(SAVE_ERROR));
+    return () => setSaveErrorHandler(() => {});
+  }, [show]);
+  return null;
+}
+
 export function SnackbarProvider({ children }: { children: React.ReactNode }) {
   const [snack, setSnack] = useState<{ id: number; text: string } | null>(null);
   const timer = useRef<number | null>(null);
@@ -25,6 +46,7 @@ export function SnackbarProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <SnackbarContext.Provider value={show}>
+      <SaveErrorBridge />
       {children}
       {snack ? (
         <div className="pointer-events-none fixed inset-x-0 bottom-[calc(10.5rem+env(safe-area-inset-bottom))] z-40 px-5">

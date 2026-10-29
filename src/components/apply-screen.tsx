@@ -48,9 +48,9 @@ export function ApplyScreen({ id }: { id: string }) {
     (item) => item.requestId === request.id && item.workerId === demo.userId && item.status !== "declined",
   );
 
-  function send() {
-    if (!skill || !request) return;
-    if (!demo.applyToRequest({ requestId: id, skill, message })) return;
+  async function send() {
+    if (!skill || !request || demo.saving) return;
+    if (!(await demo.applyToRequest({ requestId: id, skill, message }))) return;
     const owner = getUser(request.userId)?.name ?? "the investor";
     show(`Sent to ${firstName(owner)}.`);
     router.push(`/requests/${id}`);
@@ -109,7 +109,7 @@ export function ApplyScreen({ id }: { id: string }) {
             <p className="text-base text-muted-foreground">{message.length} of 200</p>
           </div>
           <ActionBar>
-            <Button variant="work" size="lg" className="w-full" disabled={!skill} onClick={send}>
+            <Button variant="work" size="lg" className="w-full" disabled={!skill || demo.saving} aria-busy={demo.saving} onClick={() => void send()}>
               Send
             </Button>
           </ActionBar>

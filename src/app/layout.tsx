@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
-import { DemoProvider } from "@/lib/demo-store";
+import { AppStore } from "@/lib/app-store";
+import { isLive } from "@/lib/mode";
 import { Shell } from "@/components/shell";
 import "./globals.css";
 
@@ -30,9 +31,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${inter.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
-        <DemoProvider>
+        <AppStore live={isLive()}>
           <Shell>{children}</Shell>
-        </DemoProvider>
+        </AppStore>
       </body>
     </html>
   );

@@ -8,7 +8,7 @@ import { PageBusy } from "@/components/busy";
 import { ActionBar, NextSteps, SavedMark, StepHeader } from "@/components/parts";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { canStillCommit, commitChoices } from "@/lib/catalog";
-import { COMMIT_LINE } from "@/lib/copy";
+import { COMMIT_LINE, moneyNote, savedLabel } from "@/lib/copy";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
 import { money } from "@/lib/format";
@@ -42,9 +42,9 @@ export function CommitScreen({ id }: { id: string }) {
   const open = canStillCommit(stillOpen, project.goalJmd, currency);
   const units = amount ? investorUnits(amount, project.goalJmd) : 0;
 
-  function save() {
-    if (!project || !amount) return;
-    demo.addCommitment({
+  async function save() {
+    if (!project || !amount || demo.saving) return;
+    const ok = await demo.addCommitment({
       id: crypto.randomUUID(),
       userId: demo.userId,
       projectId: project.id,
@@ -52,6 +52,7 @@ export function CommitScreen({ id }: { id: string }) {
       status: "pledged",
       createdAt: new Date().toISOString(),
     });
+    if (!ok) return;
     router.push(`/projects/${project.id}/committed`);
   }
 
@@ -100,7 +101,7 @@ export function CommitScreen({ id }: { id: string }) {
         </div>
       )}
       {open ? (
-        <p className="text-base text-muted-foreground">This is a demo. No money moves.</p>
+        <p className="text-base text-muted-foreground">{moneyNote()}</p>
       ) : null}
       {amount ? (
         <p className="text-lg leading-relaxed">
@@ -109,7 +110,7 @@ export function CommitScreen({ id }: { id: string }) {
       ) : null}
       {open ? (
         <ActionBar>
-          <Button size="lg" className="w-full" disabled={!amount} onClick={save}>
+          <Button size="lg" className="w-full" disabled={!amount || demo.saving} aria-busy={demo.saving} onClick={() => void save()}>
             {amount ? `Commit ${money(amount, currency)}` : "Choose an amount"}
           </Button>
         </ActionBar>
@@ -138,7 +139,7 @@ export function CommittedScreen({ id }: { id: string }) {
   return (
     <div className="space-y-6">
       <StepHeader backHref="/you" title="You committed" hint={project.name} />
-      <SavedMark label="Saved on this phone" />
+      <SavedMark label={savedLabel()} />
       <p className="text-3xl font-semibold">{money(commitment.amountJmd, currency)}</p>
       <p className="text-lg leading-relaxed">
         About {units} ownership units, waiting on the organizer.

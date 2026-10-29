@@ -433,8 +433,9 @@ function applyPath(session: Session, path: PathChoice): Session {
   };
 }
 
-type DemoValue = {
+export type DemoValue = {
   ready: boolean;
+  saving: boolean;
   userId: string;
   name: string;
   verified: boolean;
@@ -462,24 +463,24 @@ type DemoValue = {
   startPath: (path: PathChoice) => void;
   updateFlow: (patch: Partial<Flow>) => void;
   setProof: (proof: Proof | null) => void;
-  setDisplayName: (name: string) => void;
-  addCommitment: (commitment: Commitment) => void;
-  addContribution: (contribution: Contribution) => void;
-  addRequest: (draft: RequestDraft) => string | null;
-  applyToRequest: (input: { requestId: string; skill: Skill; message: string }) => boolean;
-  inviteWorker: (requestId: string, workerId: string) => boolean;
-  setApplicationStatus: (id: string, status: "accepted" | "declined") => boolean;
-  addAvailability: (draft: AvailabilityDraft) => string | null;
-  withdrawApplication: (id: string) => boolean;
-  startProject: (requestId: string, name: string) => string | null;
-  askToJoin: (projectId: string) => boolean;
+  setDisplayName: (name: string) => void | Promise<void>;
+  addCommitment: (commitment: Commitment) => Promise<boolean>;
+  addContribution: (contribution: Contribution) => Promise<boolean>;
+  addRequest: (draft: RequestDraft) => Promise<string | null>;
+  applyToRequest: (input: { requestId: string; skill: Skill; message: string }) => Promise<boolean>;
+  inviteWorker: (requestId: string, workerId: string) => Promise<boolean>;
+  setApplicationStatus: (id: string, status: "accepted" | "declined") => Promise<boolean>;
+  addAvailability: (draft: AvailabilityDraft) => Promise<string | null>;
+  withdrawApplication: (id: string) => Promise<boolean>;
+  startProject: (requestId: string, name: string) => Promise<string | null>;
+  askToJoin: (projectId: string) => Promise<boolean>;
   markOpened: () => void;
   useSample: (id: string) => void;
   useNewPerson: () => void;
   reset: () => void;
 };
 
-const DemoContext = createContext<DemoValue | null>(null);
+export const DemoContext = createContext<DemoValue | null>(null);
 
 export function DemoProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session>(initialSession);
@@ -522,23 +523,28 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     setSession((current) => ({ ...current, displayName: name.trim() }));
   }, []);
 
-  const addCommitment = useCallback((commitment: Commitment) => {
+  const addCommitment = useCallback(async (commitment: Commitment) => {
     setSession((current) => ({
       ...current,
       commitments: [...current.commitments, commitment],
     }));
+    return true;
   }, []);
 
-  const addContribution = useCallback((contribution: Contribution) => {
+  const addContribution = useCallback(async (contribution: Contribution) => {
+    const seen = listProjects(sessionRef.current).find((item) => item.id === contribution.projectId);
+    if (contribution.userId !== currentUserId(sessionRef.current)) return false;
+    if (!seen || !seen.team.includes(contribution.userId)) return false;
     setSession((current) => {
       if (contribution.userId !== currentUserId(current)) return current;
       const project = listProjects(current).find((item) => item.id === contribution.projectId);
       if (!project || !project.team.includes(contribution.userId)) return current;
       return { ...current, contributions: [...current.contributions, contribution] };
     });
+    return true;
   }, []);
 
-  const addRequest = useCallback((draft: RequestDraft) => {
+  const addRequest = useCallback(async (draft: RequestDraft) => {
     if (
       roleOf(sessionRef.current) === "worker" ||
       !askedPlace(draft.countryId, draft.parishId, draft.townId) ||
@@ -574,25 +580,25 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const applyToRequest = useCallback(
-    (input: { requestId: string; skill: Skill; message: string }) => {
+    async (input: { requestId: string; skill: Skill; message: string }) => {
       const stamp = { id: crypto.randomUUID(), createdAt: new Date().toISOString() };
       return writeDecision(sessionRef, setSession, (current) => nextApply(current, input, stamp));
     },
     [],
   );
 
-  const inviteWorker = useCallback((requestId: string, workerId: string) => {
+  const inviteWorker = useCallback(async (requestId: string, workerId: string) => {
     const stamp = { id: crypto.randomUUID(), createdAt: new Date().toISOString() };
     return writeDecision(sessionRef, setSession, (current) =>
       nextInvite(current, requestId, workerId, stamp),
     );
   }, []);
 
-  const setApplicationStatus = useCallback((id: string, status: "accepted" | "declined") => {
+  const setApplicationStatus = useCallback(async (id: string, status: "accepted" | "declined") => {
     return writeDecision(sessionRef, setSession, (current) => nextApplicationStatus(current, id, status));
   }, []);
 
-  const addAvailability = useCallback((draft: AvailabilityDraft) => {
+  const addAvailability = useCallback(async (draft: AvailabilityDraft) => {
     if (
       roleOf(sessionRef.current) === "investor" ||
       !askedPlace(draft.countryId, draft.parishId, draft.townId) ||
@@ -618,11 +624,11 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     return id;
   }, []);
 
-  const withdrawApplication = useCallback((id: string) => {
+  const withdrawApplication = useCallback(async (id: string) => {
     return writeDecision(sessionRef, setSession, (current) => nextWithdraw(current, id));
   }, []);
 
-  const startProject = useCallback((requestId: string, name: string) => {
+  const startProject = useCallback(async (requestId: string, name: string) => {
     const trimmed = name.trim().slice(0, 80);
     if (!trimmed) return null;
     const seen = listRequests(sessionRef.current).find((item) => item.id === requestId);
@@ -689,7 +695,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     return id;
   }, []);
 
-  const askToJoin = useCallback((projectId: string) => {
+  const askToJoin = useCallback(async (projectId: string) => {
     const stamp = { id: crypto.randomUUID(), createdAt: new Date().toISOString() };
     return writeDecision(sessionRef, setSession, (current) => nextAsk(current, projectId, stamp));
   }, []);
@@ -746,6 +752,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
 
     return {
       ready,
+      saving: false,
       userId,
       name,
       verified: sample?.verified ?? false,
