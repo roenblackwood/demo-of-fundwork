@@ -24,7 +24,9 @@ import { LessonList } from "@/components/lesson-card";
 import { ThisWeekCard } from "@/components/this-week";
 import { checkNote, projectNote } from "@/lib/ai";
 import { canStillCommit } from "@/lib/catalog";
-import { UNITS_PAYOUT_LINE } from "@/lib/copy";
+import { SendCapital } from "@/components/send-capital";
+import { NEVER_HOLDS_LINE, TEST_NETWORK_LINE, UNITS_PAYOUT_LINE } from "@/lib/copy";
+import { isLive } from "@/lib/mode";
 import { stageLessons, workerProjectLessons } from "@/lib/lessons";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
@@ -100,11 +102,15 @@ export function ProjectScreen({ id }: { id: string }) {
     .reduce((sum, item) => sum + item.amountJmd, 0);
   const organizerUser = project.organizerId ? getUser(project.organizerId) : undefined;
   const organizerFirst = firstName(organizerUser?.name ?? project.organizerName);
+  const hasProjectWallet = demo.projectWallets.some((item) => item.projectId === project.id);
+  const myPledge = demo.commitments.find((item) => item.projectId === project.id && item.status === "pledged");
   const ownershipLine =
     demo.role === "worker"
       ? "Your work turns into ownership units."
       : demo.role === "investor"
-        ? "Money you commit turns into ownership units once the organizer accepts it."
+        ? hasProjectWallet
+          ? "Money you commit turns into ownership units once a confirmed payment covers it."
+          : "Money you commit turns into ownership units once the organizer accepts it."
         : "Money and work both turn into ownership units.";
 
   return (
@@ -137,6 +143,12 @@ export function ProjectScreen({ id }: { id: string }) {
         <FundingPills
           labels={fundingLabels(committed, project.goalJmd, project.workStarted)}
         />
+        <Link href={`/projects/${project.id}/money`} className="inline-flex min-h-11 items-center font-semibold text-primary">
+          See the money
+        </Link>
+        {organizing && hasProjectWallet ? (
+          <p className="text-lg">You do not accept capital by hand. The chain check does.</p>
+        ) : null}
       </section>
       <div className="grid grid-cols-3 items-stretch gap-2">
         <div className="flex h-full flex-col rounded-2xl bg-card p-3 ring-1 ring-foreground/10">
@@ -272,6 +284,7 @@ export function ProjectScreen({ id }: { id: string }) {
           )}
         </section>
       ) : null}
+      {myPledge ? <SendCapital projectId={project.id} pledge={myPledge.amountJmd} /> : null}
       {showInvest && !canCommit && stillOpen > 0 ? (
         <p className="text-lg">Almost there. What is left is less than the smallest amount.</p>
       ) : null}
@@ -297,7 +310,14 @@ export function ProjectScreen({ id }: { id: string }) {
           <p>Bitcoin is the capital for the project.</p>
           <p>People who do the work are paid in a stable unit.</p>
           <p>Dollar amounts are rough and fixed in this demo.</p>
-          <p>No Bitcoin moves in this demo.</p>
+          {isLive() ? (
+            <>
+              <p>{NEVER_HOLDS_LINE}</p>
+              <p>{TEST_NETWORK_LINE}</p>
+            </>
+          ) : (
+            <p>No Bitcoin moves in this demo.</p>
+          )}
           <p>{UNITS_PAYOUT_LINE}</p>
         </div>
         {notes.map((item) => (

@@ -19,6 +19,7 @@ import { isLive } from "@/lib/mode";
 import { refreshLiveStore } from "@/lib/live-store";
 import { browserSupabase } from "@/lib/supabase/browser";
 import { firstName, placeLine } from "@/lib/format";
+import { explorerUrl, sameAddress } from "@/lib/money";
 import { investorUnits, workerUnits } from "@/lib/ownership";
 import { acceptedCount, waitingCount } from "@/lib/requests";
 import { currencyOf, getUser, requestPlace } from "@/lib/seed";
@@ -38,6 +39,9 @@ export function DashboardScreen() {
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-4xl leading-tight">{greeting}</h1>
+        <Link href="/you/wallet" className="mt-3 inline-flex min-h-11 items-center font-semibold text-primary">
+          Check a wallet
+        </Link>
         <div className="mt-3 flex flex-wrap gap-2">
           {demo.verified ? (
             <Badge className="border-transparent bg-trust text-trust-foreground">
@@ -69,16 +73,21 @@ export function DashboardScreen() {
               const project = demo.projects.find((item) => item.id === commitment.projectId);
               if (!project) return null;
               const units = investorUnits(commitment.amountJmd, project.goalJmd);
+              const onChain = demo.projectWallets.some((item) => item.projectId === project.id);
               return (
                 <Link
                   key={commitment.id}
-                  href={`/projects/${project.id}`}
+                  href={onChain && commitment.status === "pledged" ? `/projects/${project.id}/committed#send` : `/projects/${project.id}`}
                   className="block rounded-2xl focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
                 >
                   <Card>
                     <CardHeader>
                       <CardTitle>{project.name}</CardTitle>
-                      <StatusLabel status={commitment.status} kind="capital" />
+                      <StatusLabel
+                        status={commitment.status}
+                        kind="capital"
+                        waiting={onChain ? "Waiting on the chain" : undefined}
+                      />
                     </CardHeader>
                     <CardContent>
                       <p className="text-lg font-semibold">
@@ -87,8 +96,13 @@ export function DashboardScreen() {
                       <p className="mt-1 text-base">
                         {commitment.status === "accepted"
                           ? `About ${units} ownership units`
-                          : `About ${units} ownership units if accepted`}
+                          : onChain
+                            ? `About ${units} ownership units once a confirmed payment covers it`
+                            : `About ${units} ownership units if accepted`}
                       </p>
+                      {onChain && commitment.status === "pledged" ? (
+                        <p className="mt-2 font-semibold text-primary">Send it</p>
+                      ) : null}
                     </CardContent>
                   </Card>
                 </Link>
@@ -119,29 +133,49 @@ export function DashboardScreen() {
               const project = demo.projects.find((item) => item.id === contribution.projectId);
               if (!project) return null;
               const units = workerUnits(contribution.preset);
+              const paid = demo.payments.find(
+                (payment) =>
+                  payment.kind === "pay-out" &&
+                  payment.status === "confirmed" &&
+                  payment.projectId === contribution.projectId &&
+                  demo.wallets.some(
+                    (wallet) =>
+                      wallet.verifiedAt &&
+                      wallet.chain === payment.chain &&
+                      sameAddress(wallet.address, payment.toAddress),
+                  ),
+              );
+              const paidUrl = paid ? explorerUrl(paid.chain, paid.txId) : null;
               return (
-                <Link
-                  key={contribution.id}
-                  href={`/projects/${project.id}`}
-                  className="block rounded-2xl focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
-                >
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>{project.name}</CardTitle>
-                      <StatusLabel status={contribution.status} kind="work" />
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-lg font-semibold">
-                        {workPresetLabel(contribution.preset)}
-                      </p>
-                      <p className="mt-1 text-base">
-                        {contribution.status === "accepted"
-                          ? `${units} ownership units`
-                          : `${units} ownership units if accepted`}
-                      </p>
-                    </CardContent>
-                  </Card>
-                </Link>
+                <div key={contribution.id} className="space-y-2">
+                  <Link
+                    href={`/projects/${project.id}`}
+                    className="block rounded-2xl focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
+                  >
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>{project.name}</CardTitle>
+                        <StatusLabel status={contribution.status} kind="work" />
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-lg font-semibold">
+                          {workPresetLabel(contribution.preset)}
+                        </p>
+                        <p className="mt-1 text-base">
+                          {contribution.status === "accepted"
+                            ? `${units} ownership units`
+                            : `${units} ownership units if accepted`}
+                        </p>
+                        {paid ? <p className="mt-2 font-semibold">Paid</p> : null}
+                      </CardContent>
+                    </Card>
+                  </Link>
+                  {paid && paidUrl ? (
+                    <a href={paidUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center font-semibold text-primary">
+                      See it on the explorer
+                    </a>
+                  ) : null}
+                </div>
               );
             })}
             {demo.role === "worker" ? (

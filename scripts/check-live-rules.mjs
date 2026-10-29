@@ -96,7 +96,13 @@ function holdHours(row) {
 
 async function cleanup() {
   const projectIds = [projectA, projectB, projectC, startedProjectId].filter(Boolean);
+  if (userIds.length > 0) {
+    await admin.from("wallet_checks").delete().in("user_id", userIds);
+    await admin.from("wallets").delete().in("user_id", userIds);
+  }
   if (projectIds.length > 0) {
+    await admin.from("payments").delete().in("project_id", projectIds);
+    await admin.from("project_wallets").delete().in("project_id", projectIds);
     await admin.from("weekly_goals").delete().in("project_id", projectIds);
     await admin.from("contributions").delete().in("project_id", projectIds);
     await admin.from("commitments").delete().in("project_id", projectIds);
@@ -480,6 +486,155 @@ try {
       ((workerUpdate.data ?? []).length === 0) &&
       kept.data?.goal === "Count the cash",
     "A worker cannot read or write another organizer's weekly_goals.",
+  );
+
+  const benAddress = `tb1q${stamp.replace(/[^a-z0-9]/g, "").slice(0, 24)}fundworkben`;
+  const wrongAddress = `tb1q${stamp.replace(/[^a-z0-9]/g, "").slice(0, 24)}fundwrong`;
+  const tx = (mark) => `${mark}${stamp.replace(/[^a-f0-9]/gi, "")}`.padEnd(64, "0").slice(0, 64);
+  const caraCommitment = await admin
+    .from("commitments")
+    .select("id, status, amount")
+    .eq("user_id", cara.id)
+    .eq("project_id", projectC)
+    .maybeSingle();
+  const caraId = caraCommitment.data?.id ?? "";
+  const paymentInsert = await cara.client.from("payments").insert({
+    project_id: projectC,
+    kind: "capital-in",
+    chain: "bitcoin-signet",
+    tx_id: tx("aa"),
+    from_address: "tb1qfrom",
+    to_address: benAddress,
+    asset: "BTC",
+    amount: 12,
+    confirmations: 3,
+    status: "confirmed",
+  });
+  const paymentRpc = await cara.client.rpc("record_observed_payment", {
+    p_project_id: projectC,
+    p_kind: "capital-in",
+    p_chain: "bitcoin-signet",
+    p_tx_id: tx("bb"),
+    p_from_address: "tb1qfrom",
+    p_to_address: benAddress,
+    p_asset: "BTC",
+    p_amount: 12,
+    p_confirmations: 3,
+    p_commitment_id: caraId,
+    p_contribution_id: null,
+    p_failed: false,
+    p_ambiguous: false,
+  });
+  report(
+    Boolean(paymentInsert.error) && Boolean(paymentRpc.error),
+    "A signed-in person cannot insert a payment.",
+  );
+
+  const wallet = await ben.client
+    .from("wallets")
+    .insert({
+      user_id: ben.id,
+      chain: "bitcoin-signet",
+      address: benAddress,
+      label: "Ben",
+    })
+    .select("id, verified_at")
+    .single();
+  const walletId = wallet.data?.id ?? "";
+  const stamped = walletId
+    ? await ben.client.from("wallets").update({ verified_at: new Date().toISOString() }).eq("id", walletId).select("id")
+    : { data: [], error: null };
+  const sneaky = await ben.client.from("wallets").insert({
+    user_id: ben.id,
+    chain: "base-sepolia",
+    address: `0x${"ab".repeat(20)}`,
+    verified_at: new Date().toISOString(),
+  });
+  const markRpc = await ben.client.rpc("mark_wallet_checked", { p_wallet_id: walletId, p_owner_id: ben.id });
+  const before = walletId
+    ? await admin.from("wallets").select("verified_at").eq("id", walletId).maybeSingle()
+    : { data: null };
+  const earlyWallet = await ben.client.rpc("set_project_wallet", {
+    p_project_id: projectC,
+    p_chain: "bitcoin-signet",
+    p_address: benAddress,
+  });
+  const marked = walletId
+    ? await admin.rpc("mark_wallet_checked", { p_wallet_id: walletId, p_owner_id: ben.id })
+    : { error: { message: "no wallet" }, data: null };
+  const after = walletId
+    ? await admin.from("wallets").select("verified_at").eq("id", walletId).maybeSingle()
+    : { data: null };
+  report(
+    !wallet.error &&
+      wallet.data?.verified_at == null &&
+      Boolean(sneaky.error) &&
+      Boolean(markRpc.error) &&
+      ((stamped.data ?? []).length === 0) &&
+      before.data?.verified_at == null &&
+      Boolean(earlyWallet.error) &&
+      !marked.error &&
+      Boolean(after.data?.verified_at),
+    "A signed-in person cannot set verified_at.",
+  );
+
+  const setWallet = await ben.client.rpc("set_project_wallet", {
+    p_project_id: projectC,
+    p_chain: "bitcoin-signet",
+    p_address: benAddress,
+  });
+  const outsiderWallet = await outsider.client.rpc("set_project_wallet", {
+    p_project_id: projectC,
+    p_chain: "bitcoin-signet",
+    p_address: benAddress,
+  });
+  const hand = caraId
+    ? await admin.from("commitments").update({ status: "accepted" }).eq("id", caraId).select("status")
+    : { error: null, data: [] };
+  const stillPledged = caraId
+    ? await admin.from("commitments").select("status").eq("id", caraId).maybeSingle()
+    : { data: null };
+
+  async function observe(mark, to, amount, confirmations) {
+    return admin.rpc("record_observed_payment", {
+      p_project_id: projectC,
+      p_kind: "capital-in",
+      p_chain: "bitcoin-signet",
+      p_tx_id: tx(mark),
+      p_from_address: "tb1qfrom",
+      p_to_address: to,
+      p_asset: "BTC",
+      p_amount: amount,
+      p_confirmations: confirmations,
+      p_commitment_id: caraId,
+      p_contribution_id: null,
+      p_failed: false,
+      p_ambiguous: false,
+    });
+  }
+
+  const wrong = await observe("c1", wrongAddress, 12, 3);
+  const afterWrong = await admin.from("commitments").select("status").eq("id", caraId).maybeSingle();
+  const waiting = await observe("c2", benAddress, 12, 1);
+  const afterWaiting = await admin.from("commitments").select("status").eq("id", caraId).maybeSingle();
+  const short = await observe("c3", benAddress, 11, 3);
+  const afterShort = await admin.from("commitments").select("status").eq("id", caraId).maybeSingle();
+  const covered = await observe("c4", benAddress, 12, 3);
+  const afterCovered = await admin.from("commitments").select("status").eq("id", caraId).maybeSingle();
+  report(
+    !setWallet.error &&
+      Boolean(outsiderWallet.error) &&
+      Boolean(hand.error) &&
+      stillPledged.data?.status === "pledged" &&
+      wrong.data?.status === "mismatch" &&
+      afterWrong.data?.status === "pledged" &&
+      waiting.data?.status === "pending" &&
+      afterWaiting.data?.status === "pledged" &&
+      short.data?.status === "mismatch" &&
+      afterShort.data?.status === "pledged" &&
+      covered.data?.status === "confirmed" &&
+      afterCovered.data?.status === "accepted",
+    "A commitment is accepted only after a confirmed capital-in that covers it, and a payment to the wrong address is a mismatch.",
   );
 } catch (error) {
   report(false, error instanceof Error ? error.message : "The live check stopped.");

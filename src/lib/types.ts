@@ -97,6 +97,49 @@ export type Project = {
   mentorName?: string | null;
 };
 
+export type ChainId = "bitcoin-signet" | "base-sepolia";
+
+export type PaymentAsset = "BTC" | "USDC";
+
+export type PaymentKind = "capital-in" | "pay-out";
+
+export type PaymentStatus = "pending" | "confirmed" | "mismatch";
+
+export type Wallet = {
+  id: string;
+  userId: string;
+  chain: ChainId;
+  address: string;
+  label: string;
+  verifiedAt: string | null;
+  createdAt: string;
+};
+
+export type ProjectWallet = {
+  projectId: string;
+  chain: ChainId;
+  address: string;
+};
+
+export type Payment = {
+  id: string;
+  projectId: string;
+  kind: PaymentKind;
+  chain: ChainId;
+  txId: string;
+  fromAddress: string;
+  toAddress: string;
+  asset: PaymentAsset;
+  amount: number;
+  confirmations: number;
+  status: PaymentStatus;
+  commitmentId: string | null;
+  contributionId: string | null;
+  reason: string | null;
+  checkedAt: string;
+  createdAt: string;
+};
+
 export type CommitmentStatus = "pledged" | "accepted";
 
 export type Commitment = {

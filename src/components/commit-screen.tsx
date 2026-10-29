@@ -8,6 +8,7 @@ import { PageBusy } from "@/components/busy";
 import { ActionBar, MoneyText, NextSteps, SavedMark, StepHeader } from "@/components/parts";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { canStillCommit, commitChoices } from "@/lib/catalog";
+import { SendCapital } from "@/components/send-capital";
 import { COMMIT_LINE, moneyNote, savedLabel } from "@/lib/copy";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
@@ -48,6 +49,7 @@ export function CommitScreen({ id }: { id: string }) {
   const choices = commitChoices(project.goalJmd, currency);
   const open = canStillCommit(stillOpen, project.goalJmd, currency);
   const units = amount ? investorUnits(amount, project.goalJmd) : 0;
+  const hasProjectWallet = demo.projectWallets.some((item) => item.projectId === project.id);
 
   async function save() {
     if (!project || !amount || demo.saving) return;
@@ -122,7 +124,8 @@ export function CommitScreen({ id }: { id: string }) {
       ) : null}
       {amount ? (
         <p className="text-lg leading-relaxed">
-          <MoneyText amount={amount} currency={currency} /> becomes about {units} ownership units, once the organizer accepts it.
+          <MoneyText amount={amount} currency={currency} /> becomes about {units} ownership units,{" "}
+          {hasProjectWallet ? "once a confirmed payment covers it." : "once the organizer accepts it."}
         </p>
       ) : null}
       {open ? (
@@ -175,6 +178,8 @@ export function CommittedScreen({ id }: { id: string }) {
 
   const units = investorUnits(commitment.amountJmd, project.goalJmd);
   const currency = currencyOf(project.countryId);
+  const hasProjectWallet = isLive() && demo.projectWallets.some((item) => item.projectId === project.id);
+  const savedLine = isLive() ? "Your commitment is saved." : "Your commitment is saved on this phone.";
 
   return (
     <div className="space-y-6">
@@ -184,15 +189,26 @@ export function CommittedScreen({ id }: { id: string }) {
         <MoneyText amount={commitment.amountJmd} currency={currency} />
       </p>
       <p className="text-lg leading-relaxed">
-        About {units} ownership units, waiting on the organizer.
+        {hasProjectWallet
+          ? `About ${units} ownership units, once a confirmed payment covers this pledge.`
+          : `About ${units} ownership units, waiting on the organizer.`}
       </p>
       <NextSteps
-        items={[
-          "Your commitment is saved on this phone.",
-          "The organizer reviews it.",
-          "If they accept it, it becomes ownership units.",
-        ]}
+        items={
+          hasProjectWallet
+            ? [
+                savedLine,
+                "Send the coins yourself to the project address.",
+                "It counts when the confirmed amount covers this pledge.",
+              ]
+            : [
+                savedLine,
+                "The organizer reviews it.",
+                "If they accept it, it becomes ownership units.",
+              ]
+        }
       />
+      <SendCapital projectId={project.id} pledge={commitment.amountJmd} />
       <ActionBar>
         <Link href="/you" className={cn(buttonVariants({ size: "lg" }), "w-full")}>
           See my commitments

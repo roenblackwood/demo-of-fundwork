@@ -22,9 +22,12 @@ import {
   mapAvailability,
   mapCommitment,
   mapContribution,
+  mapPayment,
   mapProject,
+  mapProjectWallet,
   mapPublicPerson,
   mapRequest,
+  mapWallet,
   newest,
 } from "@/lib/live-rows";
 import { notifySaveError } from "@/components/snackbar";
@@ -37,8 +40,11 @@ import type {
   Commitment,
   Contribution,
   PathChoice,
+  Payment,
   Project,
+  ProjectWallet,
   Skill,
+  Wallet,
 } from "@/lib/types";
 
 type Snapshot = {
@@ -61,6 +67,9 @@ type Snapshot = {
   learningSeen: string[];
   learningDone: string[];
   weeks: WeekPlan[];
+  wallets: Wallet[];
+  projectWallets: ProjectWallet[];
+  payments: Payment[];
 };
 
 let reloadLive: (() => Promise<void>) | null = null;
@@ -89,6 +98,9 @@ const emptySnapshot: Snapshot = {
   learningSeen: [],
   learningDone: [],
   weeks: [],
+  wallets: [],
+  projectWallets: [],
+  payments: [],
 };
 
 function textList(value: unknown): string[] {
@@ -123,7 +135,7 @@ async function loadSnapshot(): Promise<Snapshot> {
   const supabase = browserSupabase();
   const { data: auth } = await supabase.auth.getUser();
   const user = auth.user;
-  const [projectRows, memberRows, requestRows, applicationRows, availabilityRows, peopleRows, commitmentRows, contributionRows, mine, goalRows, lessonRows] =
+  const [projectRows, memberRows, requestRows, applicationRows, availabilityRows, peopleRows, commitmentRows, contributionRows, mine, goalRows, lessonRows, walletRows, projectWalletRows, paymentRows] =
     await Promise.all([
       supabase.from("projects").select("*"),
       supabase.from("project_members").select("project_id, worker_id"),
@@ -138,6 +150,9 @@ async function loadSnapshot(): Promise<Snapshot> {
         : Promise.resolve({ data: null }),
       user ? supabase.from("weekly_goals").select("*") : Promise.resolve({ data: [] }),
       user ? supabase.from("lesson_progress").select("lesson_id, seen_at, done_at") : Promise.resolve({ data: [] }),
+      user ? supabase.from("wallets").select("*") : Promise.resolve({ data: [] }),
+      user ? supabase.from("project_wallets").select("project_id, chain, address") : Promise.resolve({ data: [] }),
+      user ? supabase.from("payments").select("*") : Promise.resolve({ data: [] }),
     ]);
 
   const people = rowsOf(peopleRows).flatMap((row) => {
@@ -215,6 +230,18 @@ async function loadSnapshot(): Promise<Snapshot> {
     weeks: rowsOf(goalRows).flatMap((row) => {
       const week = mapWeek(row);
       return week ? [week] : [];
+    }),
+    wallets: rowsOf(walletRows).flatMap((row) => {
+      const item = mapWallet(row);
+      return item ? [item] : [];
+    }),
+    projectWallets: rowsOf(projectWalletRows).flatMap((row) => {
+      const item = mapProjectWallet(row);
+      return item ? [item] : [];
+    }),
+    payments: rowsOf(paymentRows).flatMap((row) => {
+      const item = mapPayment(row);
+      return item ? [item] : [];
     }),
   };
 }
@@ -551,6 +578,9 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
       learningSeen: current.learningSeen,
       learningDone: current.learningDone,
       weeks: current.weeks,
+      wallets: current.wallets,
+      projectWallets: current.projectWallets,
+      payments: current.payments,
       markLessonsSeen: (ids) => {
         const seen = snapshotRef.current;
         if (!seen.userId) return;

@@ -3,14 +3,21 @@ import type {
   Application,
   Availability,
   CapitalRequest,
+  ChainId,
   Check,
   CheckState,
   Commitment,
   Contribution,
   PathChoice,
+  Payment,
+  PaymentAsset,
+  PaymentKind,
+  PaymentStatus,
   Project,
+  ProjectWallet,
   Skill,
   User,
+  Wallet,
   WorkPreset,
 } from "@/lib/types";
 
@@ -167,6 +174,69 @@ export function mapAvailability(row: Row): Availability | null {
     townId,
     skills: picked,
     note: text(row.note) ?? "",
+    createdAt: text(row.created_at) ?? "",
+  };
+}
+
+function chainId(value: unknown): ChainId | null {
+  return value === "bitcoin-signet" || value === "base-sepolia" ? value : null;
+}
+
+export function mapWallet(row: Row): Wallet | null {
+  const id = text(row.id);
+  const userId = text(row.user_id);
+  const chain = chainId(row.chain);
+  const address = text(row.address);
+  if (!id || !userId || !chain || !address) return null;
+  return {
+    id,
+    userId,
+    chain,
+    address,
+    label: text(row.label) ?? "",
+    verifiedAt: text(row.verified_at),
+    createdAt: text(row.created_at) ?? "",
+  };
+}
+
+export function mapProjectWallet(row: Row): ProjectWallet | null {
+  const projectId = text(row.project_id);
+  const chain = chainId(row.chain);
+  const address = text(row.address);
+  if (!projectId || !chain || !address) return null;
+  return { projectId, chain, address };
+}
+
+export function mapPayment(row: Row): Payment | null {
+  const id = text(row.id);
+  const projectId = text(row.project_id);
+  const kind = text(row.kind);
+  const chain = chainId(row.chain);
+  const txId = text(row.tx_id);
+  const asset = text(row.asset);
+  const amount = number(row.amount);
+  const confirmations = number(row.confirmations);
+  const status = text(row.status);
+  if (!id || !projectId || !chain || !txId || amount === null || confirmations === null) return null;
+  if (kind !== "capital-in" && kind !== "pay-out") return null;
+  if (asset !== "BTC" && asset !== "USDC") return null;
+  if (status !== "pending" && status !== "confirmed" && status !== "mismatch") return null;
+  return {
+    id,
+    projectId,
+    kind: kind as PaymentKind,
+    chain,
+    txId,
+    fromAddress: text(row.from_address) ?? "",
+    toAddress: text(row.to_address) ?? "",
+    asset: asset as PaymentAsset,
+    amount,
+    confirmations,
+    status: status as PaymentStatus,
+    commitmentId: text(row.commitment_id),
+    contributionId: text(row.contribution_id),
+    reason: text(row.reason),
+    checkedAt: text(row.checked_at) ?? "",
     createdAt: text(row.created_at) ?? "",
   };
 }

@@ -47,9 +47,12 @@ import type {
   Commitment,
   Contribution,
   PathChoice,
+  Payment,
   Project,
+  ProjectWallet,
   Sector,
   Skill,
+  Wallet,
 } from "@/lib/types";
 
 const STORAGE_KEY = "fundwork-demo-v3";
@@ -479,6 +482,9 @@ export type DemoValue = {
   learningSeen: string[];
   learningDone: string[];
   weeks: WeekPlan[];
+  wallets: Wallet[];
+  projectWallets: ProjectWallet[];
+  payments: Payment[];
   markLessonsSeen: (ids: string[]) => void;
   passInvestorBasics: () => void;
   saveWeek: (input: { projectId: string; goal: string; stepOne: string; stepTwo: string }) => boolean;
@@ -860,6 +866,9 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       learningSeen: session.progress.byUser[userId]?.seen ?? [],
       learningDone: session.progress.byUser[userId]?.done ?? [],
       weeks: session.progress.weeks,
+      wallets: [],
+      projectWallets: [],
+      payments: [],
       markLessonsSeen,
       passInvestorBasics,
       saveWeek,

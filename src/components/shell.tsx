@@ -24,8 +24,8 @@ import { cn } from "cn";
  * - A guide that updates when a check changes.
  * - Asking a follow-up question.
  * - Phone and WhatsApp sign-in.
- * - Organizers accepting commitments and logged work.
- * - Wallet connection.
+ * - Organizers accepting logged work. Capital is accepted by the chain check once a project has a wallet.
+ * - Mainnet, Lightning, multisig or escrow, a background watcher, and local cash-out partners.
  * - Email when someone applies.
  */
 

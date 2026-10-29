@@ -198,18 +198,22 @@ export function LearnMore({
 export function StatusLabel({
   status,
   kind,
+  waiting,
 }: {
   status: "pledged" | "accepted" | "logged";
   kind: "capital" | "work";
+  waiting?: string;
 }) {
   const accepted = status === "accepted";
   const label = accepted
     ? kind === "capital"
       ? "Capital accepted"
       : "Work accepted"
-    : kind === "capital"
-      ? "Capital waiting on the organizer"
-      : "Work waiting on the organizer";
+    : waiting
+      ? waiting
+      : kind === "capital"
+        ? "Capital waiting on the organizer"
+        : "Work waiting on the organizer";
   return (
     <span
       className={cn(
@@ -261,7 +265,7 @@ export function CapitalChip() {
         Capital not checked yet.
       </span>
       <p className="text-base text-muted-foreground">
-        Wallet connection is coming. For now this request shows the amount you entered.
+        You send it yourself. We check it on the chain. For now this request shows the amount you entered.
       </p>
     </div>
   );
