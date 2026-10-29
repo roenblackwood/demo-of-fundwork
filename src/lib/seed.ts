@@ -103,6 +103,12 @@ function assertSeed(data: Seed): void {
     if (!Array.isArray(project.team) || project.team.length === 0) {
       throw new Error(`Project ${project.id} needs a team.`);
     }
+    if (project.organizerId !== null) {
+      const organizer = data.users.find((user) => user.id === project.organizerId);
+      if (!organizer || organizer.role !== "investor") {
+        throw new Error(`Project ${project.id} organizer is not an investor.`);
+      }
+    }
     for (const member of project.team) {
       const user = data.users.find((item) => item.id === member);
       if (!user || user.role !== "worker") {

@@ -27,11 +27,12 @@ export function moneyStillOpen(goalJmd: number, committedJmd: number): number {
 
 export function projectCommitted(
   baseJmd: number,
-  extras: { projectId: string; amountJmd: number }[],
+  extras: { projectId: string; amountJmd: number; status?: "pledged" | "accepted" }[],
   projectId: string,
 ): number {
+  // Pledged money is still waiting on a capital check, so it stays out of this total.
   const extra = extras
-    .filter((item) => item.projectId === projectId)
+    .filter((item) => item.projectId === projectId && item.status !== "pledged")
     .reduce((sum, item) => sum + item.amountJmd, 0);
   return baseJmd + extra;
 }

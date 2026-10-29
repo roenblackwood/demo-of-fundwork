@@ -33,7 +33,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const label = ready ? firstName(name) : "You";
   const current = tabFor(pathname, role);
-  const attention = ready && youHasUpdate(role, userId, name, requests, applications, projects);
+  const attention = ready && youHasUpdate(role, userId, requests, applications, projects);
 
   return (
     <SnackbarProvider>

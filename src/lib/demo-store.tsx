@@ -156,7 +156,9 @@ function normalize(input: Partial<Session>): Session {
         }))
       : [],
     availability: Array.isArray(input.availability) ? input.availability : [],
-    projects: Array.isArray(input.projects) ? input.projects : [],
+    projects: Array.isArray(input.projects)
+      ? input.projects.map((project) => carryOrganizer(project, input))
+      : [],
     requestProjects: input.requestProjects ?? {},
     teamAdds: input.teamAdds ?? {},
     requestStatus: input.requestStatus ?? {},
@@ -207,6 +209,202 @@ function currentUserId(session: Session): string {
 function personName(session: Session): string {
   const sample = session.mode === "sample" && session.sampleId ? getUser(session.sampleId) : undefined;
   return sample?.name || session.displayName || "You";
+}
+
+function carryOrganizer(
+  project: Omit<Project, "organizerId"> & { organizerId?: string | null },
+  input: Partial<Session>,
+): Project {
+  if (project.organizerId === null || typeof project.organizerId === "string") {
+    return { ...project, organizerId: project.organizerId };
+  }
+  const view: Session = { ...initialSession, ...input };
+  const sameName = personName(view) === project.organizerName;
+  return { ...project, organizerId: sameName ? currentUserId(view) : null };
+}
+
+function writeDecision(
+  sessionRef: { current: Session },
+  setSession: (update: (current: Session) => Session) => void,
+  decide: (current: Session) => Session | null,
+): boolean {
+  const next = decide(sessionRef.current);
+  if (!next) return false;
+  sessionRef.current = next;
+  setSession((latest) => decide(latest) ?? latest);
+  return true;
+}
+
+function nextApply(
+  current: Session,
+  input: { requestId: string; skill: Skill; message: string },
+  stamp: { id: string; createdAt: string },
+): Session | null {
+  if (roleOf(current) !== "worker") return null;
+  const userId = currentUserId(current);
+  const request = listRequests(current).find((item) => item.id === input.requestId);
+  if (!request || request.status !== "open" || request.userId === userId) return null;
+  if (!request.skills.includes(input.skill)) return null;
+  const existing = listApplications(current).find(
+    (item) =>
+      item.requestId === input.requestId &&
+      item.workerId === userId &&
+      item.status !== "declined",
+  );
+  if (existing) return null;
+  const application: Application = {
+    id: stamp.id,
+    requestId: input.requestId,
+    projectId: null,
+    workerId: userId,
+    skill: input.skill,
+    message: input.message.trim().slice(0, 200),
+    origin: "applied",
+    status: "waiting",
+    createdAt: stamp.createdAt,
+  };
+  return { ...current, applications: [...current.applications, application] };
+}
+
+function nextInvite(
+  current: Session,
+  requestId: string,
+  workerId: string,
+  stamp: { id: string; createdAt: string },
+): Session | null {
+  const userId = currentUserId(current);
+  const request = listRequests(current).find((item) => item.id === requestId);
+  if (!request || request.userId !== userId || request.status !== "open") return null;
+  const post = listAvailability(current).find(
+    (item) => item.userId === workerId && item.skills.some((skill) => request.skills.includes(skill)),
+  );
+  const skill = post ? request.skills.find((item) => post.skills.includes(item)) : undefined;
+  if (!skill) return null;
+  const existing = listApplications(current).find(
+    (item) => item.requestId === requestId && item.workerId === workerId && item.status !== "declined",
+  );
+  if (existing) return null;
+  const application: Application = {
+    id: stamp.id,
+    requestId,
+    projectId: null,
+    workerId,
+    skill,
+    message: "",
+    origin: "invited",
+    status: "waiting",
+    createdAt: stamp.createdAt,
+  };
+  return { ...current, applications: [...current.applications, application] };
+}
+
+function nextApplicationStatus(
+  current: Session,
+  id: string,
+  status: "accepted" | "declined",
+): Session | null {
+  const application = listApplications(current).find((item) => item.id === id);
+  if (!application || application.status !== "waiting") return null;
+  const userId = currentUserId(current);
+  const applicationStatus = { ...current.applicationStatus, [id]: status };
+
+  if (application.projectId && !application.requestId) {
+    const project = listProjects(current).find((item) => item.id === application.projectId);
+    if (!project || project.organizerId !== userId) return null;
+    if (application.origin !== "applied") return null;
+    if (status === "declined" || project.team.includes(application.workerId)) {
+      return { ...current, applicationStatus };
+    }
+    const existing = current.teamAdds[project.id] ?? [];
+    if (existing.includes(application.workerId)) {
+      return { ...current, applicationStatus };
+    }
+    return {
+      ...current,
+      applicationStatus,
+      teamAdds: {
+        ...current.teamAdds,
+        [project.id]: [...existing, application.workerId],
+      },
+    };
+  }
+
+  if (!application.requestId) return null;
+  const request = baseRequest(current, application.requestId);
+  const shown = listRequests(current).find((item) => item.id === application.requestId);
+  if (!request || !shown) return null;
+  const owner = request.userId === userId;
+  const invitedWorker = application.workerId === userId && application.origin === "invited";
+  if (owner) {
+    if (application.origin !== "applied") return null;
+  } else if (!invitedWorker) {
+    return null;
+  }
+  if (status === "accepted") {
+    const filled = acceptedCount(listApplications(current), request.id);
+    if (shown.status !== "open" || filled >= request.workersNeeded) return null;
+  }
+  const nextApplications = listApplications({ ...current, applicationStatus });
+  return {
+    ...current,
+    applicationStatus,
+    requestStatus: {
+      ...current.requestStatus,
+      [request.id]: statusForTeam(shown, nextApplications),
+    },
+  };
+}
+
+function nextWithdraw(current: Session, id: string): Session | null {
+  const application = listApplications(current).find((item) => item.id === id);
+  if (!application || application.status !== "waiting") return null;
+  if (application.workerId !== currentUserId(current)) return null;
+  const withdrawnIds = current.withdrawnIds.includes(id)
+    ? current.withdrawnIds
+    : [...current.withdrawnIds, id];
+  const next = { ...current, withdrawnIds };
+  if (!application.requestId) return next;
+  const request = listRequests(current).find((item) => item.id === application.requestId);
+  if (!request) return next;
+  return {
+    ...next,
+    requestStatus: {
+      ...current.requestStatus,
+      [request.id]: statusForTeam(request, listApplications(next)),
+    },
+  };
+}
+
+function nextAsk(
+  current: Session,
+  projectId: string,
+  stamp: { id: string; createdAt: string },
+): Session | null {
+  if (roleOf(current) !== "worker") return null;
+  const userId = currentUserId(current);
+  const project = listProjects(current).find((item) => item.id === projectId);
+  if (!project || !project.organizerId || project.team.includes(userId) || project.organizerId === userId) {
+    return null;
+  }
+  const existing = listApplications(current).find(
+    (item) => item.projectId === projectId && item.workerId === userId && item.status !== "declined",
+  );
+  if (existing) return null;
+  const mine = workerSkills(current);
+  const skill = project.needs.find((item) => mine.includes(item)) ?? mine[0] ?? project.needs[0];
+  if (!skill) return null;
+  const application: Application = {
+    id: stamp.id,
+    requestId: null,
+    projectId,
+    workerId: userId,
+    skill,
+    message: "",
+    origin: "applied",
+    status: "waiting",
+    createdAt: stamp.createdAt,
+  };
+  return { ...current, applications: [...current.applications, application] };
 }
 
 function workerSkills(session: Session): Skill[] {
@@ -377,129 +575,21 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
 
   const applyToRequest = useCallback(
     (input: { requestId: string; skill: Skill; message: string }) => {
-      let changed = false;
-      setSession((current) => {
-        if (roleOf(current) !== "worker") return current;
-        const userId = currentUserId(current);
-        const request = listRequests(current).find((item) => item.id === input.requestId);
-        if (!request || request.status !== "open" || request.userId === userId) return current;
-        if (!request.skills.includes(input.skill)) return current;
-        const existing = listApplications(current).find(
-          (item) =>
-            item.requestId === input.requestId &&
-            item.workerId === userId &&
-            item.status !== "declined",
-        );
-        if (existing) return current;
-        changed = true;
-        const application: Application = {
-          id: crypto.randomUUID(),
-          requestId: input.requestId,
-          projectId: null,
-          workerId: userId,
-          skill: input.skill,
-          message: input.message.trim().slice(0, 200),
-          origin: "applied",
-          status: "waiting",
-          createdAt: new Date().toISOString(),
-        };
-        return { ...current, applications: [...current.applications, application] };
-      });
-      return changed;
+      const stamp = { id: crypto.randomUUID(), createdAt: new Date().toISOString() };
+      return writeDecision(sessionRef, setSession, (current) => nextApply(current, input, stamp));
     },
     [],
   );
 
   const inviteWorker = useCallback((requestId: string, workerId: string) => {
-    let changed = false;
-    setSession((current) => {
-      const userId = currentUserId(current);
-      const request = listRequests(current).find((item) => item.id === requestId);
-      if (!request || request.userId !== userId || request.status !== "open") return current;
-      const post = listAvailability(current).find(
-        (item) => item.userId === workerId && item.skills.some((skill) => request.skills.includes(skill)),
-      );
-      const skill = post ? request.skills.find((item) => post.skills.includes(item)) : undefined;
-      if (!skill) return current;
-      const existing = listApplications(current).find(
-        (item) => item.requestId === requestId && item.workerId === workerId && item.status !== "declined",
-      );
-      if (existing) return current;
-      changed = true;
-      const application: Application = {
-        id: crypto.randomUUID(),
-        requestId,
-        projectId: null,
-        workerId,
-        skill,
-        message: "",
-        origin: "invited",
-        status: "waiting",
-        createdAt: new Date().toISOString(),
-      };
-      return { ...current, applications: [...current.applications, application] };
-    });
-    return changed;
+    const stamp = { id: crypto.randomUUID(), createdAt: new Date().toISOString() };
+    return writeDecision(sessionRef, setSession, (current) =>
+      nextInvite(current, requestId, workerId, stamp),
+    );
   }, []);
 
   const setApplicationStatus = useCallback((id: string, status: "accepted" | "declined") => {
-    let changed = false;
-    setSession((current) => {
-      const application = listApplications(current).find((item) => item.id === id);
-      if (!application || application.status !== "waiting") return current;
-      const userId = currentUserId(current);
-      const applicationStatus = { ...current.applicationStatus, [id]: status };
-
-      if (application.projectId && !application.requestId) {
-        const project = listProjects(current).find((item) => item.id === application.projectId);
-        if (!project || project.organizerName !== personName(current)) return current;
-        if (application.origin !== "applied") return current;
-        if (status === "declined") {
-          changed = true;
-          return { ...current, applicationStatus };
-        }
-        if (project.team.includes(application.workerId)) {
-          changed = true;
-          return { ...current, applicationStatus };
-        }
-        changed = true;
-        return {
-          ...current,
-          applicationStatus,
-          teamAdds: {
-            ...current.teamAdds,
-            [project.id]: [...(current.teamAdds[project.id] ?? []), application.workerId],
-          },
-        };
-      }
-
-      if (!application.requestId) return current;
-      const request = baseRequest(current, application.requestId);
-      const shown = listRequests(current).find((item) => item.id === application.requestId);
-      if (!request || !shown) return current;
-      const owner = request.userId === userId;
-      const invitedWorker = application.workerId === userId && application.origin === "invited";
-      if (owner) {
-        if (application.origin !== "applied") return current;
-      } else if (!invitedWorker) {
-        return current;
-      }
-      if (status === "accepted") {
-        const filled = acceptedCount(listApplications(current), request.id);
-        if (shown.status !== "open" || filled >= request.workersNeeded) return current;
-      }
-      const nextApplications = listApplications({ ...current, applicationStatus });
-      changed = true;
-      return {
-        ...current,
-        applicationStatus,
-        requestStatus: {
-          ...current.requestStatus,
-          [request.id]: statusForTeam(shown, nextApplications),
-        },
-      };
-    });
-    return changed;
+    return writeDecision(sessionRef, setSession, (current) => nextApplicationStatus(current, id, status));
   }, []);
 
   const addAvailability = useCallback((draft: AvailabilityDraft) => {
@@ -529,28 +619,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const withdrawApplication = useCallback((id: string) => {
-    let changed = false;
-    setSession((current) => {
-      const application = listApplications(current).find((item) => item.id === id);
-      if (!application || application.status !== "waiting") return current;
-      if (application.workerId !== currentUserId(current)) return current;
-      const withdrawnIds = current.withdrawnIds.includes(id)
-        ? current.withdrawnIds
-        : [...current.withdrawnIds, id];
-      const next = { ...current, withdrawnIds };
-      changed = true;
-      if (!application.requestId) return next;
-      const request = listRequests(current).find((item) => item.id === application.requestId);
-      if (!request) return next;
-      return {
-        ...next,
-        requestStatus: {
-          ...current.requestStatus,
-          [request.id]: statusForTeam(request, listApplications(next)),
-        },
-      };
-    });
-    return changed;
+    return writeDecision(sessionRef, setSession, (current) => nextWithdraw(current, id));
   }, []);
 
   const startProject = useCallback((requestId: string, name: string) => {
@@ -595,6 +664,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         weeklyPayout: sectorWeekly(shown.sector),
         workStarted: false,
         organizerName: personName(current),
+        organizerId: currentUserId(current),
         needs: [...shown.skills],
         checks: openChecks(shown.sector, shown.countryId === "jamaica"),
         team: accepted.map((item) => item.workerId),
@@ -620,36 +690,8 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const askToJoin = useCallback((projectId: string) => {
-    let changed = false;
-    setSession((current) => {
-      if (roleOf(current) !== "worker") return current;
-      const userId = currentUserId(current);
-      const project = listProjects(current).find((item) => item.id === projectId);
-      if (!project || project.team.includes(userId) || project.organizerName === personName(current)) {
-        return current;
-      }
-      const existing = listApplications(current).find(
-        (item) => item.projectId === projectId && item.workerId === userId && item.status !== "declined",
-      );
-      if (existing) return current;
-      const mine = workerSkills(current);
-      const skill = project.needs.find((item) => mine.includes(item)) ?? mine[0] ?? project.needs[0];
-      if (!skill) return current;
-      changed = true;
-      const application: Application = {
-        id: crypto.randomUUID(),
-        requestId: null,
-        projectId,
-        workerId: userId,
-        skill,
-        message: "",
-        origin: "applied",
-        status: "waiting",
-        createdAt: new Date().toISOString(),
-      };
-      return { ...current, applications: [...current.applications, application] };
-    });
-    return changed;
+    const stamp = { id: crypto.randomUUID(), createdAt: new Date().toISOString() };
+    return writeDecision(sessionRef, setSession, (current) => nextAsk(current, projectId, stamp));
   }, []);
 
   const markOpened = useCallback(() => {

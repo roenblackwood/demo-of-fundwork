@@ -53,7 +53,7 @@ export function GettingStarted() {
     const posted =
       demo.requests.some((request) => request.userId === demo.userId) ||
       demo.openedProject ||
-      demo.projects.some((project) => project.organizerName === demo.name);
+      demo.projects.some((project) => project.organizerId === demo.userId);
     const committed = demo.commitments.length > 0;
     if (placed && posted && committed) return null;
     return (

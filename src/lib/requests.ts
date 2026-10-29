@@ -97,7 +97,6 @@ export function statusForTeam(request: CapitalRequest, applications: Application
 export function youHasUpdate(
   role: PathChoice | null,
   userId: string,
-  name: string,
   requests: CapitalRequest[],
   applications: Application[],
   projects: Project[],
@@ -105,7 +104,7 @@ export function youHasUpdate(
   if (role === "investor") {
     const requestIds = new Set(requests.filter((item) => item.userId === userId).map((item) => item.id));
     const projectIds = new Set(
-      projects.filter((item) => item.organizerName === name).map((item) => item.id),
+      projects.filter((item) => item.organizerId === userId).map((item) => item.id),
     );
     return applications.some(
       (item) =>

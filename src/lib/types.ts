@@ -89,6 +89,7 @@ export type Project = {
   weeklyPayout: number;
   workStarted: boolean;
   organizerName: string;
+  organizerId: string | null;
   needs: Skill[];
   checks: Check[];
   team: string[];

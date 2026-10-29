@@ -65,8 +65,16 @@ const skillIds = new Set([
 ]);
 const userIds = new Set((seed.users ?? []).map((user) => user.id));
 const usersById = new Map((seed.users ?? []).map((user) => [user.id, user]));
+const investorIds = new Set(
+  (seed.users ?? []).filter((user) => user.role === "investor").map((user) => user.id),
+);
 const projectIds = new Set(seed.projects.map((project) => project.id));
 for (const project of seed.projects) {
+  if (!Object.hasOwn(project, "organizerId")) {
+    errors.push(`${project.id} needs an organizerId.`);
+  } else if (project.organizerId !== null && !investorIds.has(project.organizerId)) {
+    errors.push(`${project.id} organizer is not an investor.`);
+  }
   for (const member of project.team ?? []) {
     const user = usersById.get(member);
     if (!user || user.role !== "worker") {

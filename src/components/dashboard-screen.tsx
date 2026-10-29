@@ -191,7 +191,7 @@ function NeedsYou() {
           }
           return Boolean(
             item.projectId &&
-              demo.projects.some((project) => project.id === item.projectId && project.organizerName === demo.name),
+              demo.projects.some((project) => project.id === item.projectId && project.organizerId === demo.userId),
           );
         })
       : demo.role === "worker"

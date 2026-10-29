@@ -28,7 +28,7 @@ import {
   moneyStillOpen,
   projectCommitted,
 } from "@/lib/ownership";
-import { currencyOf, getUser, projectPlace } from "@/lib/seed";
+import { currencyOf, getUser, projectPlace, seedCommitments } from "@/lib/seed";
 
 export function ProjectScreen({ id }: { id: string }) {
   const demo = useDemo();
@@ -66,7 +66,9 @@ export function ProjectScreen({ id }: { id: string }) {
   const onTeam = project.team.includes(demo.userId);
   const showInvest = demo.role !== "worker";
   const showWork = demo.role === "worker" && onTeam;
-  const askJoin = demo.role === "worker" && !onTeam;
+  const organizerHere = project.organizerId !== null;
+  const askJoin = demo.role === "worker" && !onTeam && organizerHere;
+  const organizerMissing = demo.role === "worker" && !onTeam && !organizerHere;
   const join = demo.applications.find(
     (item) => item.projectId === project.id && item.workerId === demo.userId && item.status !== "declined",
   );
@@ -75,7 +77,18 @@ export function ProjectScreen({ id }: { id: string }) {
   const joins = demo.applications.filter(
     (item) => item.projectId === project.id && item.origin === "applied",
   );
-  const organizing = project.organizerName === demo.name;
+  const organizing = project.organizerId === demo.userId;
+  const organizerPledged = [...seedCommitments(), ...demo.addedCommitments]
+    .filter(
+      (item) =>
+        project.organizerId !== null &&
+        item.projectId === project.id &&
+        item.userId === project.organizerId &&
+        item.status === "pledged",
+    )
+    .reduce((sum, item) => sum + item.amountJmd, 0);
+  const organizerUser = project.organizerId ? getUser(project.organizerId) : undefined;
+  const organizerFirst = firstName(organizerUser?.name ?? project.organizerName);
   const ownershipLine =
     demo.role === "worker"
       ? "Your work turns into ownership units."
@@ -103,6 +116,11 @@ export function ProjectScreen({ id }: { id: string }) {
             {moneyShort(committed, currency)} of {moneyShort(project.goalJmd, currency)}
           </ProgressLabel>
         </Progress>
+        {organizerPledged > 0 ? (
+          <p className="text-lg">
+            {money(organizerPledged, currency)} pledged by {organizerFirst}. Waiting on a capital check.
+          </p>
+        ) : null}
         <FundingPills
           labels={fundingLabels(committed, project.goalJmd, project.workStarted)}
         />
@@ -144,6 +162,7 @@ export function ProjectScreen({ id }: { id: string }) {
       <p className="text-base">
         Organizer: <span className="font-semibold">{project.organizerName}</span>
       </p>
+      {organizerMissing ? <p className="text-lg">This organizer is not on Fundwork yet.</p> : null}
       {askJoin && join ? (
         <ApplicationStatusLabel origin={join.origin} status={join.status} viewer="worker" />
       ) : null}

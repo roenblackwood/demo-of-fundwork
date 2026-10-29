@@ -596,6 +596,7 @@
       "committedJmd": 3200000,
       "workStarted": false,
       "organizerName": "Camille Wright",
+      "organizerId": "andre",
       "needs": [
         "building",
         "guest-house"
@@ -634,6 +635,7 @@
       "committedJmd": 1100000,
       "workStarted": false,
       "organizerName": "Devon Palmer",
+      "organizerId": "marcia",
       "needs": [
         "front",
         "building"
@@ -668,6 +670,7 @@
       "committedJmd": 9100000,
       "workStarted": true,
       "organizerName": "Nadine Powell",
+      "organizerId": "marcia",
       "needs": [
         "cooking",
         "guest-house"
@@ -706,6 +709,7 @@
       "committedJmd": 600000,
       "workStarted": false,
       "organizerName": "Linton Gayle",
+      "organizerId": "marcia",
       "needs": [
         "building"
       ],
@@ -743,6 +747,7 @@
       "committedJmd": 2000000,
       "workStarted": false,
       "organizerName": "Ionie Blake",
+      "organizerId": "marcia",
       "needs": [
         "farming",
         "building"
@@ -781,6 +786,7 @@
       "committedJmd": 2400000,
       "workStarted": false,
       "organizerName": "Basil Reid",
+      "organizerId": "andre",
       "needs": [
         "building",
         "farming"
@@ -819,6 +825,7 @@
       "committedJmd": 2200000,
       "workStarted": true,
       "organizerName": "Pauline Myers",
+      "organizerId": "andre",
       "needs": [
         "farming"
       ],
@@ -852,6 +859,7 @@
       "committedJmd": 1500000,
       "workStarted": false,
       "organizerName": "Carlton Ellis",
+      "organizerId": "andre",
       "needs": [
         "farming",
         "building"
@@ -894,6 +902,7 @@
       "weeklyPayout": 18000,
       "workStarted": true,
       "organizerName": "Asha Odhiambo",
+      "organizerId": "amina",
       "needs": [
         "power"
       ],
@@ -931,6 +940,7 @@
       "weeklyPayout": 1400,
       "workStarted": true,
       "organizerName": "Kwame Boateng",
+      "organizerId": "amina",
       "needs": [
         "water",
         "building"
@@ -969,6 +979,7 @@
       "weeklyPayout": 2500000,
       "workStarted": false,
       "organizerName": "Made Sari",
+      "organizerId": null,
       "needs": [
         "internet",
         "building"
@@ -1003,6 +1014,7 @@
       "weeklyPayout": 900000,
       "workStarted": true,
       "organizerName": "Luz Herrera",
+      "organizerId": null,
       "needs": [
         "teaching",
         "building"
@@ -1037,6 +1049,7 @@
       "weeklyPayout": 12000,
       "workStarted": false,
       "organizerName": "Farzana Rahman",
+      "organizerId": null,
       "needs": [
         "care",
         "power"
@@ -1075,6 +1088,7 @@
       "weeklyPayout": 120,
       "workStarted": false,
       "organizerName": "Hana Nasser",
+      "organizerId": null,
       "needs": [
         "water",
         "building"
@@ -1113,6 +1127,7 @@
       "weeklyPayout": 1800,
       "workStarted": false,
       "organizerName": "Elena Rusu",
+      "organizerId": null,
       "needs": [
         "teaching",
         "building"
