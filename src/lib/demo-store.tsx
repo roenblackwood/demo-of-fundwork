@@ -10,6 +10,18 @@ import {
   useState,
 } from "react";
 import { openChecks, sectorWeekly } from "@/lib/catalog";
+import { investorBasicsIds, stageLessons } from "@/lib/lessons";
+import {
+  closeWeek as closeWeekPlan,
+  emptyProgress,
+  finishLessons,
+  normalizeProgress,
+  openWeek,
+  passBasics,
+  seeLessons,
+  type ProgressState,
+  type WeekPlan,
+} from "@/lib/progress";
 import {
   acceptedCount,
   baseRequest,
@@ -79,6 +91,7 @@ type Session = {
   applicationStatus: Record<string, Application["status"]>;
   withdrawnIds: string[];
   openedProject: boolean;
+  progress: ProgressState;
 };
 
 type Persisted = {
@@ -124,6 +137,7 @@ const initialSession: Session = {
   applicationStatus: {},
   withdrawnIds: [],
   openedProject: false,
+  progress: emptyProgress(),
 };
 
 function isSession(value: unknown): value is Partial<Session> {
@@ -165,6 +179,7 @@ function normalize(input: Partial<Session>): Session {
     applicationStatus: input.applicationStatus ?? {},
     withdrawnIds: Array.isArray(input.withdrawnIds) ? input.withdrawnIds : [],
     openedProject: input.openedProject ?? false,
+    progress: normalizeProgress(input.progress),
     path: input.path ?? null,
     sampleId: input.sampleId ?? null,
     displayName: input.displayName ?? "",
@@ -460,6 +475,14 @@ export type DemoValue = {
   addedApplications: Application[];
   addedAvailability: Availability[];
   openedProject: boolean;
+  investorBasicsDone: boolean;
+  learningSeen: string[];
+  learningDone: string[];
+  weeks: WeekPlan[];
+  markLessonsSeen: (ids: string[]) => void;
+  passInvestorBasics: () => void;
+  saveWeek: (input: { projectId: string; goal: string; stepOne: string; stepTwo: string }) => boolean;
+  closeWeek: (input: { id: string; status: "done" | "not-done"; happened: string }) => boolean;
   startPath: (path: PathChoice) => void;
   updateFlow: (patch: Partial<Flow>) => void;
   setProof: (proof: Proof | null) => void;
@@ -674,6 +697,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         needs: [...shown.skills],
         checks: openChecks(shown.sector, shown.countryId === "jamaica"),
         team: accepted.map((item) => item.workerId),
+        mentorName: null,
       };
       const commitment: Commitment = {
         id: crypto.randomUUID(),
@@ -704,6 +728,61 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     setSession((current) =>
       current.openedProject ? current : { ...current, openedProject: true },
     );
+  }, []);
+
+  const markLessonsSeen = useCallback((ids: string[]) => {
+    setSession((current) => {
+      const progress = seeLessons(current.progress, currentUserId(current), ids);
+      if (progress === current.progress) return current;
+      return { ...current, progress };
+    });
+  }, []);
+
+  const passInvestorBasics = useCallback(() => {
+    setSession((current) => {
+      const progress = passBasics(current.progress, currentUserId(current), investorBasicsIds());
+      if (progress === current.progress) return current;
+      return { ...current, progress };
+    });
+  }, []);
+
+  const saveWeek = useCallback((input: { projectId: string; goal: string; stepOne: string; stepTwo: string }) => {
+    let saved = false;
+    setSession((current) => {
+      const userId = currentUserId(current);
+      const project = listProjects(current).find((item) => item.id === input.projectId);
+      if (!project || project.organizerId !== userId) return current;
+      let progress = openWeek(current.progress, {
+        id: crypto.randomUUID(),
+        projectId: input.projectId,
+        goal: input.goal,
+        stepOne: input.stepOne,
+        stepTwo: input.stepTwo,
+        createdAt: new Date().toISOString(),
+      });
+      if (progress === current.progress) return current;
+      saved = true;
+      const match = stageLessons(project.sector, project.workStarted).find(
+        (lesson) => lesson.action === input.goal.trim(),
+      );
+      if (match) progress = finishLessons(progress, userId, [match.id]);
+      return { ...current, progress };
+    });
+    return saved;
+  }, []);
+
+  const closeWeek = useCallback((input: { id: string; status: "done" | "not-done"; happened: string }) => {
+    let saved = false;
+    setSession((current) => {
+      const week = current.progress.weeks.find((item) => item.id === input.id && item.status === "open");
+      const project = week ? listProjects(current).find((item) => item.id === week.projectId) : undefined;
+      if (!week || !project || project.organizerId !== currentUserId(current)) return current;
+      const progress = closeWeekPlan(current.progress, input);
+      if (progress === current.progress) return current;
+      saved = true;
+      return { ...current, progress };
+    });
+    return saved;
   }, []);
 
   const useSample = useCallback((id: string) => {
@@ -777,6 +856,14 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       addedApplications: session.applications,
       addedAvailability: session.availability,
       openedProject: session.openedProject,
+      investorBasicsDone: session.progress.byUser[userId]?.basics === true,
+      learningSeen: session.progress.byUser[userId]?.seen ?? [],
+      learningDone: session.progress.byUser[userId]?.done ?? [],
+      weeks: session.progress.weeks,
+      markLessonsSeen,
+      passInvestorBasics,
+      saveWeek,
+      closeWeek,
       startPath,
       updateFlow,
       setProof: (proofNext) => {
@@ -813,6 +900,10 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     applyToRequest,
     inviteWorker,
     markOpened,
+    markLessonsSeen,
+    passInvestorBasics,
+    saveWeek,
+    closeWeek,
     ready,
     reset,
     session,

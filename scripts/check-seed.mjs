@@ -264,6 +264,122 @@ if (!Array.isArray(guides.entries)) {
   }
 }
 
+const lessonsFile = JSON.parse(readFileSync(new URL("../data/lessons.json", import.meta.url), "utf8"));
+const audiences = new Set(["investor", "organizer", "worker"]);
+const moments = new Set(["investor-basics", "first-month", "running", "on-project", "grow-work"]);
+const momentAudience = {
+  "investor-basics": "investor",
+  "first-month": "organizer",
+  running: "organizer",
+  "on-project": "worker",
+  "grow-work": "worker",
+};
+
+function wordCount(text) {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+function hasPercentTalk(text) {
+  return /\d\s*%|%\s*\d/.test(text);
+}
+
+function realDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+}
+
+function lessonLine(label, value, limit) {
+  if (typeof value !== "string" || !value.trim()) {
+    errors.push(`${label} needs text.`);
+    return;
+  }
+  if (value.includes("\n")) errors.push(`${label} must be one line.`);
+  if (wordCount(value) > limit) errors.push(`${label} is too long.`);
+  if (hasMoneyTalk(value) || hasPercentTalk(value)) {
+    errors.push(`${label} has a price or a percent.`);
+  }
+}
+
+if (!Array.isArray(lessonsFile.lessons) || lessonsFile.lessons.length === 0) {
+  errors.push("lessons.json needs a lessons list.");
+} else {
+  const seenIds = new Set();
+  const byMoment = new Map();
+  for (const lesson of lessonsFile.lessons) {
+    const label = lesson?.id ?? "a lesson";
+    if (typeof lesson.id !== "string" || !lesson.id.trim()) errors.push("A lesson needs an id.");
+    if (seenIds.has(lesson.id)) errors.push(`Duplicate lesson ${lesson.id}.`);
+    seenIds.add(lesson.id);
+    if (!audiences.has(lesson.audience)) errors.push(`${label} has an unknown audience.`);
+    if (!moments.has(lesson.moment)) errors.push(`${label} has an unknown moment.`);
+    if (momentAudience[lesson.moment] && lesson.audience !== momentAudience[lesson.moment]) {
+      errors.push(`${label} is in the wrong audience for its moment.`);
+    }
+    if (lesson.sector !== undefined && !sectorsNeeded.includes(lesson.sector)) {
+      errors.push(`${label} has an unknown sector.`);
+    }
+    if (lesson.moment === "running" && !sectorsNeeded.includes(lesson.sector)) {
+      errors.push(`${label} needs a sector.`);
+    }
+    if (lesson.moment !== "running" && lesson.sector !== undefined) {
+      errors.push(`${label} should not have a sector.`);
+    }
+    if (lesson.skill !== undefined && !skillIds.has(lesson.skill)) {
+      errors.push(`${label} has an unknown skill.`);
+    }
+    if (lesson.skill !== undefined && lesson.moment !== "on-project") {
+      errors.push(`${label} should not have a skill.`);
+    }
+    lessonLine(`${label} title`, lesson.title, 16);
+    lessonLine(`${label} body`, lesson.body, 90);
+    lessonLine(`${label} rule`, lesson.rule, 30);
+    lessonLine(`${label} action`, lesson.action, 20);
+    if (typeof lesson.checkedOn !== "string" || !realDate(lesson.checkedOn)) {
+      errors.push(`${label} needs a checkedOn date.`);
+    }
+    const bucket = byMoment.get(lesson.moment) ?? [];
+    bucket.push(lesson);
+    byMoment.set(lesson.moment, bucket);
+  }
+  const basics = byMoment.get("investor-basics") ?? [];
+  if (basics.length !== 5) errors.push("Investor basics needs five cards.");
+  for (const id of ["investor-lose", "investor-sell", "investor-time", "investor-prices", "investor-spread"]) {
+    if (!seenIds.has(id)) errors.push(`Missing lesson ${id}.`);
+  }
+  const firstMonth = byMoment.get("first-month") ?? [];
+  if (firstMonth.length < 5) errors.push("The first month needs five cards.");
+  const running = byMoment.get("running") ?? [];
+  for (const sector of sectorsNeeded) {
+    const count = running.filter((lesson) => lesson.sector === sector).length;
+    const need = sector === "lodging" || sector === "agriculture" ? 6 : 4;
+    if (count < need) errors.push(`${sector} needs ${need} running cards.`);
+  }
+  const onProject = byMoment.get("on-project") ?? [];
+  for (const skill of skillIds) {
+    if (!onProject.some((lesson) => lesson.skill === skill)) {
+      errors.push(`Missing a safety card for ${skill}.`);
+    }
+  }
+  const shared = onProject.filter((lesson) => !lesson.skill);
+  if (!shared.some((lesson) => lesson.id === "worker-photo")) errors.push("Missing the daily photo card.");
+  if (!shared.some((lesson) => lesson.id === "worker-units")) errors.push("Missing the units card.");
+  const grow = byMoment.get("grow-work") ?? [];
+  if (grow.length !== 1 || grow[0].id !== "grow-work") errors.push("Missing the grow-your-work card.");
+}
+
+const mentors = seed.projects.filter(
+  (project) => project.countryId === "jamaica" && typeof project.mentorName === "string" && project.mentorName.trim(),
+);
+if (mentors.length < 2) errors.push("Two Jamaica projects need a mentor.");
+for (const project of seed.projects) {
+  if (project.mentorName === undefined || project.mentorName === null) continue;
+  if (typeof project.mentorName !== "string" || !project.mentorName.trim() || project.mentorName.length > 80) {
+    errors.push(`${project.id} has a bad mentor name.`);
+  }
+}
+
 if (errors.length) {
   console.error(errors.join("\n"));
   process.exit(1);

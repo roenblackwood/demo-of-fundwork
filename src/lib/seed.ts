@@ -124,6 +124,15 @@ function assertSeed(data: Seed): void {
         throw new Error(`Project ${project.id} has a team member who does not fit.`);
       }
     }
+    if (
+      project.mentorName !== undefined &&
+      project.mentorName !== null &&
+      (typeof project.mentorName !== "string" ||
+        !project.mentorName.trim() ||
+        project.mentorName.length > 80)
+    ) {
+      throw new Error(`Project ${project.id} has a bad mentor name.`);
+    }
     for (const check of project.checks) {
       const known: readonly string[] = CHECK_IDS;
       if (!known.includes(check.id)) {

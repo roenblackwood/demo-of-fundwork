@@ -20,8 +20,12 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { Progress, ProgressLabel } from "@/components/ui/progress";
 import { BeforeYouApply, YourPlan } from "@/components/guide-card";
+import { LessonList } from "@/components/lesson-card";
+import { ThisWeekCard } from "@/components/this-week";
 import { checkNote, projectNote } from "@/lib/ai";
 import { canStillCommit } from "@/lib/catalog";
+import { UNITS_PAYOUT_LINE } from "@/lib/copy";
+import { stageLessons, workerProjectLessons } from "@/lib/lessons";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
 import { firstName, money, moneyShort, placeLine } from "@/lib/format";
@@ -35,6 +39,7 @@ import {
   projectCommitted,
 } from "@/lib/ownership";
 import { currencyOf, getCountry, getUser, projectPlace, seedCommitments } from "@/lib/seed";
+import type { Skill } from "@/lib/types";
 
 export function ProjectScreen({ id }: { id: string }) {
   const demo = useDemo();
@@ -161,12 +166,20 @@ export function ProjectScreen({ id }: { id: string }) {
           {showWork ? "Accepted work here turns into ownership units. " : null}
           {ownershipLine}
         </p>
+        <p className="text-lg leading-relaxed">{UNITS_PAYOUT_LINE}</p>
       </section>
-      <div className="flex items-center gap-3">
+      <div className="flex items-start gap-3">
         <Avatar name={project.organizerName} />
         <div className="min-w-0">
           <p className="font-semibold">{project.organizerName}</p>
           <p className="text-sm text-muted-foreground">Organizer</p>
+          {project.mentorName ? (
+            <>
+              {/* Experienced organizers mentor new ones, matched by sector and parish. Messaging is not built. */}
+              <p className="mt-2 font-semibold">Your mentor: {project.mentorName}</p>
+              <p className="text-sm text-muted-foreground">Talk to them before big choices.</p>
+            </>
+          ) : null}
         </div>
         {project.checks.some((check) => check.id === "organizer" && check.state === "yes") ? (
           <span className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-full bg-trust px-2 py-0.5 text-xs font-semibold whitespace-nowrap text-trust-foreground">
@@ -176,6 +189,17 @@ export function ProjectScreen({ id }: { id: string }) {
         ) : null}
       </div>
       {organizerMissing ? <p className="text-lg">This organizer is not on Fundwork yet.</p> : null}
+      {organizing ? (
+        <>
+          <LessonList lessons={stageLessons(project.sector, project.workStarted)} />
+          <ThisWeekCard project={project} />
+        </>
+      ) : null}
+      {showWork ? (
+        <LessonList
+          lessons={workerProjectLessons(workerSkills(demo.homeSkill, demo.homeExtraSkills, project.needs))}
+        />
+      ) : null}
       {organizing ? (
         <YourPlan
           countryId={project.countryId}
@@ -274,6 +298,7 @@ export function ProjectScreen({ id }: { id: string }) {
           <p>People who do the work are paid in a stable unit.</p>
           <p>Dollar amounts are rough and fixed in this demo.</p>
           <p>No Bitcoin moves in this demo.</p>
+          <p>{UNITS_PAYOUT_LINE}</p>
         </div>
         {notes.map((item) => (
           <div key={item.title} className="space-y-3">
@@ -324,4 +349,10 @@ export function ProjectScreen({ id }: { id: string }) {
       ) : null}
     </div>
   );
+}
+
+function workerSkills(home: Skill | null, extra: Skill[], needs: Skill[]): Skill[] {
+  const mine = [home, ...extra].filter((item): item is Skill => Boolean(item));
+  const fitting = mine.filter((skill) => needs.includes(skill));
+  return fitting.length > 0 ? fitting : mine;
 }

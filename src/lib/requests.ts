@@ -116,6 +116,7 @@ export function youHasUpdate(
     const projectIds = new Set(
       projects.filter((item) => item.organizerId === userId).map((item) => item.id),
     );
+    if (projectIds.size > 0) return true;
     return applications.some(
       (item) =>
         item.origin === "applied" &&

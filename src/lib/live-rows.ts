@@ -79,6 +79,7 @@ export function mapProject(row: Row, team: string[], acceptedJmd: number): Proje
     workStarted: row.work_started === true,
     organizerName,
     organizerId: text(row.organizer_id),
+    mentorName: text(row.mentor_name),
     needs: skills(row.needs),
     checks: checks(row.checks),
     team,
@@ -185,6 +186,7 @@ export function mapCommitment(row: Row): Commitment | null {
     amountJmd: amount,
     status,
     createdAt: text(row.created_at) ?? "",
+    countsAt: text(row.counts_at),
   };
 }
 

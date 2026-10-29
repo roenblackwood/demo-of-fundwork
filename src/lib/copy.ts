@@ -7,6 +7,10 @@ export const CAPITAL_LINE =
 export const COMMIT_LINE =
   "You deploy Bitcoin capital. Workers receive a stable unit.";
 
+/** Keep this until a product decision says how units pay. */
+export const UNITS_PAYOUT_LINE =
+  "How units pay out is not set yet. Do not commit expecting a payout.";
+
 export function savedLabel(): string {
   return isLive() ? "Saved" : "Saved on this phone";
 }

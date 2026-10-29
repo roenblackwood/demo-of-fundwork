@@ -14,6 +14,17 @@ import {
   withdrawApplication as withdrawApplicationAction,
 } from "@/app/actions/live";
 import { isSkill } from "@/lib/catalog";
+import { investorBasicsIds, stageLessons } from "@/lib/lessons";
+import {
+  closeWeek as closeWeekPlan,
+  emptyProgress,
+  finishLessons,
+  normalizeProgress,
+  openWeek,
+  passBasics,
+  seeLessons,
+  type ProgressState,
+} from "@/lib/progress";
 import { DemoContext, type AvailabilityDraft, type DemoValue, type Flow, type Proof, type RequestDraft } from "@/lib/demo-store";
 import {
   mapApplication,
@@ -180,6 +191,8 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
   const [path, setPath] = useState<PathChoice | null>(null);
   const [proof, setProofState] = useState<Proof | null>(null);
   const [openedProject, setOpenedProject] = useState(false);
+  const [progress, setProgress] = useState<ProgressState>(emptyProgress);
+  const [progressReady, setProgressReady] = useState(false);
   const snapshotRef = useRef(snapshot);
   const savingRef = useRef(false);
   const flowStarted = useRef(false);
@@ -187,6 +200,25 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     snapshotRef.current = snapshot;
   }, [snapshot]);
+
+  useEffect(() => {
+    // Load this phone's lesson record after mount so the server HTML matches.
+    try {
+      const raw = window.localStorage.getItem("fundwork-progress-v1");
+      if (raw) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setProgress(normalizeProgress(JSON.parse(raw)));
+      }
+    } catch {
+      // Keep the empty record.
+    }
+    setProgressReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!progressReady) return;
+    window.localStorage.setItem("fundwork-progress-v1", JSON.stringify(progress));
+  }, [progress, progressReady]);
 
   const reload = useCallback(async () => {
     try {
@@ -478,11 +510,63 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
         );
       },
       markOpened: () => setOpenedProject(true),
+      investorBasicsDone: progress.byUser[current.userId]?.basics === true,
+      learningSeen: progress.byUser[current.userId]?.seen ?? [],
+      learningDone: progress.byUser[current.userId]?.done ?? [],
+      weeks: progress.weeks,
+      markLessonsSeen: (ids) => {
+        const userId = snapshotRef.current.userId;
+        if (!userId) return;
+        setProgress((item) => seeLessons(item, userId, ids));
+      },
+      passInvestorBasics: () => {
+        const userId = snapshotRef.current.userId;
+        if (!userId) return;
+        setProgress((item) => passBasics(item, userId, investorBasicsIds()));
+      },
+      saveWeek: (input) => {
+        const seen = snapshotRef.current;
+        const project = seen.projects.find((item) => item.id === input.projectId);
+        if (!seen.userId || !project || project.organizerId !== seen.userId) return false;
+        let saved = false;
+        setProgress((item) => {
+          let next = openWeek(item, {
+            id: crypto.randomUUID(),
+            projectId: input.projectId,
+            goal: input.goal,
+            stepOne: input.stepOne,
+            stepTwo: input.stepTwo,
+            createdAt: new Date().toISOString(),
+          });
+          if (next === item) return item;
+          saved = true;
+          const match = stageLessons(project.sector, project.workStarted).find(
+            (lesson) => lesson.action === input.goal.trim(),
+          );
+          if (match && seen.userId) next = finishLessons(next, seen.userId, [match.id]);
+          return next;
+        });
+        return saved;
+      },
+      closeWeek: (input) => {
+        const seen = snapshotRef.current;
+        const week = progress.weeks.find((item) => item.id === input.id && item.status === "open");
+        const project = week ? seen.projects.find((item) => item.id === week.projectId) : undefined;
+        if (!week || !project || project.organizerId !== seen.userId) return false;
+        let saved = false;
+        setProgress((item) => {
+          const next = closeWeekPlan(item, input);
+          if (next === item) return item;
+          saved = true;
+          return next;
+        });
+        return saved;
+      },
       useSample: () => {},
       useNewPerson: () => {},
       reset: () => {},
     };
-  }, [commitFlag, commitId, flow, openedProject, path, proof, ready, reload, saving, snapshot]);
+  }, [commitFlag, commitId, flow, openedProject, path, progress, proof, ready, reload, saving, snapshot]);
 
   return <DemoContext.Provider value={value}>{children}</DemoContext.Provider>;
 }

@@ -93,6 +93,8 @@ export type Project = {
   needs: Skill[];
   checks: Check[];
   team: string[];
+  /** Experienced organizers mentor new ones, matched by sector and parish. */
+  mentorName?: string | null;
 };
 
 export type CommitmentStatus = "pledged" | "accepted";
@@ -104,6 +106,8 @@ export type Commitment = {
   amountJmd: number;
   status: CommitmentStatus;
   createdAt: string;
+  /** When this commitment starts to count. Absent means it can count now. */
+  countsAt?: string | null;
 };
 
 export type ContributionStatus = "logged" | "accepted";

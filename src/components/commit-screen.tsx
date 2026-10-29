@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
@@ -11,7 +11,8 @@ import { canStillCommit, commitChoices } from "@/lib/catalog";
 import { COMMIT_LINE, moneyNote, savedLabel } from "@/lib/copy";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
-import { money } from "@/lib/format";
+import { firstName } from "@/lib/format";
+import { isLive } from "@/lib/mode";
 import { investorUnits, moneyStillOpen, projectCommitted } from "@/lib/ownership";
 import { currencyOf } from "@/lib/seed";
 
@@ -20,8 +21,14 @@ export function CommitScreen({ id }: { id: string }) {
   const demo = useDemo();
   const project = demo.projects.find((item) => item.id === id);
   const [amount, setAmount] = useState<number | null>(null);
+  const learnHref = `/learn/investor?next=${encodeURIComponent(`/projects/${id}/commit`)}`;
 
-  if (!demo.ready) return <PageBusy />;
+  useEffect(() => {
+    if (!demo.ready || demo.investorBasicsDone) return;
+    router.replace(learnHref);
+  }, [demo.ready, demo.investorBasicsDone, learnHref, router]);
+
+  if (!demo.ready || !demo.investorBasicsDone) return <PageBusy />;
   if (!project) {
     return (
       <div className="space-y-4">
@@ -68,6 +75,14 @@ export function CommitScreen({ id }: { id: string }) {
         <p className="text-lg">The money they asked for is already in.</p>
       ) : (
         <div className="space-y-3">
+          <div className="space-y-1">
+            <p className="text-lg font-semibold leading-snug">
+              {firstName(demo.name)}, this is high risk. You could lose all of this money.
+            </p>
+            <Link href={learnHref} className="inline-flex min-h-11 items-center font-semibold text-primary">
+              Read the risks again
+            </Link>
+          </div>
           {choices.map((preset) => {
             const tooMuch = preset > stillOpen;
             const selected = amount === preset;
@@ -112,8 +127,31 @@ export function CommitScreen({ id }: { id: string }) {
       ) : null}
       {open ? (
         <ActionBar>
-          <Button size="lg" className="w-full" disabled={!amount || demo.saving} aria-busy={demo.saving} onClick={() => void save()}>
-            {amount ? `Commit ${money(amount, currency)}` : "Choose an amount"}
+          {/* In demo mode the first commitment is saved right away. Live mode holds the first commitment of a new account for 24 hours before it counts. */}
+          {isLive() && demo.commitments.length === 0 ? (
+            <p className="text-base leading-snug">
+              This is your first one. We hold it for 24 hours so you can think it over.
+            </p>
+          ) : null}
+          <Button
+            type="button"
+            size="lg"
+            variant="outline"
+            className="w-full"
+            disabled={!amount || demo.saving}
+            aria-busy={demo.saving}
+            onClick={() => void save()}
+          >
+            Commit
+          </Button>
+          <Button
+            type="button"
+            size="lg"
+            variant="outline"
+            className="w-full"
+            onClick={() => router.push(`/projects/${project.id}`)}
+          >
+            Not now
           </Button>
         </ActionBar>
       ) : null}

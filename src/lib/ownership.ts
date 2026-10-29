@@ -27,12 +27,19 @@ export function moneyStillOpen(goalJmd: number, committedJmd: number): number {
 
 export function projectCommitted(
   baseJmd: number,
-  extras: { projectId: string; amountJmd: number; status?: "pledged" | "accepted" }[],
+  extras: { projectId: string; amountJmd: number; status?: "pledged" | "accepted"; countsAt?: string | null }[],
   projectId: string,
 ): number {
   // Pledged money is still waiting on a capital check, so it stays out of this total.
+  // A first live commitment also waits until countsAt before it counts.
+  const now = Date.now();
   const extra = extras
-    .filter((item) => item.projectId === projectId && item.status !== "pledged")
+    .filter((item) => {
+      if (item.projectId !== projectId || item.status === "pledged") return false;
+      if (!item.countsAt) return true;
+      const time = Date.parse(item.countsAt);
+      return Number.isNaN(time) || time <= now;
+    })
     .reduce((sum, item) => sum + item.amountJmd, 0);
   return baseJmd + extra;
 }

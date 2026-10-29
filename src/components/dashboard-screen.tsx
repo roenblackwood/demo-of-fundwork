@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PageBusy } from "@/components/busy";
 import { GettingStarted } from "@/components/getting-started";
+import { LessonList } from "@/components/lesson-card";
 import { ApplicationStatusLabel, MoneyText, StatusLabel, sectionTitle } from "@/components/parts";
+import { ThisWeekNeed } from "@/components/this-week";
 import { useSnackbar } from "@/components/snackbar";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -12,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { sectorTitle, skillTitle, workPresetLabel } from "@/lib/catalog";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
+import { allLessons, growWorkLesson } from "@/lib/lessons";
 import { isLive } from "@/lib/mode";
 import { refreshLiveStore } from "@/lib/live-store";
 import { browserSupabase } from "@/lib/supabase/browser";
@@ -152,6 +155,8 @@ export function DashboardScreen() {
           </section>
       ) : null}
 
+      {demo.role === "worker" && hasWork ? <GrowYourWork /> : null}
+
       {(hasMoney || hasWork) ? (
         <Link
           href="/you/ownership"
@@ -163,6 +168,8 @@ export function DashboardScreen() {
           See your ownership units
         </Link>
       ) : null}
+
+      <YourLearning />
 
       <GettingStarted />
 
@@ -219,13 +226,20 @@ function NeedsYou() {
             (item) => item.workerId === demo.userId && item.origin === "invited" && item.status === "waiting",
           )
         : [];
-  if (waiting.length === 0) return null;
+  const organized =
+    demo.role === "investor"
+      ? demo.projects.filter((project) => project.organizerId === demo.userId)
+      : [];
+  if (waiting.length === 0 && organized.length === 0) return null;
 
   return (
     <section className="space-y-4">
       <h2 className={sectionTitle}>Needs you</h2>
       {waiting.map((application) => (
         <NeedRow key={application.id} application={application} show={show} />
+      ))}
+      {organized.map((project) => (
+        <ThisWeekNeed key={project.id} project={project} />
       ))}
     </section>
   );
@@ -291,6 +305,73 @@ function NeedRow({
         </div>
       )}
     </article>
+  );
+}
+
+function GrowYourWork() {
+  const demo = useDemo();
+  const lesson = growWorkLesson();
+  if (!lesson) return null;
+  const countryId = demo.flow?.countryId || demo.homeCountryId;
+  const parishId = demo.flow?.countryId ? (demo.flow.parishId ?? null) : demo.homeParishId;
+  const townId = (demo.flow?.countryId ? demo.flow.townId : demo.homeTownId) || "";
+  const place = parishId || countryId;
+  const href = townId && place ? `/invest/start/${place}/${townId}` : "/invest/start";
+  return (
+    <section className="space-y-4">
+      <h2 className={sectionTitle}>Grow your work</h2>
+      <LessonList lessons={[lesson]} />
+      <Link href={href} className={cn(buttonVariants({ variant: "outline", size: "lg" }), "w-full")}>
+        Start a project here
+      </Link>
+    </section>
+  );
+}
+
+function YourLearning() {
+  const demo = useDemo();
+  if (demo.role !== "investor" && demo.role !== "worker") return null;
+  const audiences = demo.role === "worker" ? new Set(["worker"]) : new Set(["investor", "organizer"]);
+  const mine = allLessons().filter((lesson) => audiences.has(lesson.audience));
+  const seen = mine.filter((lesson) => demo.learningSeen.includes(lesson.id));
+  const done = mine.filter((lesson) => demo.learningDone.includes(lesson.id));
+  return (
+    <section className="space-y-3">
+      <h2 className={sectionTitle}>Your learning</h2>
+      <div>
+        <h3 className="font-semibold">Seen</h3>
+        {seen.length === 0 ? (
+          <p className="text-base">You have not opened a lesson yet.</p>
+        ) : (
+          <ul className="mt-1 space-y-1">
+            {seen.map((lesson) => (
+              <li key={lesson.id} className="text-base">
+                {lesson.title}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <div>
+        <h3 className="font-semibold">Done</h3>
+        {done.length === 0 ? (
+          <p className="text-base">None yet.</p>
+        ) : (
+          <ul className="mt-1 space-y-1">
+            {done.map((lesson) => (
+              <li key={lesson.id} className="text-base">
+                {lesson.title}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      {demo.role === "investor" ? (
+        <Link href="/learn/investor" className="inline-flex min-h-11 items-center font-semibold text-primary">
+          Review the investor basics
+        </Link>
+      ) : null}
+    </section>
   );
 }
 
