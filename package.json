@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "check:seed": "node scripts/check-seed.mjs",
+    "check:live": "node scripts/check-live-rules.mjs",
     "seed:live": "node scripts/seed-supabase.mjs"
   },
   "dependencies": {

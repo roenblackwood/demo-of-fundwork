@@ -25,6 +25,7 @@ import { canStillCommit } from "@/lib/catalog";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
 import { firstName, money, moneyShort, placeLine } from "@/lib/format";
+import { aboutUsd } from "@/lib/rates";
 import {
   INVESTOR_UNITS,
   PLATFORM_UNITS,
@@ -110,17 +111,17 @@ export function ProjectScreen({ id }: { id: string }) {
         <p className="mt-1 text-lg text-muted-foreground">{place}</p>
       </div>
       <section className="space-y-3">
-        <p className="min-w-0 text-2xl font-semibold leading-snug">
-          {stillOpen > 0 ? (
-            <MoneyText amount={stillOpen} currency={currency} short suffix="still needed" />
-          ) : (
-            "The money they asked for is in"
-          )}
-        </p>
+        <div>
+          <p className="text-2xl font-semibold leading-tight">
+            {stillOpen > 0 ? `${moneyShort(stillOpen, currency)} still needed` : "The money they asked for is in"}
+          </p>
+          {stillOpen > 0 && aboutUsd(stillOpen, currency) ? (
+            <p className="text-base text-muted-foreground">{aboutUsd(stillOpen, currency)}</p>
+          ) : null}
+        </div>
         <Progress value={percent} aria-label="Money committed">
-          <ProgressLabel className="text-base">
-            {moneyShort(committed, currency)} of{" "}
-            <MoneyText amount={project.goalJmd} currency={currency} short />
+          <ProgressLabel className="whitespace-nowrap text-sm">
+            {moneyShort(committed, currency)} of {moneyShort(project.goalJmd, currency)}
           </ProgressLabel>
         </Progress>
         {organizerPledged > 0 ? (

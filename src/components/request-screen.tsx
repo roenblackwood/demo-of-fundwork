@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { Check } from "lucide-react";
 import { PageBusy } from "@/components/busy";
 import {
   ActionBar,
   ApplicationStatusLabel,
   Avatar,
   CapitalChip,
-  MoneyText,
   SectorTile,
   sectionTitle,
   StepHeader,
@@ -18,7 +18,8 @@ import { BeforeYouApply, YourPlan } from "@/components/guide-card";
 import { sectorTitle, sectorWeekly, skillTitle } from "@/lib/catalog";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
-import { firstName, nameWithInitial, postedDate } from "@/lib/format";
+import { firstName, money, nameWithInitial, postedDate } from "@/lib/format";
+import { aboutUsd } from "@/lib/rates";
 import { matchWorkers } from "@/lib/match";
 import { acceptedCount } from "@/lib/requests";
 import { currencyOf, getCountry, getUser, requestPlace } from "@/lib/seed";
@@ -68,9 +69,12 @@ export function RequestScreen({ id }: { id: string }) {
           </div>
         </div>
       </div>
-      <p className="min-w-0 text-2xl font-semibold leading-snug">
-        <MoneyText amount={request.budget} currency={currency} />
-      </p>
+      <div>
+        <p className="text-2xl font-semibold leading-tight">{money(request.budget, currency)}</p>
+        {aboutUsd(request.budget, currency) ? (
+          <p className="text-base text-muted-foreground">{aboutUsd(request.budget, currency)}</p>
+        ) : null}
+      </div>
       <div className="space-y-2">
         <p className="text-lg font-semibold">
           {accepted} of {request.workersNeeded} workers
@@ -80,10 +84,12 @@ export function RequestScreen({ id }: { id: string }) {
             <span
               key={index}
               className={cn(
-                "size-3 rounded-full",
-                index < accepted ? "bg-work" : "border-2 border-border bg-card",
+                "grid size-[24px] place-items-center rounded-full",
+                index < accepted ? "bg-work text-work-foreground" : "border-2 border-border",
               )}
-            />
+            >
+              {index < accepted ? <Check className="size-[14px]" strokeWidth={2.5} /> : null}
+            </span>
           ))}
         </div>
       </div>

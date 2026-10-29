@@ -12,6 +12,7 @@ import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
 import { placeLine } from "@/lib/format";
 import { bandRank } from "@/lib/match";
+import { projectCommitted } from "@/lib/ownership";
 import { getCity, getCountry, getParish, getTown } from "@/lib/seed";
 import type { CapitalRequest, PathChoice, Project, Sector, Skill } from "@/lib/types";
 
@@ -117,6 +118,16 @@ export function FeedScreen({ mode }: { mode: PathChoice }) {
   const projects = rows.filter((row) => row.kind === "project").length;
   const requests = rows.filter((row) => row.kind === "request").length;
 
+  function clearFilters() {
+    demo.updateFlow({
+      regionId: undefined,
+      countryId: undefined,
+      parishId: undefined,
+      townId: undefined,
+    });
+    router.replace(mode === "investor" ? "/invest" : "/work");
+  }
+
   return (
     <div>
       <h1 className="sr-only">{mode === "investor" ? "Projects" : "Work"}</h1>
@@ -179,12 +190,25 @@ export function FeedScreen({ mode }: { mode: PathChoice }) {
           </Link>
         </p>
       ) : null}
+      {mode === "worker" && mine.length === 0 ? (
+        <div className="mt-3 rounded-2xl bg-card px-3 py-2 ring-1 ring-foreground/10">
+          <p className="text-sm leading-5">Pick your work to see what fits you.</p>
+          <Link
+            href="/work/place"
+            className="inline-flex min-h-11 items-center text-sm font-semibold whitespace-nowrap text-work"
+          >
+            Pick your work
+          </Link>
+        </div>
+      ) : null}
       {rows.length === 0 ? (
-        <p className="mt-6 text-lg leading-relaxed">
-          {mode === "worker" && mine.length === 0
-            ? "Pick your work to see what fits you."
-            : "Nothing open here yet."}
-        </p>
+        <button
+          type="button"
+          onClick={clearFilters}
+          className="mt-4 inline-flex min-h-11 items-center font-semibold whitespace-nowrap text-primary"
+        >
+          Clear filters
+        </button>
       ) : (
         <div className="mt-2 space-y-1 pb-24">
           {rows.map((row) =>
@@ -215,9 +239,16 @@ function workerSkills(demo: ReturnType<typeof useDemo>): Skill[] {
   return [...new Set([primary, ...extras].filter((item): item is Skill => Boolean(item)))];
 }
 
-type Row =
-  | { kind: "project"; project: Project; rank: number; name: string }
-  | { kind: "request"; request: CapitalRequest; rank: number; name: string };
+type Row = {
+  rank: number;
+  full: number;
+  ratio: number;
+  left: number;
+  createdAt: string;
+} & (
+  | { kind: "project"; project: Project }
+  | { kind: "request"; request: CapitalRequest }
+);
 
 function investorRows(demo: ReturnType<typeof useDemo>, home: Home | null, sector: Sector | null): Row[] {
   const projects = demo.projects.filter(
@@ -231,18 +262,8 @@ function investorRows(demo: ReturnType<typeof useDemo>, home: Home | null, secto
       (!sector || request.sector === sector),
   );
   return sortRows([
-    ...projects.map((project) => ({
-      kind: "project" as const,
-      project,
-      rank: rankOf(home, project),
-      name: project.name,
-    })),
-    ...requests.map((request) => ({
-      kind: "request" as const,
-      request,
-      rank: rankOf(home, request),
-      name: request.note || request.sector,
-    })),
+    ...projects.map((project) => projectRow(demo, home, project)),
+    ...requests.map((request) => requestRow(home, request)),
   ]);
 }
 
@@ -253,32 +274,60 @@ function workerRows(
   skill: Skill | null,
 ): Row[] {
   const skills = skill ? [skill] : mine;
-  if (skills.length === 0) return [];
-  const projects = demo.projects.filter(
-    (project) => inPlace(home, project) && project.needs.some((need) => skills.includes(need)),
-  );
-  const requests = demo.requests.filter(
-    (request) =>
-      request.status === "open" &&
-      inPlace(home, request) &&
-      request.skills.some((item) => skills.includes(item)),
-  );
+  const openSkills = skill === null && mine.length === 0;
+  const projects = demo.projects.filter((project) => {
+    if (!inPlace(home, project)) return false;
+    if (openSkills) return true;
+    return project.needs.some((need) => skills.includes(need));
+  });
+  const requests = demo.requests.filter((request) => {
+    if (request.status !== "open" || !inPlace(home, request)) return false;
+    if (openSkills) return true;
+    return request.skills.some((item) => skills.includes(item));
+  });
   return sortRows([
-    ...projects.map((project) => ({
-      kind: "project" as const,
-      project,
-      rank: rankOf(home, project),
-      name: project.name,
-    })),
-    ...requests.map((request) => ({
-      kind: "request" as const,
-      request,
-      rank: rankOf(home, request),
-      name: request.note || request.sector,
-    })),
+    ...projects.map((project) => projectRow(demo, home, project)),
+    ...requests.map((request) => requestRow(home, request)),
   ]);
 }
 
+function projectRow(demo: ReturnType<typeof useDemo>, home: Home | null, project: Project): Row {
+  const committed = projectCommitted(project.committedJmd, demo.addedCommitments, project.id);
+  const left = project.goalJmd - committed;
+  const ratio = project.goalJmd > 0 ? committed / project.goalJmd : 0;
+  return {
+    kind: "project",
+    project,
+    rank: rankOf(home, project),
+    full: left <= 0 ? 1 : 0,
+    ratio,
+    left,
+    createdAt: "",
+  };
+}
+
+function requestRow(home: Home | null, request: CapitalRequest): Row {
+  return {
+    kind: "request",
+    request,
+    rank: rankOf(home, request),
+    full: 0,
+    ratio: 0,
+    left: 0,
+    createdAt: request.createdAt.length === 10 ? `${request.createdAt}T00:00:00.000Z` : request.createdAt,
+  };
+}
+
 function sortRows(rows: Row[]): Row[] {
-  return rows.sort((a, b) => a.rank - b.rank || a.name.localeCompare(b.name));
+  return [...rows].sort((a, b) => {
+    if (a.rank !== b.rank) return a.rank - b.rank;
+    if (a.kind !== b.kind) return a.kind === "project" ? -1 : 1;
+    if (a.kind === "project") {
+      if (a.full !== b.full) return a.full - b.full;
+      if (a.ratio !== b.ratio) return b.ratio - a.ratio;
+      return a.left - b.left;
+    }
+    if (a.createdAt !== b.createdAt) return a.createdAt < b.createdAt ? 1 : -1;
+    return 0;
+  });
 }

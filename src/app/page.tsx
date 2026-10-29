@@ -73,25 +73,21 @@ export default function HomePage() {
           onSelectCountry={setCountryId}
         />
       </div>
-      <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-        {REGIONS.map((item) => {
-          const on = regionId === item.id;
-          return (
+      {region ? null : (
+        <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+          {REGIONS.map((item) => (
             <button
               key={item.id}
               type="button"
-              aria-pressed={on}
+              aria-pressed={false}
               onClick={() => pickRegion(item.id)}
-              className={cn(
-                "inline-flex min-h-11 shrink-0 items-center rounded-full px-3 text-base font-semibold whitespace-nowrap focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring",
-                on ? "bg-primary text-primary-foreground" : "border-2 border-border bg-card",
-              )}
+              className="inline-flex min-h-11 shrink-0 items-center rounded-full border-2 border-border bg-card px-3 text-base font-semibold whitespace-nowrap focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
             >
               {item.name}
             </button>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
       <nav ref={crumbs} aria-label="Place" className={country ? "mt-2 flex gap-1 overflow-x-auto" : "mt-3 flex gap-1 overflow-x-auto"}>
         {region ? (
           <button
