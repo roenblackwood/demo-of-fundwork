@@ -1,7 +1,7 @@
 import { sectorTitle } from "@/lib/catalog";
 import { bandRank } from "@/lib/match";
 import { boundsContain, countryZoom, type MapBounds } from "@/lib/map-camera";
-import { projectCommitted } from "@/lib/ownership";
+import { capitalReserved } from "@/lib/ownership";
 import { REGIONS, countriesIn, getRegion, showcaseById, type RegionId } from "@/lib/regions";
 import { getCity, getCountry, getParish, getParishes, getTown } from "@/lib/seed";
 import type { CapitalRequest, Commitment, Project, Sector } from "@/lib/types";
@@ -100,9 +100,9 @@ export function openingFromProject(
   const where = namesFor(project.countryId, project.parishId);
   const point = pointOf(project.countryId, project.parishId, project.townId);
   if (!where || !point) return null;
-  const committed = projectCommitted(project.committedJmd, commitments, project.id);
-  const left = project.goalJmd - committed;
-  const ratio = project.goalJmd > 0 ? committed / project.goalJmd : 0;
+  const reserved = capitalReserved(project.committedJmd, commitments, project.id);
+  const left = project.goalJmd - reserved;
+  const ratio = project.goalJmd > 0 ? reserved / project.goalJmd : 0;
   return {
     id: project.id,
     kind: "project",

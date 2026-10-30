@@ -521,7 +521,7 @@ function annotate(demo: ReturnType<typeof useDemo>, row: Opening): NotedOpening 
   const item = row.project
     ? itemFromProject(row.project, demo.addedCommitments)
     : row.request
-      ? itemFromRequest(row.request, demo.applications)
+      ? itemFromRequest(row.request, demo.applications, demo.pledges)
       : null;
   if (!item) return empty;
   const explained = explainItem(

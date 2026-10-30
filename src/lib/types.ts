@@ -199,6 +199,18 @@ export type Contribution = {
 
 export type RequestStatus = "open" | "team-ready" | "closed";
 
+export type PledgeStatus = "pledged" | "withdrawn" | "converted";
+
+export type RequestPledge = {
+  id: string;
+  requestId: string;
+  userId: string;
+  amount: number;
+  status: PledgeStatus;
+  showName: boolean;
+  createdAt: string;
+};
+
 export type SiteStatus = "own" | "lease" | "permission" | "not-yet";
 
 export type ReadinessState = "have" | "working" | "not-yet";

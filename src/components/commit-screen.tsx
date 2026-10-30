@@ -14,7 +14,8 @@ import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
 import { firstName } from "@/lib/format";
 import { isLive } from "@/lib/mode";
-import { investorUnits, moneyStillOpen, projectCommitted } from "@/lib/ownership";
+import { capitalReserved, investorUnits, moneyStillOpen } from "@/lib/ownership";
+import { convertedBacking } from "@/lib/pledges";
 import { currencyOf } from "@/lib/seed";
 
 export function CommitScreen({ id }: { id: string }) {
@@ -46,12 +47,11 @@ export function CommitScreen({ id }: { id: string }) {
     );
   }
 
-  const committed = projectCommitted(
-    project.committedJmd,
-    demo.addedCommitments,
-    project.id,
+  const reserved = Math.max(
+    capitalReserved(project.committedJmd, demo.addedCommitments, project.id),
+    convertedBacking(project.id, demo.requests, demo.pledges),
   );
-  const stillOpen = moneyStillOpen(project.goalJmd, committed);
+  const stillOpen = moneyStillOpen(project.goalJmd, reserved);
   const currency = currencyOf(project.countryId);
   const choices = commitChoices(project.goalJmd, currency);
   const open = canStillCommit(stillOpen, project.goalJmd, currency);

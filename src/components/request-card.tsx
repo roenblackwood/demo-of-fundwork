@@ -1,8 +1,12 @@
+"use client";
+
 import Link from "next/link";
 import { CardNotes } from "@/components/card-notes";
-import { MoneyText } from "@/components/parts";
+import { CapitalBar } from "@/components/pledge-bars";
 import { sectorTitle, SECTOR_MARKS } from "@/lib/catalog";
+import { useDemo } from "@/lib/demo-store";
 import { placeLine } from "@/lib/format";
+import { activePledges, pledgedAmount } from "@/lib/pledges";
 import type { ScorePart } from "@/lib/recommend";
 import { currencyOf, requestPlace } from "@/lib/seed";
 import type { CapitalRequest } from "@/lib/types";
@@ -17,9 +21,12 @@ export function RequestCard({
   reason?: string;
   parts?: ScorePart[];
 }) {
+  const demo = useDemo();
   const where = requestPlace(request);
   const place = where ? placeLine(where.town, where.parish) : "This place";
   const currency = currencyOf(request.countryId);
+  const investors = activePledges(demo.pledges, request.id).length;
+  const pledged = pledgedAmount(demo.pledges, request.id);
   const title = where ? `${sectorTitle(request.sector)} in ${where.town}` : sectorTitle(request.sector);
   const mark = SECTOR_MARKS[request.sector];
   const Icon = mark.icon;
@@ -39,9 +46,13 @@ export function RequestCard({
         </span>
         <span className="line-clamp-2 text-sm font-semibold leading-4">{title}</span>
         <span className="block truncate text-[11px] leading-4 text-muted-foreground">{place}</span>
-        <span className="text-[11px] font-semibold leading-4">
-          <MoneyText amount={request.budget} currency={currency} short suffix="needed" />
-        </span>
+        <CapitalBar
+          pledged={pledged}
+          budget={request.budget}
+          investors={investors}
+          currency={currency}
+          compact
+        />
       </span>
     </Link>
     <CardNotes id={request.id} sector={request.sector} reason={reason} parts={parts} />

@@ -41,10 +41,12 @@ import {
   INVESTOR_UNITS,
   PLATFORM_UNITS,
   WORKER_UNITS,
+  capitalReserved,
   fundingLabels,
   moneyStillOpen,
   projectCommitted,
 } from "@/lib/ownership";
+import { convertedBacking } from "@/lib/pledges";
 import { currencyOf, getCountry, projectPlace, seedCommitments } from "@/lib/seed";
 import type { Skill } from "@/lib/types";
 
@@ -74,8 +76,12 @@ export function ProjectScreen({ id }: { id: string }) {
     demo.addedCommitments,
     project.id,
   );
-  const stillOpen = moneyStillOpen(project.goalJmd, committed);
-  const percent = project.goalJmd <= 0 ? 0 : Math.min(100, (committed / project.goalJmd) * 100);
+  const reserved = Math.max(
+    capitalReserved(project.committedJmd, demo.addedCommitments, project.id),
+    convertedBacking(project.id, demo.requests, demo.pledges),
+  );
+  const stillOpen = moneyStillOpen(project.goalJmd, reserved);
+  const percent = project.goalJmd <= 0 ? 0 : Math.min(100, (reserved / project.goalJmd) * 100);
   const note = projectNote(project);
   const notes = project.checks
     .map((check) => checkNote(check.id, check.state))
@@ -184,7 +190,7 @@ export function ProjectScreen({ id }: { id: string }) {
       <section className="space-y-3">
         <div>
           <p className="text-2xl font-semibold leading-tight">
-            {stillOpen > 0 ? `${moneyShort(stillOpen, currency)} still needed` : "The money they asked for is in"}
+            {stillOpen > 0 ? `${money(stillOpen, currency)} still needed` : "The money they asked for is in"}
           </p>
           {stillOpen > 0 && aboutUsd(stillOpen, currency) ? (
             <p className="text-base text-muted-foreground">{aboutUsd(stillOpen, currency)}</p>
@@ -192,7 +198,7 @@ export function ProjectScreen({ id }: { id: string }) {
         </div>
         <Progress value={percent} aria-label="Money committed">
           <ProgressLabel className="whitespace-nowrap text-sm">
-            {moneyShort(committed, currency)} of {moneyShort(project.goalJmd, currency)}
+            {moneyShort(reserved, currency)} of {moneyShort(project.goalJmd, currency)}
           </ProgressLabel>
         </Progress>
         {organizerPledged > 0 ? (
@@ -203,9 +209,11 @@ export function ProjectScreen({ id }: { id: string }) {
         <FundingPills
           labels={fundingLabels(committed, project.goalJmd, project.workStarted)}
         />
-        <p className="text-base font-semibold">
-          {backers} {backers === 1 ? "backer" : "backers"}
-        </p>
+        {backers > 0 ? (
+          <p className="text-base font-semibold">
+            Backed by {backers} {backers === 1 ? "investor" : "investors"}
+          </p>
+        ) : null}
         {backerNames.length > 0 ? <p className="text-base">{backerNames.join(", ")}</p> : null}
         <Link href={`/projects/${project.id}/money`} className="inline-flex min-h-11 items-center font-semibold text-primary">
           See the money
@@ -419,19 +427,21 @@ export function ProjectScreen({ id }: { id: string }) {
     </div>
     <aside className="sticky top-20 hidden space-y-3 self-start rounded-2xl bg-card p-4 ring-1 ring-foreground/10 min-[840px]:block">
       <p className="text-2xl font-semibold leading-tight">
-        {stillOpen > 0 ? `${moneyShort(stillOpen, currency)} still needed` : "The money they asked for is in"}
+        {stillOpen > 0 ? `${money(stillOpen, currency)} still needed` : "The money they asked for is in"}
       </p>
       <Progress value={percent} aria-label="Money committed">
         <ProgressLabel className="text-sm">
-          {moneyShort(committed, currency)} of {moneyShort(project.goalJmd, currency)}
+          {moneyShort(reserved, currency)} of {moneyShort(project.goalJmd, currency)}
         </ProgressLabel>
       </Progress>
       {stillOpen > 0 && aboutUsd(stillOpen, currency) ? (
         <p className="text-base text-muted-foreground">{aboutUsd(stillOpen, currency)}</p>
       ) : null}
-      <p className="text-base font-semibold">
-        {backers} {backers === 1 ? "backer" : "backers"}
-      </p>
+      {backers > 0 ? (
+        <p className="text-base font-semibold">
+          Backed by {backers} {backers === 1 ? "investor" : "investors"}
+        </p>
+      ) : null}
       {backerNames.length > 0 ? <p className="text-base">{backerNames.join(", ")}</p> : null}
       {projectActions}
       <CapitalChip />

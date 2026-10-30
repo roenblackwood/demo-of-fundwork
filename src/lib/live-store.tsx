@@ -3,11 +3,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   inviteWorker as inviteWorkerAction,
+  closeRequest as closeRequestAction,
+  pledgeToRequest as pledgeToRequestAction,
   postApplication,
   postAvailability,
   postCommitment,
   postContribution,
   postRequest,
+  withdrawRequestPledge as withdrawRequestPledgeAction,
   saveDisplayName,
   saveHomeTown,
   saveProfileDetails,
@@ -38,6 +41,7 @@ import {
   mapCommitment,
   mapContribution,
   mapPayment,
+  mapPledge,
   mapProject,
   mapProjectWallet,
   mapPublicPerson,
@@ -47,7 +51,10 @@ import {
   newest,
 } from "@/lib/live-rows";
 import { notifySaveError } from "@/components/snackbar";
+import { capitalReserved } from "@/lib/ownership";
+import { convertedBacking, joinBlock, withdrawBlock } from "@/lib/pledges";
 import { askedPlace, rememberLivePeople } from "@/lib/seed";
+import type { RequestPledge } from "@/lib/types";
 import { browserSupabase } from "@/lib/supabase/browser";
 import type {
   Application,
@@ -76,6 +83,7 @@ type Snapshot = {
   contributions: Contribution[];
   addedCommitments: Commitment[];
   requests: CapitalRequest[];
+  pledges: RequestPledge[];
   applications: Application[];
   availability: Availability[];
   projects: Project[];
@@ -111,6 +119,7 @@ const emptySnapshot: Snapshot = {
   contributions: [],
   addedCommitments: [],
   requests: [],
+  pledges: [],
   applications: [],
   availability: [],
   projects: [],
@@ -151,6 +160,19 @@ function mapWeek(row: Record<string, unknown>): WeekPlan | null {
   };
 }
 
+function mergePledges(amounts: Record<string, unknown>[], named: Record<string, unknown>[]): RequestPledge[] {
+  const byId = new Map<string, RequestPledge>();
+  for (const row of amounts) {
+    const item = mapPledge(row);
+    if (item) byId.set(item.id, item);
+  }
+  for (const row of named) {
+    const item = mapPledge(row);
+    if (item) byId.set(item.id, item);
+  }
+  return [...byId.values()];
+}
+
 function rowsOf(value: { data: unknown[] | null }): Record<string, unknown>[] {
   return (value.data ?? []).filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object");
 }
@@ -159,7 +181,7 @@ async function loadSnapshot(): Promise<Snapshot> {
   const supabase = browserSupabase();
   const { data: auth } = await supabase.auth.getUser();
   const user = auth.user;
-  const [projectRows, memberRows, requestRows, applicationRows, availabilityRows, peopleRows, commitmentRows, contributionRows, mine, goalRows, lessonRows, walletRows, projectWalletRows, paymentRows, trancheRows, detailRows, signalRows] =
+  const [projectRows, memberRows, requestRows, applicationRows, availabilityRows, peopleRows, commitmentRows, contributionRows, mine, goalRows, lessonRows, walletRows, projectWalletRows, paymentRows, trancheRows, detailRows, signalRows, pledgeRows, pledgeNameRows] =
     await Promise.all([
       supabase.from("projects").select("*"),
       supabase.from("project_members").select("project_id, worker_id"),
@@ -182,6 +204,10 @@ async function loadSnapshot(): Promise<Snapshot> {
         ? supabase.from("profile_details").select("*").eq("user_id", user.id).maybeSingle()
         : Promise.resolve({ data: null }),
       user ? supabase.from("user_signals").select("item_id, kind, sector") : Promise.resolve({ data: [] }),
+      supabase.from("request_pledges").select("id, request_id, amount, status, created_at"),
+      user
+        ? supabase.from("request_pledge_names").select("id, request_id, user_id, name, show_name, amount, status, created_at")
+        : Promise.resolve({ data: [] }),
     ]);
 
   const people = rowsOf(peopleRows).flatMap((row) => {
@@ -263,6 +289,7 @@ async function loadSnapshot(): Promise<Snapshot> {
       const item = mapRequest(row);
       return item ? [item] : [];
     })),
+    pledges: mergePledges(rowsOf(pledgeRows), rowsOf(pledgeNameRows)),
     applications: newest(rowsOf(applicationRows).flatMap((row) => {
       const item = mapApplication(row);
       return item ? [item] : [];
@@ -453,6 +480,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
       contributions: current.contributions,
       addedCommitments: current.addedCommitments,
       requests: current.requests,
+      pledges: current.pledges,
       applications: current.applications,
       availability: current.availability,
       projects: current.projects,
@@ -484,11 +512,20 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
       },
       addCommitment: (commitment) => {
         const seen = snapshotRef.current;
+        const project = seen.projects.find((item) => item.id === commitment.projectId);
+        const reserved = project
+          ? Math.max(
+              capitalReserved(project.committedJmd, seen.addedCommitments, project.id),
+              convertedBacking(project.id, seen.requests, seen.pledges),
+            )
+          : 0;
+        const room = project ? Math.max(0, project.goalJmd - reserved) : 0;
         const local =
           seen.role === "investor" &&
           commitment.userId === seen.userId &&
           commitment.amountJmd > 0 &&
-          seen.projects.some((project) => project.id === commitment.projectId);
+          Boolean(project) &&
+          commitment.amountJmd <= room;
         return commitFlag(local, () =>
           postCommitment({
             projectId: commitment.projectId,
@@ -525,8 +562,45 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
           draft.skills.length > 0 &&
           Boolean(kindById(draft.sector, draft.kind)) &&
           isSite(draft.site) &&
-          Boolean(cleanReadiness(draft.readiness));
+          Boolean(cleanReadiness(draft.readiness)) &&
+          draft.share >= 1 &&
+          draft.share <= draft.budget;
         return commitId(local, () => postRequest(draft));
+      },
+      pledgeToRequest: async (input) => {
+        const seen = snapshotRef.current;
+        const blocked = joinBlock({
+          role: seen.role,
+          basics: seen.investorBasicsDone,
+          request: seen.requests.find((item) => item.id === input.requestId),
+          pledges: seen.pledges,
+          userId: seen.userId,
+          amount: input.amount,
+        });
+        if (blocked) return blocked;
+        const ok = await commitFlag(true, () => pledgeToRequestAction(input));
+        return ok ? "ok" : "left";
+      },
+      withdrawRequestPledge: async (pledgeId) => {
+        const seen = snapshotRef.current;
+        const pledge = seen.pledges.find((item) => item.id === pledgeId);
+        const blocked = withdrawBlock({
+          request: pledge ? seen.requests.find((item) => item.id === pledge.requestId) : undefined,
+          pledges: seen.pledges,
+          userId: seen.userId,
+          pledgeId,
+        });
+        if (blocked) return blocked;
+        const ok = await commitFlag(true, () => withdrawRequestPledgeAction(pledgeId));
+        return ok ? "ok" : "missing";
+      },
+      closeRequest: (requestId) => {
+        const seen = snapshotRef.current;
+        const request = seen.requests.find((item) => item.id === requestId);
+        const local = Boolean(
+          request && request.userId === seen.userId && !request.projectId && request.status !== "closed",
+        );
+        return commitFlag(local, () => closeRequestAction(requestId));
       },
       applyToRequest: (input) => {
         const seen = snapshotRef.current;

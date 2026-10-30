@@ -73,6 +73,7 @@ export async function postRequest(input: {
   kind: string;
   site: SiteStatus;
   readiness: Readiness;
+  share: number;
 }): Promise<string | null> {
   const id = await callerId();
   if (!id) return null;
@@ -82,6 +83,7 @@ export async function postRequest(input: {
     return null;
   }
   if (!kindById(input.sector, input.kind) || !isSite(input.site)) return null;
+  if (!(input.share >= 1) || input.share > input.budget) return null;
   const readiness = cleanReadiness(input.readiness);
   if (!readiness) return null;
   const skills = [...new Set(input.skills.filter((item) => isSkill(item)))];
@@ -104,11 +106,44 @@ export async function postRequest(input: {
       kind: input.kind,
       site: input.site,
       readiness,
+      poster_amount: input.share,
     })
     .select("id")
     .single();
   if (error || !data?.id) return null;
   return String(data.id);
+}
+
+export async function pledgeToRequest(input: {
+  requestId: string;
+  amount: number;
+  showName: boolean;
+}): Promise<boolean> {
+  const id = await callerId();
+  if (!id || !(input.amount >= 1) || !input.requestId) return false;
+  const supabase = await serverSupabase();
+  const { data, error } = await supabase.rpc("pledge_to_request", {
+    request_id: input.requestId,
+    amount: input.amount,
+    show_name: input.showName,
+  });
+  return !error && typeof data === "string" && data.length > 0;
+}
+
+export async function withdrawRequestPledge(pledgeId: string): Promise<boolean> {
+  const id = await callerId();
+  if (!id || !pledgeId) return false;
+  const supabase = await serverSupabase();
+  const { data, error } = await supabase.rpc("withdraw_request_pledge", { pledge_id: pledgeId });
+  return !error && data === true;
+}
+
+export async function closeRequest(requestId: string): Promise<boolean> {
+  const id = await callerId();
+  if (!id || !requestId) return false;
+  const supabase = await serverSupabase();
+  const { data, error } = await supabase.rpc("close_request", { request_id: requestId });
+  return !error && data === true;
 }
 
 export async function postAvailability(input: {
@@ -245,6 +280,14 @@ export async function postCommitment(input: {
 }): Promise<boolean> {
   const id = await callerId();
   if (!id || !(input.amount > 0) || !input.projectId) return false;
+  const admin = adminSupabase();
+  if (admin) {
+    const project = await admin.from("projects").select("goal").eq("id", input.projectId).maybeSingle();
+    const existing = await admin.from("commitments").select("amount").eq("project_id", input.projectId);
+    const goal = Number(project.data?.goal ?? 0);
+    const used = (existing.data ?? []).reduce((sum, row) => sum + Number(row.amount), 0);
+    if (!(goal > 0) || used + input.amount > goal) return false;
+  }
   const supabase = await serverSupabase();
   await ensureProjectPhases(input.projectId);
   // The database sets counts_at. A first commitment is held for 24 hours.

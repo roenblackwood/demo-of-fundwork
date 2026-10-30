@@ -4,6 +4,7 @@ export function needsSession(pathname: string): boolean {
   if (pathname === "/invest/start" || pathname.startsWith("/invest/start/")) return true;
   if (pathname === "/work/available" || pathname.startsWith("/work/available/")) return true;
   if (/^\/requests\/[^/]+\/apply\/?$/.test(pathname)) return true;
+  if (/^\/requests\/[^/]+\/join\/?$/.test(pathname)) return true;
   if (/^\/requests\/[^/]+\/start\/?$/.test(pathname)) return true;
   if (/^\/projects\/[^/]+\/commit\/?$/.test(pathname)) return true;
   if (/^\/projects\/[^/]+\/log\/?$/.test(pathname)) return true;

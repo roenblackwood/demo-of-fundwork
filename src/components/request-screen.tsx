@@ -16,13 +16,14 @@ import { useSnackbar } from "@/components/snackbar";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { BeforeYouApply, YourPlan } from "@/components/guide-card";
 import { ReadinessReport } from "@/components/needs-panel";
+import { BackersRow, CapitalBar, TeamBar } from "@/components/pledge-bars";
 import { sectorTitle, sectorWeekly, skillTitle } from "@/lib/catalog";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
-import { firstName, money, nameWithInitial, postedDate } from "@/lib/format";
-import { aboutUsd } from "@/lib/rates";
+import { firstName, nameWithInitial, postedDate } from "@/lib/format";
 import { matchWorkers } from "@/lib/match";
 import { acceptedCount } from "@/lib/requests";
+import { activePledges, backerMarks, pledgedAmount } from "@/lib/pledges";
 import { currencyOf, getCountry, requestPlace } from "@/lib/seed";
 import { RulesChip, RulesHere } from "@/components/rules-panel";
 import type { Application } from "@/lib/types";
@@ -53,6 +54,18 @@ export function RequestScreen({ id }: { id: string }) {
   const declined = related.find((item) => item.workerId === demo.userId && item.status === "declined");
   const nearby = isOwner ? matchWorkers(request, demo.availability) : [];
   const postedBy = demo.displayNameFor(request.userId);
+  const pledged = pledgedAmount(demo.pledges, request.id);
+  const investors = activePledges(demo.pledges, request.id).length;
+  const left = Math.max(0, request.budget - pledged);
+  const mine = demo.pledges.find(
+    (item) => item.requestId === request.id && item.userId === demo.userId && item.status === "pledged",
+  );
+  const openPledge = (request.status === "open" || request.status === "team-ready") && !request.projectId;
+  const canJoin = demo.role === "investor" && openPledge && left >= 1 && !mine;
+  const leadBlocked = Boolean(mine && mine.userId === request.userId && investors > 1);
+  const canWithdraw = Boolean(mine && !request.projectId && !leadBlocked);
+  const canClose = isOwner && openPledge && leadBlocked;
+  const marks = backerMarks(request, demo.pledges, demo.displayNameFor);
 
   const requestActions = (
     <>
@@ -60,6 +73,49 @@ export function RequestScreen({ id }: { id: string }) {
         <Link href={`/requests/${request.id}/start`} className={cn(buttonVariants({ size: "lg" }), "w-full")}>
           Start the project
         </Link>
+      ) : null}
+      {canJoin ? (
+        <Link href={`/requests/${request.id}/join`} className={cn(buttonVariants({ size: "lg" }), "w-full")}>
+          Join this request
+        </Link>
+      ) : null}
+      {canWithdraw && mine ? (
+        <Button
+          variant="outline"
+          size="lg"
+          className="w-full"
+          disabled={demo.saving}
+          aria-busy={demo.saving}
+          onClick={() => {
+            if (demo.saving) return;
+            void demo.withdrawRequestPledge(mine.id).then((result) => {
+              if (result === "ok") show("Pledge withdrawn.");
+              else if (result === "lead") show("Close this request instead.");
+            });
+          }}
+        >
+          Withdraw your pledge
+        </Button>
+      ) : null}
+      {canClose ? (
+        <div className="space-y-2">
+          <p className="text-base">You cannot withdraw while others are pledged. Close this request instead.</p>
+          <Button
+            variant="outline"
+            size="lg"
+            className="w-full"
+            disabled={demo.saving}
+            aria-busy={demo.saving}
+            onClick={() => {
+              if (demo.saving) return;
+              void demo.closeRequest(request.id).then((ok) => {
+                if (ok) show("Request closed.");
+              });
+            }}
+          >
+            Close this request
+          </Button>
+        </div>
       ) : null}
       {isWorker && !active && request.status === "open" ? (
         <Link
@@ -99,6 +155,9 @@ export function RequestScreen({ id }: { id: string }) {
   );
   const hasRequestActions =
     (isOwner && request.status === "team-ready" && !request.projectId) ||
+    canJoin ||
+    canWithdraw ||
+    canClose ||
     (isWorker && !active && request.status === "open") ||
     demo.role === null;
 
@@ -125,11 +184,10 @@ export function RequestScreen({ id }: { id: string }) {
         </div>
       </div>
       <RulesHere countryId={request.countryId} />
-      <div>
-        <p className="text-2xl font-semibold leading-tight">{money(request.budget, currency)}</p>
-        {aboutUsd(request.budget, currency) ? (
-          <p className="text-base text-muted-foreground">{aboutUsd(request.budget, currency)}</p>
-        ) : null}
+      <div className="space-y-3">
+        <CapitalBar pledged={pledged} budget={request.budget} investors={investors} currency={currency} />
+        <TeamBar accepted={accepted} needed={request.workersNeeded} />
+        <BackersRow people={marks} />
       </div>
       <div className="space-y-2">
         <p className="text-lg font-semibold">
@@ -357,14 +415,9 @@ export function RequestScreen({ id }: { id: string }) {
       {hasRequestActions ? <ActionBar hideExpanded>{requestActions}</ActionBar> : null}
     </div>
     <aside className="sticky top-20 hidden space-y-3 self-start rounded-2xl bg-card p-4 ring-1 ring-foreground/10 min-[840px]:block">
-      <p className="text-2xl font-semibold leading-tight">{money(request.budget, currency)} needed</p>
-      {aboutUsd(request.budget, currency) ? (
-        <p className="text-base text-muted-foreground">{aboutUsd(request.budget, currency)}</p>
-      ) : null}
-      <p className="text-base font-semibold">
-        {accepted} of {request.workersNeeded} workers
-      </p>
-      <p className="text-base font-semibold">No backers yet.</p>
+      <CapitalBar pledged={pledged} budget={request.budget} investors={investors} currency={currency} />
+      <TeamBar accepted={accepted} needed={request.workersNeeded} />
+      <BackersRow people={marks} />
       {requestActions}
       <CapitalChip />
     </aside>

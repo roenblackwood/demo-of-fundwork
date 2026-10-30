@@ -5,9 +5,54 @@ import { PageBusy } from "@/components/busy";
 import { LessonCard } from "@/components/lesson-card";
 import { sectionTitle } from "@/components/parts";
 import { useDemo } from "@/lib/demo-store";
-import { money } from "@/lib/format";
+import { money, placeLine } from "@/lib/format";
 import { lessonById } from "@/lib/lessons";
 import { buildPortfolio, formatUsd, type BarRow, type LocalAmount, type PortfolioView } from "@/lib/portfolio";
+import { CapitalBar, TeamBar } from "@/components/pledge-bars";
+import { acceptedCount } from "@/lib/requests";
+import { activePledges, pledgedAmount } from "@/lib/pledges";
+import { sectorTitle } from "@/lib/catalog";
+import { currencyOf, requestPlace } from "@/lib/seed";
+
+function PledgedRequests({ demo }: { demo: ReturnType<typeof useDemo> }) {
+  const mine = demo.pledges.filter((item) => item.userId === demo.userId && item.status === "pledged");
+  if (mine.length === 0) return null;
+  return (
+    <section className="space-y-4">
+      <h2 className={sectionTitle}>Pledged to requests</h2>
+      {mine.map((pledge) => {
+        const request = demo.requests.find((item) => item.id === pledge.requestId);
+        if (!request) return null;
+        const where = requestPlace(request);
+        const place = where ? placeLine(where.town, where.parish) : "This place";
+        const currency = currencyOf(request.countryId);
+        const title = where ? `${sectorTitle(request.sector)} in ${where.town}` : sectorTitle(request.sector);
+        const accepted = acceptedCount(
+          demo.applications.filter((item) => item.requestId === request.id),
+          request.id,
+        );
+        return (
+          <article key={pledge.id} className="space-y-2 rounded-2xl bg-card p-4 ring-1 ring-foreground/10">
+            <h3 className="text-lg font-semibold">
+              <Link href={`/requests/${request.id}`} className="text-primary">
+                {title}
+              </Link>
+            </h3>
+            <p className="text-base text-muted-foreground">{place}</p>
+            <p className="text-base">Your pledge {money(pledge.amount, currency)}</p>
+            <CapitalBar
+              pledged={pledgedAmount(demo.pledges, request.id)}
+              budget={request.budget}
+              investors={activePledges(demo.pledges, request.id).length}
+              currency={currency}
+            />
+            <TeamBar accepted={accepted} needed={request.workersNeeded} />
+          </article>
+        );
+      })}
+    </section>
+  );
+}
 
 function viewFor(demo: ReturnType<typeof useDemo>): PortfolioView {
   return buildPortfolio({
@@ -112,6 +157,8 @@ export function PortfolioScreen() {
       <SplitBars title="By country" note={barNote} rows={view.countries} />
       <SplitBars title="By sector" note={barNote} rows={view.sectors} />
       {spread ? <LessonCard lesson={spread} /> : null}
+
+      <PledgedRequests demo={demo} />
 
       <section className="space-y-4">
         <h2 className={sectionTitle}>Projects you back</h2>

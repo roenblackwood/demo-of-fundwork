@@ -17,6 +17,7 @@ import type {
   PaymentStatus,
   Project,
   ProjectWallet,
+  RequestPledge,
   Skill,
   User,
   Wallet,
@@ -274,6 +275,24 @@ export function mapPayment(row: Row): Payment | null {
     contributionId: text(row.contribution_id),
     reason: text(row.reason),
     checkedAt: text(row.checked_at) ?? "",
+    createdAt: text(row.created_at) ?? "",
+  };
+}
+
+export function mapPledge(row: Row): RequestPledge | null {
+  const id = text(row.id);
+  const requestId = text(row.request_id);
+  const amount = number(row.amount);
+  const status = text(row.status);
+  if (!id || !requestId || amount === null || !(amount >= 1)) return null;
+  if (status !== "pledged" && status !== "withdrawn" && status !== "converted") return null;
+  return {
+    id,
+    requestId,
+    userId: text(row.user_id) ?? "",
+    amount,
+    status,
+    showName: row.show_name === true,
     createdAt: text(row.created_at) ?? "",
   };
 }

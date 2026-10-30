@@ -11,6 +11,14 @@ import {
 } from "react";
 import { cleanReadiness, isSite, kindById } from "@/lib/blueprints";
 import { amountsFor, defaultPhases, phasesFor, readinessChangeNote, splitPledge } from "@/lib/capital";
+import { capitalReserved } from "@/lib/ownership";
+import {
+  joinBlock,
+  withdrawBlock,
+  withLeadPledges,
+  type PledgeResult,
+  type WithdrawResult,
+} from "@/lib/pledges";
 import { openChecks, sectorWeekly } from "@/lib/catalog";
 import { investorBasicsIds, stageLessons } from "@/lib/lessons";
 import {
@@ -60,13 +68,15 @@ import type {
   Project,
   ProjectWallet,
   Readiness,
+  RequestPledge,
   Sector,
   SiteStatus,
   Skill,
   Wallet,
 } from "@/lib/types";
 
-const STORAGE_KEY = "fundwork-demo-v4";
+const STORAGE_KEY = "fundwork-demo-v5";
+const V4_KEY = "fundwork-demo-v4";
 const V3_KEY = "fundwork-demo-v3";
 const V2_KEY = "fundwork-demo-v2";
 const V1_KEY = "fundwork-demo-v1";
@@ -97,6 +107,7 @@ type Session = {
   commitments: Commitment[];
   contributions: Contribution[];
   requests: CapitalRequest[];
+  pledges: RequestPledge[];
   applications: Application[];
   availability: Availability[];
   projects: Project[];
@@ -114,7 +125,7 @@ type Session = {
 };
 
 type Persisted = {
-  version: 1 | 2 | 3 | 4;
+  version: 1 | 2 | 3 | 4 | 5;
   session: Partial<Session>;
 };
 
@@ -124,6 +135,7 @@ export type RequestDraft = {
   townId: string;
   sector: Sector;
   budget: number;
+  share: number;
   workersNeeded: number;
   skills: Skill[];
   note: string;
@@ -150,6 +162,7 @@ const initialSession: Session = {
   commitments: [],
   contributions: [],
   requests: [],
+  pledges: [],
   applications: [],
   availability: [],
   projects: [],
@@ -213,8 +226,38 @@ function cleanSignals(value: unknown): Session["signals"] {
   return out;
 }
 
+function cleanPledges(value: unknown): RequestPledge[] {
+  if (!Array.isArray(value)) return [];
+  const out: RequestPledge[] = [];
+  for (const row of value) {
+    if (!row || typeof row !== "object") continue;
+    const item = row as Partial<RequestPledge>;
+    if (typeof item.id !== "string" || typeof item.requestId !== "string" || typeof item.userId !== "string") {
+      continue;
+    }
+    if (typeof item.amount !== "number" || !(item.amount >= 1)) continue;
+    if (item.status !== "pledged" && item.status !== "withdrawn" && item.status !== "converted") continue;
+    out.push({
+      id: item.id,
+      requestId: item.requestId,
+      userId: item.userId,
+      amount: item.amount,
+      status: item.status,
+      showName: item.showName !== false,
+      createdAt: typeof item.createdAt === "string" ? item.createdAt : "",
+    });
+  }
+  return out;
+}
+
+function ensureLead(session: Session): Session {
+  const pledges = withLeadPledges(listRequests(session), session.pledges);
+  if (pledges.length === session.pledges.length) return session;
+  return { ...session, pledges };
+}
+
 function normalize(input: Partial<Session>): Session {
-  return {
+  const session: Session = {
     ...initialSession,
     ...input,
     flow: input.flow
@@ -235,6 +278,7 @@ function normalize(input: Partial<Session>): Session {
           readiness: cleanReadiness(request.readiness) ?? {},
         }))
       : [],
+    pledges: cleanPledges(input.pledges),
     applications: Array.isArray(input.applications)
       ? input.applications.map((application) => ({
           ...application,
@@ -261,6 +305,7 @@ function normalize(input: Partial<Session>): Session {
     sampleId: input.sampleId ?? null,
     displayName: input.displayName ?? "",
   };
+  return ensureLead(session);
 }
 
 function readPayload(raw: string | null): Persisted | null {
@@ -268,7 +313,11 @@ function readPayload(raw: string | null): Persisted | null {
   const parsed = JSON.parse(raw) as Persisted;
   if (
     !parsed ||
-    (parsed.version !== 1 && parsed.version !== 2 && parsed.version !== 3 && parsed.version !== 4) ||
+    (parsed.version !== 1 &&
+      parsed.version !== 2 &&
+      parsed.version !== 3 &&
+      parsed.version !== 4 &&
+      parsed.version !== 5) ||
     !isSession(parsed.session)
   ) {
     return null;
@@ -280,19 +329,22 @@ function loadSession(): Session {
   if (typeof window === "undefined") return initialSession;
   try {
     const current = readPayload(window.localStorage.getItem(STORAGE_KEY));
-    if (current?.version === 4) return normalize(current.session);
-    if (window.localStorage.getItem(STORAGE_KEY)) return initialSession;
+    if (current?.version === 5) return normalize(current.session);
+    if (window.localStorage.getItem(STORAGE_KEY)) return ensureLead(initialSession);
+    const previous = readPayload(window.localStorage.getItem(V4_KEY));
+    if (previous?.version === 4) return normalize(previous.session);
+    if (window.localStorage.getItem(V4_KEY)) return ensureLead(initialSession);
     const carried = readPayload(window.localStorage.getItem(V3_KEY));
     if (carried?.version === 3) return normalize(carried.session);
-    if (window.localStorage.getItem(V3_KEY)) return initialSession;
-    const previous = readPayload(window.localStorage.getItem(V2_KEY));
-    if (previous?.version === 2) return normalize(previous.session);
-    if (window.localStorage.getItem(V2_KEY)) return initialSession;
+    if (window.localStorage.getItem(V3_KEY)) return ensureLead(initialSession);
+    const older = readPayload(window.localStorage.getItem(V2_KEY));
+    if (older?.version === 2) return normalize(older.session);
+    if (window.localStorage.getItem(V2_KEY)) return ensureLead(initialSession);
     const legacy = readPayload(window.localStorage.getItem(V1_KEY));
-    if (!legacy || legacy.version !== 1) return initialSession;
+    if (!legacy || legacy.version !== 1) return ensureLead(initialSession);
     return normalize(legacy.session);
   } catch {
-    return initialSession;
+    return ensureLead(initialSession);
   }
 }
 
@@ -551,6 +603,7 @@ export type DemoValue = {
   contributions: Contribution[];
   addedCommitments: Commitment[];
   requests: CapitalRequest[];
+  pledges: RequestPledge[];
   applications: Application[];
   availability: Availability[];
   projects: Project[];
@@ -577,6 +630,9 @@ export type DemoValue = {
   addCommitment: (commitment: Commitment) => Promise<boolean>;
   addContribution: (contribution: Contribution) => Promise<boolean>;
   addRequest: (draft: RequestDraft) => Promise<string | null>;
+  pledgeToRequest: (input: { requestId: string; amount: number; showName: boolean }) => Promise<PledgeResult>;
+  withdrawRequestPledge: (pledgeId: string) => Promise<WithdrawResult>;
+  closeRequest: (requestId: string) => Promise<boolean>;
   applyToRequest: (input: { requestId: string; skill: Skill; message: string }) => Promise<boolean>;
   inviteWorker: (requestId: string, workerId: string) => Promise<boolean>;
   setApplicationStatus: (id: string, status: "accepted" | "declined") => Promise<boolean>;
@@ -628,7 +684,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!ready) return;
-    const payload: Persisted = { version: 4, session };
+    const payload: Persisted = { version: 5, session };
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   }, [ready, session]);
 
@@ -652,11 +708,17 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addCommitment = useCallback(async (commitment: Commitment) => {
-    setSession((current) => ({
-      ...current,
-      commitments: [...current.commitments, commitment],
-    }));
-    return true;
+    let saved = false;
+    setSession((current) => {
+      const project = listProjects(current).find((item) => item.id === commitment.projectId);
+      if (!project || !(commitment.amountJmd >= 1)) return current;
+      if (commitment.userId !== currentUserId(current) || roleOf(current) !== "investor") return current;
+      const reserved = capitalReserved(project.committedJmd, current.commitments, project.id);
+      if (commitment.amountJmd > Math.max(0, project.goalJmd - reserved)) return current;
+      saved = true;
+      return { ...current, commitments: [...current.commitments, commitment] };
+    });
+    return saved;
   }, []);
 
   const addContribution = useCallback(async (contribution: Contribution) => {
@@ -683,17 +745,22 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       draft.skills.length === 0 ||
       !kindById(draft.sector, draft.kind) ||
       !isSite(draft.site) ||
-      !cleanReadiness(draft.readiness)
+      !cleanReadiness(draft.readiness) ||
+      !(draft.share >= 1) ||
+      draft.share > draft.budget
     ) {
       return null;
     }
     const id = crypto.randomUUID();
+    const pledgeId = crypto.randomUUID();
+    const createdAt = new Date().toISOString();
     const readiness = cleanReadiness(draft.readiness) ?? {};
     setSession((current) => {
       if (roleOf(current) === "worker") return current;
+      const userId = currentUserId(current);
       const request: CapitalRequest = {
         id,
-        userId: currentUserId(current),
+        userId,
         countryId: draft.countryId,
         parishId: draft.parishId,
         townId: draft.townId,
@@ -704,14 +771,107 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         note: draft.note.trim().slice(0, 240),
         status: "open",
         projectId: null,
-        createdAt: new Date().toISOString(),
+        createdAt,
         kind: draft.kind,
         site: draft.site,
         readiness,
       };
-      return { ...current, requests: [...current.requests, request] };
+      const showName = resolvedProfile(userId, current.profiles[userId]).profile.showName !== false;
+      const pledge: RequestPledge = {
+        id: pledgeId,
+        requestId: id,
+        userId,
+        amount: draft.share,
+        status: "pledged",
+        showName,
+        createdAt,
+      };
+      return { ...current, requests: [...current.requests, request], pledges: [...current.pledges, pledge] };
     });
     return id;
+  }, []);
+
+  const pledgeToRequest = useCallback(async (input: { requestId: string; amount: number; showName: boolean }) => {
+    const stamp = { id: crypto.randomUUID(), createdAt: new Date().toISOString() };
+    const seen = sessionRef.current;
+    const userId = currentUserId(seen);
+    const pledges = withLeadPledges(listRequests(seen), seen.pledges);
+    const blocked = joinBlock({
+      role: roleOf(seen),
+      basics: seen.progress.byUser[userId]?.basics === true,
+      request: listRequests(seen).find((item) => item.id === input.requestId),
+      pledges,
+      userId,
+      amount: input.amount,
+    });
+    if (blocked) return blocked;
+    const saved = writeDecision(sessionRef, setSession, (current) => {
+      const nextUser = currentUserId(current);
+      const known = withLeadPledges(listRequests(current), current.pledges);
+      const again = joinBlock({
+        role: roleOf(current),
+        basics: current.progress.byUser[nextUser]?.basics === true,
+        request: listRequests(current).find((item) => item.id === input.requestId),
+        pledges: known,
+        userId: nextUser,
+        amount: input.amount,
+      });
+      if (again) return null;
+      const pledge: RequestPledge = {
+        id: stamp.id,
+        requestId: input.requestId,
+        userId: nextUser,
+        amount: input.amount,
+        status: "pledged",
+        showName: input.showName !== false,
+        createdAt: stamp.createdAt,
+      };
+      return { ...current, pledges: [...known, pledge] };
+    });
+    return saved ? "ok" : "left";
+  }, []);
+
+  const withdrawRequestPledge = useCallback(async (pledgeId: string) => {
+    const seen = sessionRef.current;
+    const userId = currentUserId(seen);
+    const pledges = withLeadPledges(listRequests(seen), seen.pledges);
+    const pledge = pledges.find((item) => item.id === pledgeId);
+    const blocked = withdrawBlock({
+      request: pledge ? listRequests(seen).find((item) => item.id === pledge.requestId) : undefined,
+      pledges,
+      userId,
+      pledgeId,
+    });
+    if (blocked) return blocked;
+    const saved = writeDecision(sessionRef, setSession, (current) => {
+      const known = withLeadPledges(listRequests(current), current.pledges);
+      const row = known.find((item) => item.id === pledgeId);
+      const again = withdrawBlock({
+        request: row ? listRequests(current).find((item) => item.id === row.requestId) : undefined,
+        pledges: known,
+        userId: currentUserId(current),
+        pledgeId,
+      });
+      if (again) return null;
+      return {
+        ...current,
+        pledges: known.map((item) => (item.id === pledgeId ? { ...item, status: "withdrawn" as const } : item)),
+      };
+    });
+    return saved ? "ok" : "missing";
+  }, []);
+
+  const closeRequest = useCallback(async (requestId: string) => {
+    return writeDecision(sessionRef, setSession, (current) => {
+      const request = listRequests(current).find((item) => item.id === requestId);
+      if (!request || request.userId !== currentUserId(current) || request.projectId || request.status === "closed") {
+        return null;
+      }
+      return {
+        ...current,
+        requestStatus: { ...current.requestStatus, [requestId]: "closed" },
+      };
+    });
   }, []);
 
   const applyToRequest = useCallback(
@@ -818,24 +978,35 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         openPhase: 0,
         phaseBaseline: shown.readiness ?? {},
       };
-      const commitment: Commitment = {
-        id: crypto.randomUUID(),
-        userId: currentUserId(current),
-        projectId: id,
-        amountJmd: shown.budget,
-        status: "pledged",
-        createdAt: new Date().toISOString(),
-        tranches: splitPledge(shown.budget, phases).map((row) => ({
-          phase: row.phase,
-          position: row.position,
-          amount: row.amount,
-          status: row.position === 0 ? "open" : "waiting",
-        })),
-      };
+      const known = withLeadPledges(listRequests(current), current.pledges);
+      const active = known.filter((item) => item.requestId === requestId && item.status === "pledged");
+      const stamped = new Date().toISOString();
+      const commitments = active.map((item) => {
+        const row: Commitment = {
+          id: crypto.randomUUID(),
+          userId: item.userId,
+          projectId: id,
+          amountJmd: item.amount,
+          status: "pledged",
+          showName: item.showName,
+          createdAt: stamped,
+          tranches: splitPledge(item.amount, phases).map((part) => ({
+            phase: part.phase,
+            position: part.position,
+            amount: part.amount,
+            status: part.position === 0 ? "open" : "waiting",
+          })),
+        };
+        return row;
+      });
+      const pledges = known.map((item) =>
+        item.requestId === requestId && item.status === "pledged" ? { ...item, status: "converted" as const } : item,
+      );
       return {
         ...current,
         projects: [...current.projects, project],
-        commitments: [...current.commitments, commitment],
+        commitments: [...current.commitments, ...commitments],
+        pledges,
         requestProjects: { ...current.requestProjects, [requestId]: id },
         requestStatus: { ...current.requestStatus, [requestId]: "closed" },
         openedProject: true,
@@ -1146,6 +1317,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   const reset = useCallback(() => {
     setSession(initialSession);
     window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(V4_KEY);
     window.localStorage.removeItem(V3_KEY);
     window.localStorage.removeItem(V2_KEY);
     window.localStorage.removeItem(V1_KEY);
@@ -1191,6 +1363,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       contributions,
       addedCommitments: session.commitments,
       requests: listRequests(session),
+      pledges: withLeadPledges(listRequests(session), session.pledges),
       applications: listApplications(session),
       availability: listAvailability(session),
       projects: listProjects(session),
@@ -1229,6 +1402,9 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       addCommitment,
       addContribution,
       addRequest,
+      pledgeToRequest,
+      withdrawRequestPledge,
+      closeRequest,
       applyToRequest,
       inviteWorker,
       setApplicationStatus,
@@ -1264,6 +1440,9 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     addCommitment,
     addContribution,
     addRequest,
+    pledgeToRequest,
+    withdrawRequestPledge,
+    closeRequest,
     applyToRequest,
     inviteWorker,
     markOpened,

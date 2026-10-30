@@ -10,7 +10,7 @@ import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
 import { placeLine } from "@/lib/format";
 import { matchProjects } from "@/lib/match";
-import { moneyStillOpen, projectCommitted } from "@/lib/ownership";
+import { capitalReserved, moneyStillOpen } from "@/lib/ownership";
 import { currencyOf, projectPlace } from "@/lib/seed";
 import type { Skill } from "@/lib/types";
 
@@ -76,12 +76,12 @@ export function MatchesScreen() {
           {matches.map((match) => {
             const where = projectPlace(match.project);
             const currency = currencyOf(match.project.countryId);
-            const committed = projectCommitted(
+            const reserved = capitalReserved(
               match.project.committedJmd,
               demo.addedCommitments,
               match.project.id,
             );
-            const stillOpen = moneyStillOpen(match.project.goalJmd, committed);
+            const stillOpen = moneyStillOpen(match.project.goalJmd, reserved);
             return (
               <Link
                 key={match.project.id}

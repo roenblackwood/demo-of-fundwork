@@ -87,6 +87,8 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
   const [site, setSite] = useState<SiteStatus | null>(null);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [budgetText, setBudgetText] = useState("");
+  const [shareText, setShareText] = useState("");
+  const [shareTouched, setShareTouched] = useState(false);
   const [note, setNote] = useState("");
   const [readiness, setReadiness] = useState<Readiness>({});
   const [callerName, setCallerName] = useState("");
@@ -96,6 +98,8 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
 
   const kind = sector ? kindById(sector, kindId) : null;
   const amount = readAmount(budgetText);
+  const shareShown = shareTouched ? shareText : budgetText;
+  const share = readAmount(shareShown);
   const workersNeeded = peopleCount(counts);
   const skills = skillsFromCounts(counts);
 
@@ -149,7 +153,7 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
   const needsName = !demo.name.trim() || demo.name.trim() === "You";
 
   async function post() {
-    if (!sector || !kind || !site || !amount || workersNeeded < 1 || workersNeeded > 10 || skills.length === 0) return;
+    if (!sector || !kind || !site || !amount || !share || share > amount || workersNeeded < 1 || workersNeeded > 10 || skills.length === 0) return;
     if (!note.trim() || demo.saving) return;
     const called = callerName.trim();
     if (needsName && !called) return;
@@ -160,6 +164,7 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
       townId,
       sector,
       budget: amount,
+      share,
       workersNeeded,
       skills,
       note,
@@ -219,6 +224,7 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
             "Workers near this place can apply.",
             "You accept the ones you want.",
             "When the team is full, the request says the team is ready.",
+            "Other investors can pledge what is left.",
           ]}
         />
         <ActionBar>
@@ -247,6 +253,12 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
               <MoneyText amount={amount} currency={currency} showAbout={false} />
             </p>
             {about ? <p className="text-base text-muted-foreground">{about}</p> : null}
+          </div>
+          <div>
+            <p className="text-lg">Your share</p>
+            <p className="text-2xl font-bold">
+              <MoneyText amount={share ?? 0} currency={currency} showAbout={false} />
+            </p>
           </div>
           <ul className="space-y-1">
             {skills.map((skill) => (
@@ -356,6 +368,22 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
           />
           {about ? <p className="text-base text-muted-foreground">{about}</p> : null}
         </div>
+        <div className="space-y-2">
+          <Label htmlFor="request-share">Your share</Label>
+          <Input
+            id="request-share"
+            inputMode="numeric"
+            value={shareShown}
+            onChange={(event) => {
+              setShareTouched(true);
+              setShareText(formatAmountInput(event.target.value));
+            }}
+            placeholder="6,000,000"
+          />
+          <p className="text-base text-muted-foreground">
+            This is the part you pledge. Other investors can pledge what is left.
+          </p>
+        </div>
         {rangeLine ? <p className="text-lg leading-relaxed">{rangeLine}</p> : null}
         {range && amount && (amount < range.low / 2 || amount > range.high * 2) ? (
           <p className="text-base text-muted-foreground">
@@ -379,7 +407,12 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
     );
     action = (
       <ActionBar>
-        <Button size="lg" className="w-full" disabled={!amount} onClick={() => setStep("note")}>
+        <Button
+          size="lg"
+          className="w-full"
+          disabled={!amount || !share || share > amount}
+          onClick={() => setStep("note")}
+        >
           Continue
         </Button>
       </ActionBar>

@@ -97,7 +97,6 @@ export function waitingCount(applications: Application[], requestId: string): nu
 // Later, not in this pass:
 // - Messages between an investor and a worker.
 // - Push notifications when someone applies, is invited, or accepts.
-// - More than one investor funding the same request.
 export function statusForTeam(request: CapitalRequest, applications: Application[]): RequestStatus {
   if (request.status === "closed" || request.projectId) return "closed";
   if (acceptedCount(applications, request.id) >= request.workersNeeded) return "team-ready";

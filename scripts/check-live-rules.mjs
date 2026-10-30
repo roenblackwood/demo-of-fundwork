@@ -54,6 +54,8 @@ const userIds = [];
 let requestId = null;
 let startedProjectId = null;
 let availabilityId = null;
+let cofundRequestId = null;
+let cofundProjectId = null;
 
 function userClient() {
   return createClient(url, anonKey, {
@@ -109,10 +111,11 @@ function singleWallet(projectId, chain, address) {
 }
 
 async function cleanup() {
-  const projectIds = [projectA, projectB, projectC, startedProjectId].filter(Boolean);
+  const projectIds = [projectA, projectB, projectC, startedProjectId, cofundProjectId].filter(Boolean);
   if (userIds.length > 0) {
     await admin.from("wallet_checks").delete().in("user_id", userIds);
     await admin.from("wallets").delete().in("user_id", userIds);
+    await admin.from("request_pledges").delete().in("user_id", userIds);
   }
   if (projectIds.length > 0) {
     await admin.from("payments").delete().in("project_id", projectIds);
@@ -133,9 +136,10 @@ async function cleanup() {
     await admin.from("applications").delete().in("worker_id", userIds);
     await admin.from("availability").delete().in("user_id", userIds);
   }
-  if (requestId) {
-    await admin.from("applications").delete().eq("request_id", requestId);
-    await admin.from("capital_requests").delete().eq("id", requestId);
+  for (const id of [requestId, cofundRequestId]) {
+    if (!id) continue;
+    await admin.from("applications").delete().eq("request_id", id);
+    await admin.from("capital_requests").delete().eq("id", id);
   }
   if (projectIds.length > 0) {
     await admin.from("projects").delete().in("id", projectIds);
@@ -843,6 +847,108 @@ try {
       Boolean(eventDelete.error) &&
       (stillThere.data ?? []).length > 0,
     "payment_events cannot be updated or deleted.",
+  );
+
+  const early = await makeUser("investor", "Early Pledge");
+  const host = await makeUser("investor", "Host Pledge");
+  const joiner = await makeUser("investor", "Join Pledge");
+  const hostPass = await host.client.rpc("pass_investor_basics");
+  const joinerPass = await joiner.client.rpc("pass_investor_basics");
+  const posted = await admin
+    .from("capital_requests")
+    .insert({
+      user_id: host.id,
+      country_id: "ghana",
+      parish_id: null,
+      town_id: "tamale",
+      sector: "water",
+      budget: 1000,
+      poster_amount: 400,
+      workers_needed: 1,
+      skills: ["water"],
+      note: "Cofund.",
+      status: "open",
+      kind: "rainwater",
+      site: "own",
+      readiness: {},
+    })
+    .select("id")
+    .single();
+  if (posted.error) throw new Error(posted.error.message);
+  cofundRequestId = posted.data.id;
+  const earlyPledge = await early.client.rpc("pledge_to_request", {
+    request_id: cofundRequestId,
+    amount: 100,
+    show_name: true,
+  });
+  report(
+    earlyPledge.data === null && !earlyPledge.error,
+    "A pledge before investor basics is refused.",
+  );
+  const tooMuch = await joiner.client.rpc("pledge_to_request", {
+    request_id: cofundRequestId,
+    amount: 700,
+    show_name: true,
+  });
+  report(
+    !hostPass.error &&
+      !joinerPass.error &&
+      tooMuch.data === null &&
+      !tooMuch.error,
+    "A second pledge that would pass the budget is refused.",
+  );
+  const fits = await joiner.client.rpc("pledge_to_request", {
+    request_id: cofundRequestId,
+    amount: 500,
+    show_name: false,
+  });
+  const cofundApp = await admin
+    .from("applications")
+    .insert({
+      request_id: cofundRequestId,
+      worker_id: member.id,
+      skill: "water",
+      origin: "applied",
+      status: "waiting",
+    })
+    .select("id")
+    .single();
+  const cofundAccept = cofundApp.data
+    ? await host.client.rpc("set_application_status", {
+        application_id: cofundApp.data.id,
+        status: "accepted",
+      })
+    : { data: false };
+  const cofundStart = await host.client.rpc("start_project", {
+    request_id: cofundRequestId,
+    name: "Cofund check",
+  });
+  cofundProjectId = typeof cofundStart.data === "string" ? cofundStart.data : null;
+  const pledgeRows = cofundRequestId
+    ? await admin.from("request_pledges").select("user_id, amount, status").eq("request_id", cofundRequestId)
+    : { data: [] };
+  const commitmentRows = cofundProjectId
+    ? await admin.from("commitments").select("id, user_id, amount, status").eq("project_id", cofundProjectId)
+    : { data: [] };
+  const trancheRows = cofundProjectId
+    ? await admin.from("capital_tranches").select("commitment_id, status").eq("project_id", cofundProjectId)
+    : { data: [] };
+  const byUser = new Map((commitmentRows.data ?? []).map((row) => [row.user_id, Number(row.amount)]));
+  const openForEach = (commitmentRows.data ?? []).every((row) =>
+    (trancheRows.data ?? []).some((tranche) => tranche.commitment_id === row.id && tranche.status === "open"),
+  );
+  report(
+    typeof fits.data === "string" &&
+      cofundAccept.data === true &&
+      Boolean(cofundProjectId) &&
+      !cofundStart.error &&
+      (pledgeRows.data ?? []).length === 2 &&
+      (pledgeRows.data ?? []).every((row) => row.status === "converted") &&
+      (commitmentRows.data ?? []).length === 2 &&
+      byUser.get(host.id) === 400 &&
+      byUser.get(joiner.id) === 500 &&
+      openForEach,
+    "start_project converts every pledge.",
   );
 } catch (error) {
   report(false, error instanceof Error ? error.message : "The live check stopped.");

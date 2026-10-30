@@ -35,6 +35,8 @@ export type WorkItem = {
   stillNeededUsd: number | null;
   confirmedIn: boolean;
   fundedRatio: number;
+  /** Set on an open request that still has room. Absent on other items. */
+  pledgeLeft?: string | null;
 };
 
 export type WorkerView = {
@@ -202,8 +204,9 @@ export function scoreForInvestor(item: WorkItem, view: InvestorView, nowMs: numb
   if (momentum > 0) parts.push({ label: "Momentum", text: "It is moving toward the full amount." });
   if (recent) parts.push({ label: "Recency", text: "It was posted in the last two weeks." });
   const reasons = takeTwo([
+    amount > 0 && item.pledgeLeft ? item.pledgeLeft : "",
     interest > 0 ? `Matches ${item.sectorLabel}` : "",
-    amount > 0 ? "The amount still needed fits your range" : "",
+    amount > 0 && !item.pledgeLeft ? "The amount still needed fits your range" : "",
     !anywhere && place > 0 ? "In a place you chose" : "",
     confirmed > 0 ? "Some money is already in" : "",
     ready > 0 ? "The plan is moving" : "",

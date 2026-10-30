@@ -46,6 +46,21 @@ export function confirmedTrancheTotal(
   return (tranches ?? []).reduce((sum, row) => (row.status === "confirmed" ? sum + row.amount : sum), 0);
 }
 
+/**
+ * Confirmed money plus pledged amounts that are not confirmed yet.
+ * The full pledge is reserved. It is not the same as money already in.
+ */
+export function capitalReserved(baseJmd: number, extras: CountedMoney[], projectId: string): number {
+  const now = Date.now();
+  const confirmed = projectCommitted(baseJmd, extras, projectId);
+  const gap = extras.reduce((sum, item) => {
+    if (item.projectId !== projectId || item.status !== "pledged") return sum;
+    if (!countsNow(item.countsAt, now)) return sum;
+    return sum + Math.max(0, item.amountJmd - confirmedTrancheTotal(item.tranches));
+  }, 0);
+  return confirmed + gap;
+}
+
 export function projectCommitted(baseJmd: number, extras: CountedMoney[], projectId: string): number {
   // A pledged commitment counts only its confirmed phases, and only after countsAt.
   // Once it is accepted, the full amount counts and the phases are not added again.

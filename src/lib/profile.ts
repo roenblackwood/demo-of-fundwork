@@ -1,5 +1,7 @@
 import { isSector, isSkill, sectorTitle, skillPhrase, toolChoices } from "@/lib/catalog";
-import { projectCommitted } from "@/lib/ownership";
+import { moneyShort } from "@/lib/format";
+import { capitalReserved, projectCommitted } from "@/lib/ownership";
+import { pledgedAmount } from "@/lib/pledges";
 import {
   inReach,
   orderForYou,
@@ -18,6 +20,7 @@ import type {
   Application,
   CapitalRequest,
   Commitment,
+  RequestPledge,
   Contribution,
   Payment,
   Project,
@@ -282,9 +285,10 @@ function skillsOf(ids: Skill[]): { id: string; phrase: string }[] {
 
 export function itemFromProject(project: Project, commitments: Commitment[]): WorkItem {
   const committed = projectCommitted(project.committedJmd, commitments, project.id);
-  const left = Math.max(0, project.goalJmd - committed);
+  const reserved = capitalReserved(project.committedJmd, commitments, project.id);
+  const left = Math.max(0, project.goalJmd - reserved);
   const currency = currencyOf(project.countryId);
-  const ratio = project.goalJmd > 0 ? committed / project.goalJmd : 0;
+  const ratio = project.goalJmd > 0 ? reserved / project.goalJmd : 0;
   return {
     id: project.id,
     sector: project.sector,
@@ -305,9 +309,17 @@ export function itemFromProject(project: Project, commitments: Commitment[]): Wo
   };
 }
 
-export function itemFromRequest(request: CapitalRequest, applications: Application[]): WorkItem {
+export function itemFromRequest(
+  request: CapitalRequest,
+  applications: Application[],
+  pledges: RequestPledge[] = [],
+): WorkItem {
   const filled = acceptedCount(applications, request.id);
   const currency = currencyOf(request.countryId);
+  const open = request.status !== "closed" && !request.projectId;
+  const taken = open ? pledgedAmount(pledges, request.id) : 0;
+  const left = open ? Math.max(0, request.budget - taken) : 0;
+  const ratio = request.budget > 0 ? Math.min(1, taken / request.budget) : 0;
   return {
     id: request.id,
     sector: request.sector,
@@ -322,9 +334,10 @@ export function itemFromRequest(request: CapitalRequest, applications: Applicati
     openSpots: Math.max(0, request.workersNeeded - filled),
     readiness: readinessOf([], Object.values(request.readiness ?? {})),
     createdAt: request.createdAt,
-    stillNeededUsd: usdOf(request.budget, currency),
+    stillNeededUsd: usdOf(left, currency),
     confirmedIn: false,
-    fundedRatio: 0,
+    fundedRatio: ratio,
+    pledgeLeft: open && left > 0 ? `${moneyShort(left, currency)} left to pledge` : null,
   };
 }
 

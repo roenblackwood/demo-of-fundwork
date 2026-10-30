@@ -12,7 +12,7 @@ import { INVESTOR_CHECKS, lessonById, lessonsForMoment } from "@/lib/lessons";
 import { cn } from "cn";
 
 function commitReturn(value: string | null): string | null {
-  if (value && /^\/projects\/[^/]+\/commit$/.test(value)) return value;
+  if (value && (/^\/projects\/[^/]+\/commit$/.test(value) || /^\/requests\/[^/]+\/join$/.test(value))) return value;
   return null;
 }
 

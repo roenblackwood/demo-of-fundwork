@@ -16,7 +16,7 @@ import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
 import { placeLine } from "@/lib/format";
 import { bandRank } from "@/lib/match";
-import { projectCommitted } from "@/lib/ownership";
+import { capitalReserved } from "@/lib/ownership";
 import { openingFromProject, openingFromRequest } from "@/lib/openings";
 import {
   explainItem,
@@ -513,9 +513,9 @@ function scored(
 }
 
 function projectRow(demo: ReturnType<typeof useDemo>, home: Home | null, project: Project): Row {
-  const committed = projectCommitted(project.committedJmd, demo.addedCommitments, project.id);
-  const left = project.goalJmd - committed;
-  const ratio = project.goalJmd > 0 ? committed / project.goalJmd : 0;
+  const reserved = capitalReserved(project.committedJmd, demo.addedCommitments, project.id);
+  const left = project.goalJmd - reserved;
+  const ratio = project.goalJmd > 0 ? reserved / project.goalJmd : 0;
   const item = itemFromProject(project, demo.addedCommitments);
   const note = scored(demo, home, item);
   return {
@@ -533,7 +533,7 @@ function projectRow(demo: ReturnType<typeof useDemo>, home: Home | null, project
 }
 
 function requestRow(demo: ReturnType<typeof useDemo>, home: Home | null, request: CapitalRequest): Row {
-  const item = itemFromRequest(request, demo.applications);
+  const item = itemFromRequest(request, demo.applications, demo.pledges);
   const note = scored(demo, home, item);
   return {
     kind: "request",
