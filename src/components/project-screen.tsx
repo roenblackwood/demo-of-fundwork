@@ -20,7 +20,9 @@ import { useSnackbar } from "@/components/snackbar";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { Progress, ProgressLabel } from "@/components/ui/progress";
-import { BeforeYouApply, YourPlan } from "@/components/guide-card";
+import { BeforeYouApply, WhatItTakes } from "@/components/guide-card";
+import { PageHero, PhotoAdder, usePhotos } from "@/components/photo-box";
+import { TeamBar } from "@/components/pledge-bars";
 import { ProjectPhases, ReadinessReport } from "@/components/needs-panel";
 import { PhasePlan } from "@/components/phase-plan";
 import { LessonList } from "@/components/lesson-card";
@@ -30,7 +32,8 @@ import { canStillCommit } from "@/lib/catalog";
 import { SendCapital } from "@/components/send-capital";
 import { NEVER_HOLDS_LINE, TEST_NETWORK_LINE, UNITS_PAYOUT_LINE } from "@/lib/copy";
 import { ThisPlace } from "@/components/place-fit";
-import { RulesChip, RulesHere } from "@/components/rules-panel";
+import { RulesHere } from "@/components/rules-panel";
+import { kindById } from "@/lib/blueprints";
 import { isLive } from "@/lib/mode";
 import { stageLessons, workerProjectLessons } from "@/lib/lessons";
 import { cn } from "cn";
@@ -53,6 +56,7 @@ import type { Skill } from "@/lib/types";
 export function ProjectScreen({ id }: { id: string }) {
   const demo = useDemo();
   const show = useSnackbar();
+  const photos = usePhotos("project", id);
   const project = demo.projects.find((item) => item.id === id);
 
   useEffect(() => {
@@ -83,6 +87,8 @@ export function ProjectScreen({ id }: { id: string }) {
   const stillOpen = moneyStillOpen(project.goalJmd, reserved);
   const percent = project.goalJmd <= 0 ? 0 : Math.min(100, (reserved / project.goalJmd) * 100);
   const note = projectNote(project);
+  const story = project.summary.trim() || note.body;
+  const kindTitle = kindById(project.sector, project.kind)?.title ?? "";
   const notes = project.checks
     .map((check) => checkNote(check.id, check.state))
     .filter((item) => item !== null);
@@ -177,16 +183,16 @@ export function ProjectScreen({ id }: { id: string }) {
     <div className="min-[840px]:grid min-[840px]:grid-cols-[minmax(0,1fr)_20rem] min-[840px]:items-start min-[840px]:gap-8">
     <div className="min-w-0 space-y-6">
       <StepHeader backHref={backHref} />
-      <SectorTile sector={project.sector} size="page" />
+      <PageHero
+        photo={photos[0] ?? null}
+        sectorTile={<SectorTile sector={project.sector} size="page" />}
+      />
       <div>
         <h1 className="font-display text-3xl leading-tight">{project.name}</h1>
-        <div className="mt-1 flex flex-wrap items-center gap-2">
-          <p className="text-lg text-muted-foreground">{place}</p>
-          <RulesChip countryId={project.countryId} />
-        </div>
+        <p className="mt-1 text-base text-muted-foreground">{place}</p>
+        {kindTitle ? <p className="text-base">{kindTitle}</p> : null}
       </div>
-      <RulesHere countryId={project.countryId} />
-      <ThisPlace countryId={project.countryId} parishId={project.parishId} />
+      {story ? <p className="text-base leading-relaxed">{story}</p> : null}
       <section className="space-y-3">
         <div>
           <p className="text-2xl font-semibold leading-tight">
@@ -215,6 +221,7 @@ export function ProjectScreen({ id }: { id: string }) {
           </p>
         ) : null}
         {backerNames.length > 0 ? <p className="text-base">{backerNames.join(", ")}</p> : null}
+        <TeamBar accepted={project.workersMatched} needed={project.workersNeeded} />
         <Link href={`/projects/${project.id}/money`} className="inline-flex min-h-11 items-center font-semibold text-primary">
           See the money
         </Link>
@@ -232,7 +239,7 @@ export function ProjectScreen({ id }: { id: string }) {
         <div className="flex h-full flex-col rounded-2xl bg-card p-3 ring-1 ring-foreground/10">
           <p className="text-sm whitespace-nowrap text-muted-foreground">Pay a week</p>
           <p className="mt-1 text-sm font-semibold whitespace-nowrap">{money(project.weeklyPayout, currency)}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Stable unit</p>
+          <p className="mt-1 text-sm text-muted-foreground">Stable unit</p>
         </div>
         <div className="flex h-full flex-col rounded-2xl bg-card p-3 ring-1 ring-foreground/10">
           <p className="text-sm whitespace-nowrap text-muted-foreground">Checks</p>
@@ -242,7 +249,6 @@ export function ProjectScreen({ id }: { id: string }) {
         </div>
       </div>
       <TrustBadges checks={project.checks} />
-      <p className="border-l-4 border-primary pl-4 text-lg leading-relaxed">{note.body}</p>
       <ProjectPhases
         sector={project.sector}
         kindId={project.kind}
@@ -266,6 +272,23 @@ export function ProjectScreen({ id }: { id: string }) {
           });
         }}
       />
+      <WhatItTakes
+        countryId={project.countryId}
+        countryName={getCountry(project.countryId)?.name ?? "this country"}
+        sector={project.sector}
+        placeName={where?.town ?? "this place"}
+        projects={demo.projects}
+        collapsed
+      />
+      <ThisPlace countryId={project.countryId} parishId={project.parishId} collapsed />
+      <RulesHere countryId={project.countryId} />
+      {organizing ? (
+        <PhotoAdder
+          subject="project"
+          subjectId={project.id}
+          ownerId={demo.userId}
+        />
+      ) : null}
       <section className="space-y-2">
         <h2 className={sectionTitle}>What you get</h2>
         <p className="text-lg leading-relaxed">
@@ -289,7 +312,7 @@ export function ProjectScreen({ id }: { id: string }) {
           ) : null}
         </div>
         {project.checks.some((check) => check.id === "organizer" && check.state === "yes") ? (
-          <span className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-full bg-trust px-2 py-0.5 text-xs font-semibold whitespace-nowrap text-trust-foreground">
+          <span className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-full bg-trust px-2 py-0.5 text-sm font-semibold whitespace-nowrap text-trust-foreground">
             <Check className="size-3" aria-hidden />
             Checked
           </span>
@@ -305,15 +328,6 @@ export function ProjectScreen({ id }: { id: string }) {
       {showWork ? (
         <LessonList
           lessons={workerProjectLessons(workerSkills(demo.homeSkill, demo.homeExtraSkills, project.needs))}
-        />
-      ) : null}
-      {organizing ? (
-        <YourPlan
-          countryId={project.countryId}
-          countryName={getCountry(project.countryId)?.name ?? "this country"}
-          sector={project.sector}
-          placeName={where?.town ?? "this place"}
-          projects={demo.projects}
         />
       ) : null}
       {demo.role === "worker" && !onTeam && !organizing ? (
@@ -426,17 +440,17 @@ export function ProjectScreen({ id }: { id: string }) {
       {canCommit || showWork || (askJoin && !join) ? <ActionBar hideExpanded>{projectActions}</ActionBar> : null}
     </div>
     <aside className="sticky top-20 hidden space-y-3 self-start rounded-2xl bg-card p-4 ring-1 ring-foreground/10 min-[840px]:block">
-      <p className="text-2xl font-semibold leading-tight">
+      <p className="text-base font-semibold leading-tight whitespace-nowrap">
         {stillOpen > 0 ? `${money(stillOpen, currency)} still needed` : "The money they asked for is in"}
       </p>
+      {stillOpen > 0 && aboutUsd(stillOpen, currency) ? (
+        <p className="text-sm text-muted-foreground">{aboutUsd(stillOpen, currency)}</p>
+      ) : null}
       <Progress value={percent} aria-label="Money committed">
         <ProgressLabel className="text-sm">
           {moneyShort(reserved, currency)} of {moneyShort(project.goalJmd, currency)}
         </ProgressLabel>
       </Progress>
-      {stillOpen > 0 && aboutUsd(stillOpen, currency) ? (
-        <p className="text-base text-muted-foreground">{aboutUsd(stillOpen, currency)}</p>
-      ) : null}
       {backers > 0 ? (
         <p className="text-base font-semibold">
           Backed by {backers} {backers === 1 ? "investor" : "investors"}
@@ -444,7 +458,7 @@ export function ProjectScreen({ id }: { id: string }) {
       ) : null}
       {backerNames.length > 0 ? <p className="text-base">{backerNames.join(", ")}</p> : null}
       {projectActions}
-      <CapitalChip />
+      <CapitalChip audience="project" />
     </aside>
     </div>
   );

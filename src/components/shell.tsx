@@ -93,7 +93,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
               aria-current={on ? "page" : undefined}
               aria-label={tab.id === "you" && attention ? "You, new update" : undefined}
               className={cn(
-                "flex flex-col items-center gap-1 rounded-2xl px-1 py-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring",
+                "flex flex-col items-center gap-1 rounded-2xl px-1 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring",
                 on ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
               )}
             >
@@ -240,6 +240,7 @@ function HeaderSearch() {
 
 function contentWidth(pathname: string): string {
   if (pathname.startsWith("/you/profile")) return "max-w-2xl";
+  if (pathname === "/you") return "max-w-lg min-[600px]:max-w-3xl";
   if (/\/(commit|apply|log)(\/|$)/.test(pathname)) return "max-w-2xl";
   if (pathname.includes("/start")) return "max-w-2xl min-[840px]:max-w-6xl";
   return "max-w-lg min-[600px]:max-w-3xl min-[840px]:max-w-6xl";

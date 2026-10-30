@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PageBusy } from "@/components/busy";
@@ -18,6 +19,7 @@ import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
 import { allLessons, growWorkLesson } from "@/lib/lessons";
 import { isLive } from "@/lib/mode";
+import { buildPortfolio, formatUsd } from "@/lib/portfolio";
 import { refreshLiveStore } from "@/lib/live-store";
 import { browserSupabase } from "@/lib/supabase/browser";
 import { firstName, placeLine } from "@/lib/format";
@@ -55,10 +57,8 @@ export function DashboardScreen() {
           </Link>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
-          {demo.verified ? (
-            <Badge className="border-transparent bg-trust text-trust-foreground">
-              Verified ID
-            </Badge>
+          {!isLive() && demo.userId !== "you" ? (
+            <Badge variant="outline">Sample person</Badge>
           ) : (
             <Badge variant="outline">ID not checked yet</Badge>
           )}
@@ -72,7 +72,14 @@ export function DashboardScreen() {
         </div>
       </div>
 
-      <SavedList />
+      {demo.role === "investor" ? (
+        <div className="space-y-6 min-[840px]:grid min-[840px]:grid-cols-2 min-[840px]:items-start min-[840px]:gap-6 min-[840px]:space-y-0">
+          <SavedList />
+          <PortfolioCard />
+        </div>
+      ) : (
+        <SavedList />
+      )}
 
       <NeedsYou />
 
@@ -256,6 +263,33 @@ export function DashboardScreen() {
   );
 }
 
+function PortfolioCard() {
+  const demo = useDemo();
+  const [now] = useState(() => Date.now());
+  const view = buildPortfolio({
+    userId: demo.userId,
+    commitments: demo.commitments,
+    projects: demo.projects,
+    payments: demo.payments,
+    weeks: demo.weeks,
+    applications: demo.applications,
+    nameFor: demo.displayNameFor,
+    now,
+  });
+  return (
+    <section className="space-y-3">
+      <h2 className={sectionTitle}>Your portfolio</h2>
+      <div className="rounded-2xl bg-card p-4 ring-1 ring-foreground/10">
+        <p className="text-base">{formatUsd(view.pledged.usd)} pledged</p>
+        <p className="text-base">{formatUsd(view.confirmed.usd)} confirmed on the chain</p>
+        <Link href="/you/portfolio" className="inline-flex min-h-11 items-center font-semibold text-primary">
+          See your portfolio
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 function SavedList() {
   const demo = useDemo();
   return (
@@ -330,10 +364,10 @@ function NeedRow({
   const person = named || "A worker";
   const href = request ? `/requests/${request.id}` : project ? `/projects/${project.id}` : "/you";
   const title = request
-    ? `${sectorTitle(request.sector)} request`
+    ? `${skillTitle(application.skill)} on ${sectorTitle(request.sector)} request`
     : project
-      ? project.name
-      : "An application";
+      ? `${skillTitle(application.skill)} on ${project.name}`
+      : skillTitle(application.skill);
   const open = request ? request.status === "open" : true;
   const work = demo.role === "worker";
 
@@ -351,28 +385,32 @@ function NeedRow({
   }
 
   return (
-    <article className="space-y-3 rounded-2xl bg-card p-4 ring-1 ring-foreground/10">
-      <Link href={href} className="text-lg font-semibold text-primary">
-        {work ? title : person}
-      </Link>
-      <p className="text-base">{work ? "Invited. Waiting on you." : title}</p>
-      {open ? (
-        <div className="flex flex-col gap-2">
-          <Button variant={work ? "work" : "default"} disabled={demo.saving} aria-busy={demo.saving} onClick={() => void accept()}>
-            Accept
-          </Button>
-          <Button variant="outline" disabled={demo.saving} aria-busy={demo.saving} onClick={() => void decline()}>
-            {work ? "Decline" : "Not this time"}
-          </Button>
+    <article className="rounded-2xl bg-card p-4 ring-1 ring-foreground/10">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <Link href={href} className="text-base font-semibold text-primary">
+            {work ? title : person}
+          </Link>
+          <p className="text-sm">{work ? "Invited. Waiting on you." : title}</p>
         </div>
-      ) : (
-        <div className="space-y-3">
-          <p className="text-lg">The team is full.</p>
-          <Button variant="outline" disabled={demo.saving} aria-busy={demo.saving} onClick={() => void decline()}>
-            {work ? "Decline" : "Not this time"}
-          </Button>
-        </div>
-      )}
+        {open ? (
+          <div className="flex shrink-0 gap-2">
+            <Button variant={work ? "work" : "default"} disabled={demo.saving} aria-busy={demo.saving} onClick={() => void accept()}>
+              Accept
+            </Button>
+            <Button variant="outline" disabled={demo.saving} aria-busy={demo.saving} onClick={() => void decline()}>
+              {work ? "Decline" : "Not this time"}
+            </Button>
+          </div>
+        ) : (
+          <div className="flex shrink-0 items-center gap-2">
+            <p className="text-sm">The team is full.</p>
+            <Button variant="outline" disabled={demo.saving} aria-busy={demo.saving} onClick={() => void decline()}>
+              {work ? "Decline" : "Not this time"}
+            </Button>
+          </div>
+        )}
+      </div>
     </article>
   );
 }

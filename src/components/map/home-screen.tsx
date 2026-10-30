@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { FilterBar } from "@/components/filter-bar";
 import { ProjectCard } from "@/components/project-card";
 import { RequestCard } from "@/components/request-card";
-import { FilterChips, MapLoadNote, PlaceSearch, ShowMapButton } from "@/components/map/chrome";
+import { MapLoadNote, PlaceSearch, ShowMapButton } from "@/components/map/chrome";
 import { useMapPhase } from "@/components/map/lite";
 import { MapView } from "@/components/map/map-view";
 import { readSheetStop, ResultsSheet, writeSheetStop, type SheetStop } from "@/components/map/results-sheet";
 import { useDemo } from "@/lib/demo-store";
+import { defaultListOrder, emptyFilters, passesFilters, type AppliedFilters, type ListOrder } from "@/lib/list-filters";
+import { projectCommitted } from "@/lib/ownership";
 import {
   REGION_CAMERA,
   WORLD_ZOOM,
@@ -37,21 +40,15 @@ import {
   workerAllows,
 } from "@/lib/profile";
 import type { ScorePart } from "@/lib/recommend";
-import { showcaseById } from "@/lib/regions";
+import { getRegion, showcaseById } from "@/lib/regions";
 import { getCity, getParish, getTown } from "@/lib/seed";
-import type { Sector } from "@/lib/types";
-import { cn } from "cn";
-
-type HomeOrder = "for-you" | "closest" | "newest";
+import type { Sector, Skill } from "@/lib/types";
 
 type NotedOpening = Opening & {
   score: number;
   reasons: string[];
   parts: ScorePart[];
 };
-
-const orderChip =
-  "inline-flex min-h-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-border bg-card px-3 text-base font-semibold whitespace-nowrap hover:border-primary focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring";
 
 function homeSpot(input: {
   flow: { countryId?: string; parishId?: string; townId?: string } | null;
@@ -116,7 +113,7 @@ function OpeningCard({
 export function HomeScreen() {
   const demo = useDemo();
   const { phase, lite, failed, showMap, mapReady, mapFailed } = useMapPhase();
-  const [lens, setLens] = useState<"invest" | "work" | null>(null);
+  const [applied, setApplied] = useState<AppliedFilters>(emptyFilters);
   const [sector, setSector] = useState<Sector | null>(null);
   const [regionId, setRegionId] = useState<string | null>(null);
   const [blockedName, setBlockedName] = useState<string | null>(null);
@@ -127,15 +124,16 @@ export function HomeScreen() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [stop, setStop] = useState<SheetStop>("peek");
   const [fly, setFly] = useState<FlyRequest | null>(null);
-  const profileKey = `${demo.userId}:${demo.profileSet ? "1" : "0"}`;
-  const [order, setOrder] = useState<HomeOrder>(demo.profileSet ? "for-you" : "closest");
-  const [orderKey, setOrderKey] = useState(profileKey);
-  if (orderKey !== profileKey) {
+  const profileKey = `${demo.ready ? "1" : "0"}:${demo.userId}:${demo.profileSet ? "1" : "0"}`;
+  const [order, setOrder] = useState<ListOrder>("newest");
+  const [orderKey, setOrderKey] = useState("");
+  if (demo.ready && orderKey !== profileKey) {
     setOrderKey(profileKey);
-    setOrder(demo.profileSet ? "for-you" : "closest");
+    setOrder(defaultListOrder(demo.profileSet, Boolean(homeSpot(demo)?.townId)));
   }
   const token = useRef(0);
   const flew = useRef(false);
+  const failedRef = useRef(false);
 
   useEffect(() => {
     const saved = readSheetStop();
@@ -181,17 +179,24 @@ export function HomeScreen() {
 
   const rows = useMemo(() => noteRows(demo), [demo]);
 
-  const regionLock = listed ? null : regionId;
+  const regionLock = listed && phase === "map" ? null : regionId;
   const filtered = useMemo(() => {
     return rows.filter((row) => {
-      if (lens === "invest" && row.kind !== "project") return false;
-      if (lens === "work" && row.kind !== "request") return false;
       if (sector && row.sector !== sector) return false;
       if (regionLock && row.regionId !== regionLock) return false;
-      return true;
+      return passesFilters({
+        kind: row.kind,
+        checks: row.project?.checks,
+        readiness: row.request?.readiness ?? row.project?.readiness,
+        confirmedAmount: row.project
+          ? projectCommitted(row.project.committedJmd, demo.addedCommitments, row.project.id)
+          : 0,
+        skillIds: row.project ? row.project.needs : row.request ? row.request.skills : [],
+        filters: applied,
+      });
     });
-  }, [rows, lens, sector, regionLock]);
-  const visible = inBounds(filtered, listed);
+  }, [rows, sector, regionLock, applied, demo.addedCommitments]);
+  const visible = inBounds(filtered, phase === "map" ? listed : null);
   const ordered = orderNoted(visible as NotedOpening[], order, demo.profileSet);
   const selected = selectedId ? rows.find((row) => row.id === selectedId) : undefined;
   const shown = selected
@@ -249,8 +254,7 @@ export function HomeScreen() {
   const away = Boolean(regionId) || zoom >= WORLD_ZOOM;
   const mapLive = phase === "loading" || phase === "map";
 
-  function toggleEverywhere() {
-    const next = !demo.seeEverywhere;
+  function toggleEverywhere(next = !demo.seeEverywhere) {
     demo.setSeeEverywhere(next);
     if (next) goWorld();
     else {
@@ -259,8 +263,7 @@ export function HomeScreen() {
     }
   }
 
-  function toggleNear() {
-    const next = !demo.nearMe;
+  function toggleNear(next = !demo.nearMe) {
     demo.setNearMe(next);
     if (!next) {
       goWorld();
@@ -294,78 +297,93 @@ export function HomeScreen() {
     </div>
   );
 
-  const orderRow = (
-    <div className="flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Order">
-      {demo.role === "worker" && demo.profileSet ? (
-        <button
-          type="button"
-          aria-pressed={demo.seeEverywhere}
-          onClick={toggleEverywhere}
-          className={cn(orderChip, demo.seeEverywhere && "border-work bg-work text-work-foreground hover:border-work")}
-        >
-          See everywhere
-        </button>
-      ) : null}
-      {demo.role === "investor" && demo.profileSet ? (
-        <button
-          type="button"
-          aria-pressed={demo.nearMe}
-          onClick={toggleNear}
-          className={cn(orderChip, demo.nearMe && "border-primary bg-primary text-primary-foreground hover:border-primary")}
-        >
-          Near me
-        </button>
-      ) : null}
-      {(
-        [
-          ["for-you", "For you"],
-          ["closest", "Closest"],
-          ["newest", "Newest"],
-        ] as const
-      ).map(([id, label]) => (
-        <button
-          key={id}
-          type="button"
-          aria-pressed={order === id}
-          onClick={() => setOrder(id)}
-          className={cn(orderChip, order === id && "border-foreground bg-foreground text-background hover:border-foreground")}
-        >
-          {label}
-        </button>
-      ))}
-    </div>
-  );
+  function retryMap() {
+    failedRef.current = false;
+    setListed(null);
+    setPending(null);
+    setAreaMoved(false);
+    showMap();
+  }
+
+  function renderFilters() {
+    const spot = homeSpot(demo);
+    const regionName = regionId ? (getRegion(regionId)?.name ?? "") : "";
+    const town = spot?.townId
+      ? spot.parishId
+        ? getTown(spot.parishId, spot.townId)
+        : getCity(spot.countryId, spot.townId)
+      : undefined;
+    const skills = demo.role === "worker" ? workerSkillIds(demo) : undefined;
+    return (
+      <FilterBar
+        placeLabel={regionName || town?.name || "Place"}
+        placeHref={applied.kind === "request" ? "/work/place" : "/invest/place"}
+        onTown={(place) => {
+          demo.setHomeTown(place);
+          const point = place.parishId ? getTown(place.parishId, place.townId) : getCity(place.countryId, place.townId);
+          if (!point) return;
+          // The camera token changes only after this click.
+          // eslint-disable-next-line react-hooks/refs
+          ask({ kind: "center", center: [point.lng, point.lat], zoom: 11 });
+        }}
+        sector={sector}
+        onSector={setSector}
+        order={order}
+        onOrder={setOrder}
+        applied={applied}
+        onApply={setApplied}
+        skills={skills}
+        homeToggle={applied.kind === "project" ? "invest" : applied.kind === "request" ? "work" : null}
+        nearMe={demo.role === "investor" && demo.profileSet ? demo.nearMe : undefined}
+        seeEverywhere={demo.role === "worker" && demo.profileSet ? demo.seeEverywhere : undefined}
+        onNearMe={demo.role === "investor" && demo.profileSet ? toggleNear : undefined}
+        onSeeEverywhere={demo.role === "worker" && demo.profileSet ? toggleEverywhere : undefined}
+        placeChip={
+          regionName
+            ? {
+                label: regionName,
+                onRemove: () => {
+                  // The camera token changes only after this click.
+                  // eslint-disable-next-line react-hooks/refs
+                  goWorld();
+                },
+              }
+            : null
+        }
+        onClear={() => {
+          setApplied(emptyFilters);
+          setSector(null);
+          if (demo.nearMe) demo.setNearMe(false);
+          if (demo.seeEverywhere) demo.setSeeEverywhere(false);
+          goWorld();
+        }}
+      />
+    );
+  }
+
+  const mapFrame =
+    phase === "map" || failed
+      ? "fixed top-[var(--fw-top)] right-0 bottom-[var(--fw-bottom)] left-[var(--fw-left)] z-20"
+      : "fixed top-[var(--fw-top)] right-0 bottom-[var(--fw-bottom)] left-[var(--fw-left)] z-20 invisible";
 
   return (
     <>
-      {mapLive ? (
-        <div
-          className={
-            phase === "map"
-              ? "fixed top-[var(--fw-top)] right-0 bottom-[var(--fw-bottom)] left-[var(--fw-left)] z-20"
-              : "fixed top-[var(--fw-top)] right-0 bottom-[var(--fw-bottom)] left-[var(--fw-left)] z-20 invisible"
-          }
-          aria-hidden={phase !== "map"}
-        >
+      {mapLive || failed ? (
+        <div className={mapFrame} aria-hidden={phase !== "map" && !failed}>
           <div className="flex h-full">
             <aside className="hidden h-full w-[400px] shrink-0 flex-col border-r border-border bg-background min-[840px]:flex">
               <div className="flex shrink-0 flex-col gap-2 p-3">
-                <PlaceSearch onPick={pickSearch} />
-                <FilterChips
-                  lens={lens}
-                  sector={sector}
-                  regionId={regionId}
-                  onLens={setLens}
-                  onSector={setSector}
-                  onRegion={goRegion}
-                  wrap
-                />
-                {orderRow}
+                {renderFilters()}
                 <p className="text-sm text-muted-foreground">{label}</p>
               </div>
               <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 pb-3">{openingList()}</div>
             </aside>
             <div className="relative h-full min-w-0 flex-1">
+            {failed ? (
+              <div className="hidden h-full place-items-center p-6 text-center min-[840px]:grid">
+                <MapLoadNote onRetry={retryMap} />
+              </div>
+            ) : (
             <MapView
               points={filtered}
               showMarkers
@@ -373,6 +391,7 @@ export function HomeScreen() {
               regionId={regionId}
               fly={fly}
               onReady={(view) => {
+                if (failedRef.current) return;
                 setListed(view.bounds);
                 setZoom(view.zoom);
                 setAreaMoved(false);
@@ -386,6 +405,7 @@ export function HomeScreen() {
                 }
               }}
               onMove={(view, gesture) => {
+                if (failedRef.current) return;
                 setZoom(view.zoom);
                 if (gesture && view.zoom < WORLD_ZOOM - 0.4) {
                   setRegionId(null);
@@ -402,23 +422,23 @@ export function HomeScreen() {
               onRegion={goRegion}
               onBlocked={showBlocked}
               onPoint={pickPoint}
-              onFail={mapFailed}
+              onFail={() => {
+                failedRef.current = true;
+                setListed(null);
+                setPending(null);
+                setAreaMoved(false);
+                mapFailed();
+              }}
             />
+            )}
+            {phase === "map" ? (
             <div data-fw-pad="top" className="pointer-events-none absolute inset-x-0 top-0 z-10 min-[840px]:hidden">
               <div className="pointer-events-auto mx-auto flex w-full max-w-lg flex-col gap-2 px-3 pt-3 min-[600px]:mx-0 min-[600px]:max-w-[480px]">
                 <PlaceSearch onPick={pickSearch} collapsible />
-                <FilterChips
-                  lens={lens}
-                  sector={sector}
-                  regionId={regionId}
-                  onLens={setLens}
-                  onSector={setSector}
-                  onRegion={goRegion}
-                />
-                {orderRow}
               </div>
             </div>
-            {areaMoved ? (
+            ) : null}
+            {phase === "map" && areaMoved ? (
               <button
                 type="button"
                 className="absolute left-1/2 z-10 inline-flex min-h-11 -translate-x-1/2 items-center rounded-full bg-primary px-4 text-base font-semibold text-primary-foreground shadow"
@@ -431,7 +451,7 @@ export function HomeScreen() {
                 Search this area
               </button>
             ) : null}
-            {away ? (
+            {phase === "map" && away ? (
               <button
                 type="button"
                 className="absolute left-3 z-10 inline-flex min-h-11 items-center rounded-full border-2 border-border bg-card px-3 text-base font-semibold shadow"
@@ -441,6 +461,7 @@ export function HomeScreen() {
                 World
               </button>
             ) : null}
+            {phase === "map" ? (
             <ResultsSheet
               label={label}
               notice={
@@ -450,31 +471,31 @@ export function HomeScreen() {
               }
               stop={stop}
               onStop={chooseStop}
+              toolbar={renderFilters()}
             >
               {openingList()}
             </ResultsSheet>
+            ) : null}
+            {failed ? (
+              <div className="flex h-full flex-col gap-3 overflow-y-auto p-3 min-[840px]:hidden">
+                <PlaceSearch onPick={pickSearch} collapsible />
+                {renderFilters()}
+                <MapLoadNote onRetry={retryMap} />
+                <p className="text-sm text-muted-foreground">{label}</p>
+                {openingList()}
+              </div>
+            ) : null}
             </div>
           </div>
         </div>
       ) : null}
-      {phase === "map" ? null : (
+      {phase === "map" || failed ? null : (
         <div className="flex flex-1 flex-col gap-3">
-          <PlaceSearch onPick={pickSearch} collapsible />
-          <FilterChips
-            lens={lens}
-            sector={sector}
-            regionId={regionId}
-            onLens={setLens}
-            onSector={setSector}
-            onRegion={(id) => {
-              setRegionId(id);
-              setSelectedId(null);
-              setBlockedName(null);
-            }}
-          />
-          {orderRow}
-          {failed ? <MapLoadNote onRetry={showMap} /> : null}
-          {lite && !failed && phase !== "loading" ? <ShowMapButton onClick={showMap} /> : null}
+          <div className="min-[840px]:hidden">
+            <PlaceSearch onPick={pickSearch} collapsible />
+          </div>
+          {renderFilters()}
+          {lite && phase !== "loading" ? <ShowMapButton onClick={retryMap} /> : null}
           <p className="text-sm text-muted-foreground">{label}</p>
           {openingList()}
         </div>
@@ -483,9 +504,18 @@ export function HomeScreen() {
   );
 }
 
-function orderNoted(rows: NotedOpening[], order: HomeOrder, profileSet: boolean): NotedOpening[] {
-  if (!profileSet || order === "closest") return orderOpenings(rows) as NotedOpening[];
+function orderNoted(rows: NotedOpening[], order: ListOrder, profileSet: boolean): NotedOpening[] {
+  if (order === "closest") return orderOpenings(rows) as NotedOpening[];
+  if (order === "newest") return orderCards(rows, "newest", Date.now());
+  if (!profileSet) return orderOpenings(rows) as NotedOpening[];
   return orderCards(rows, order, Date.now());
+}
+
+function workerSkillIds(demo: ReturnType<typeof useDemo>): Skill[] {
+  const fromProfile = demo.profile.skillLevels.map((item) => item.skill);
+  const primary = demo.flow?.skill || demo.homeSkill;
+  const extras = demo.flow?.skill ? demo.flow.extraSkills : demo.homeExtraSkills;
+  return [...new Set([primary, ...extras, ...fromProfile].filter((item): item is Skill => Boolean(item)))];
 }
 
 function noteRows(demo: ReturnType<typeof useDemo>): NotedOpening[] {

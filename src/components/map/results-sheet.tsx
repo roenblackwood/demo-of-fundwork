@@ -27,19 +27,21 @@ export function ResultsSheet({
   notice,
   stop,
   onStop,
+  toolbar,
   children,
 }: {
   label: string;
   notice?: string | null;
   stop: SheetStop;
   onStop: (stop: SheetStop) => void;
+  toolbar?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const root = useRef<HTMLDivElement>(null);
   const [frame, setFrame] = useState(640);
   const [dragHeight, setDragHeight] = useState<number | null>(null);
   const drag = useRef<{ y: number; h: number; latest: number } | null>(null);
-  const peek = 112;
+  const peek = toolbar ? 248 : 112;
   const half = Math.max(420, Math.round(frame * 0.62));
   const full = frame;
   const heights: Record<SheetStop, number> = { peek, half, full };
@@ -69,7 +71,7 @@ export function ResultsSheet({
     const query = window.matchMedia("(min-width: 840px)");
     query.addEventListener("change", apply);
     return () => query.removeEventListener("change", apply);
-  }, [height, frame]);
+  }, [height, frame, peek]);
 
   function step(direction: 1 | -1) {
     const next = STOPS[Math.min(STOPS.length - 1, Math.max(0, stopIndex(stop) + direction))];
@@ -159,6 +161,7 @@ export function ResultsSheet({
         </div>
         <p className="pb-1 text-center text-sm text-muted-foreground">{label}</p>
         {notice ? <p className="px-1 pb-2 text-center text-base">{notice}</p> : null}
+        {toolbar ? <div className="px-1 pb-2">{toolbar}</div> : null}
       </div>
       <div
         className={cn("min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain px-3 pb-3", !open && "hidden")}

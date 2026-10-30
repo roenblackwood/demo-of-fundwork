@@ -56,7 +56,7 @@ export function SwitchScreen() {
         >
           <span className="block text-lg font-semibold">{user.name}</span>
           <span className="mt-1 block text-base font-normal text-muted-foreground">
-            {user.verified ? "Verified ID. " : ""}
+            Sample person.{" "}
             {user.example}
           </span>
         </button>

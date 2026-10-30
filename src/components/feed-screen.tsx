@@ -3,20 +3,20 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronDown, MapPin } from "lucide-react";
 import { PageBusy } from "@/components/busy";
+import { FilterBar } from "@/components/filter-bar";
 import { MapView } from "@/components/map/map-view";
 import { FloatingAction } from "@/components/parts";
 import { ProjectCard } from "@/components/project-card";
 import { RequestCard } from "@/components/request-card";
-import { UseMyLocation } from "@/components/use-location";
 import { buttonVariants } from "@/components/ui/button";
-import { SECTORS, SKILLS, isSector, isSkill, skillTitle } from "@/lib/catalog";
+import { isSector, isSkill } from "@/lib/catalog";
+import { defaultListOrder, emptyFilters, passesFilters, type AppliedFilters, type ListOrder } from "@/lib/list-filters";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
 import { placeLine } from "@/lib/format";
 import { bandRank } from "@/lib/match";
-import { capitalReserved } from "@/lib/ownership";
+import { capitalReserved, projectCommitted } from "@/lib/ownership";
 import { openingFromProject, openingFromRequest } from "@/lib/openings";
 import {
   explainItem,
@@ -31,8 +31,6 @@ import {
 import type { ScorePart } from "@/lib/recommend";
 import { getCity, getCountry, getParish, getTown } from "@/lib/seed";
 import type { CapitalRequest, PathChoice, Project, Sector, Skill } from "@/lib/types";
-
-type FeedOrder = "for-you" | "closest" | "newest";
 
 type Spot = {
   countryId: string;
@@ -106,9 +104,6 @@ function availableHref(home: Home | null): string {
   return `/work/available/${place}/${home.townId}`;
 }
 
-const chipClass =
-  "inline-flex min-h-11 shrink-0 cursor-pointer items-center rounded-full px-3 text-base font-semibold whitespace-nowrap hover:border-primary focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring";
-
 export function FeedScreen({ mode }: { mode: PathChoice }) {
   const demo = useDemo();
   const router = useRouter();
@@ -118,14 +113,17 @@ export function FeedScreen({ mode }: { mode: PathChoice }) {
   const sector = sectorParam && isSector(sectorParam) ? sectorParam : null;
   const skillParam = searchParams.get("skill");
   const mine = workerSkills(demo);
-  const skill = skillParam && isSkill(skillParam) && mine.includes(skillParam) ? skillParam : null;
+  const [applied, setApplied] = useState<AppliedFilters>(() => ({
+    ...emptyFilters,
+    skill: skillParam && isSkill(skillParam) ? skillParam : null,
+  }));
 
-  const profileKey = `${demo.userId}:${demo.profileSet ? "1" : "0"}`;
-  const [order, setOrder] = useState<FeedOrder>(demo.profileSet ? "for-you" : "closest");
-  const [orderKey, setOrderKey] = useState(profileKey);
-  if (orderKey !== profileKey) {
+  const profileKey = `${demo.ready ? "1" : "0"}:${demo.userId}:${demo.profileSet ? "1" : "0"}`;
+  const [order, setOrder] = useState<ListOrder>("newest");
+  const [orderKey, setOrderKey] = useState("");
+  if (demo.ready && orderKey !== profileKey) {
     setOrderKey(profileKey);
-    setOrder(demo.profileSet ? "for-you" : "closest");
+    setOrder(defaultListOrder(demo.profileSet, Boolean(home?.countryId)));
   }
   const [desk, setDesk] = useState(false);
   useEffect(() => {
@@ -139,9 +137,9 @@ export function FeedScreen({ mode }: { mode: PathChoice }) {
   const rows = useMemo(
     () =>
       mode === "investor"
-        ? investorRows(demo, home, sector, order)
-        : workerRows(demo, home, mine, skill, order),
-    [mode, demo, home, sector, mine, skill, order],
+        ? investorRows(demo, home, sector, order, applied)
+        : workerRows(demo, home, mine, sector, order, applied),
+    [mode, demo, home, sector, mine, order, applied],
   );
   const mapPoints = useMemo(() => {
     const spot = home
@@ -171,15 +169,27 @@ export function FeedScreen({ mode }: { mode: PathChoice }) {
   const projects = rows.filter((row) => row.kind === "project").length;
   const requests = rows.filter((row) => row.kind === "request").length;
 
-  function clearFilters() {
+  function clearPlace() {
     demo.updateFlow({
       regionId: undefined,
       countryId: undefined,
       parishId: undefined,
       townId: undefined,
     });
+  }
+
+  function clearFilters() {
+    clearPlace();
+    setApplied(emptyFilters);
+    if (mode === "investor") demo.setNearMe(false);
+    if (mode === "worker") demo.setSeeEverywhere(false);
     router.replace(mode === "investor" ? "/invest" : "/work");
   }
+
+  const placeLimits =
+    Boolean(home) &&
+    !(mode === "investor" && demo.profileSet && !demo.nearMe) &&
+    !(mode === "worker" && demo.profileSet && demo.seeEverywhere);
 
   const actionHref = mode === "investor" ? startHref(home) : availableHref(home);
   const actionLabel = mode === "investor" ? "Start a project" : "I am available";
@@ -201,97 +211,28 @@ export function FeedScreen({ mode }: { mode: PathChoice }) {
           {actionLabel}
         </Link>
       </div>
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        <Link href={placeHref} className={cn(chipClass, "gap-1.5 border-2 border-border bg-card")}>
-          <MapPin className="size-4 shrink-0" aria-hidden />
-          {placeChipLabel(demo, mode, home)}
-          <ChevronDown className="size-4 shrink-0" aria-hidden />
-        </Link>
-        {mode === "worker" && demo.profileSet ? (
-          <button
-            type="button"
-            aria-pressed={demo.seeEverywhere}
-            onClick={() => demo.setSeeEverywhere(!demo.seeEverywhere)}
-            className={cn(chipClass, demo.seeEverywhere ? "bg-work text-work-foreground" : "border-2 border-border bg-card")}
-          >
-            See everywhere
-          </button>
-        ) : null}
-        {mode === "investor" && demo.profileSet ? (
-          <button
-            type="button"
-            aria-pressed={demo.nearMe}
-            onClick={() => demo.setNearMe(!demo.nearMe)}
-            className={cn(chipClass, demo.nearMe ? "bg-primary text-primary-foreground" : "border-2 border-border bg-card")}
-          >
-            Near me
-          </button>
-        ) : null}
-        {mode === "investor"
-          ? SECTORS.map((item) => {
-              const on = sector === item.id;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => setQuery("sector", on ? null : item.id)}
-                  className={cn(chipClass, on ? "bg-primary text-primary-foreground" : "border-2 border-border bg-card")}
-                >
-                  {item.title}
-                </button>
-              );
-            })
-          : [
-              <button
-                key="all"
-                type="button"
-                aria-pressed={!skill}
-                onClick={() => setQuery("skill", null)}
-                className={cn(chipClass, !skill ? "bg-work text-work-foreground" : "border-2 border-border bg-card")}
-              >
-                All
-              </button>,
-              ...mine.map((item) => {
-                const on = skill === item;
-                const title = SKILLS.find((entry) => entry.id === item)?.title ?? skillTitle(item);
-                return (
-                  <button
-                    key={item}
-                    type="button"
-                    aria-pressed={on}
-                    onClick={() => setQuery("skill", on ? null : item)}
-                    className={cn(chipClass, on ? "bg-work text-work-foreground" : "border-2 border-border bg-card")}
-                  >
-                    {title}
-                  </button>
-                );
-              }),
-            ]}
-      </div>
-      <UseMyLocation
-        className={cn(chipClass, "mt-2 border-2 border-border bg-card")}
+      <FilterBar
+        placeLabel={placeChipLabel(demo, mode, home)}
+        placeHref={placeHref}
         onTown={(place) => demo.setHomeTown(place)}
+        sector={sector}
+        onSector={(next) => setQuery("sector", next)}
+        order={order}
+        onOrder={setOrder}
+        applied={applied}
+        onApply={setApplied}
+        skills={mode === "worker" ? mine : undefined}
+        nearMe={mode === "investor" && demo.profileSet ? demo.nearMe : undefined}
+        seeEverywhere={mode === "worker" && demo.profileSet ? demo.seeEverywhere : undefined}
+        onNearMe={mode === "investor" && demo.profileSet ? (value) => demo.setNearMe(value) : undefined}
+        onSeeEverywhere={mode === "worker" && demo.profileSet ? (value) => demo.setSeeEverywhere(value) : undefined}
+        placeChip={
+          placeLimits && home
+            ? { label: home.label, onRemove: clearPlace }
+            : null
+        }
+        onClear={clearFilters}
       />
-      <div className="mt-2 flex gap-2 overflow-x-auto" role="group" aria-label="Order">
-        {(
-          [
-            ["for-you", "For you"],
-            ["closest", "Closest"],
-            ["newest", "Newest"],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            aria-pressed={order === id}
-            onClick={() => setOrder(id)}
-            className={cn(chipClass, order === id ? "bg-foreground text-background" : "border-2 border-border bg-card")}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
       <p className="mt-2 text-sm text-muted-foreground">
         {countPhrase(projects, "project")} and {countPhrase(requests, "request")}
       </p>
@@ -442,7 +383,8 @@ function investorRows(
   demo: ReturnType<typeof useDemo>,
   home: Home | null,
   sector: Sector | null,
-  order: FeedOrder,
+  order: ListOrder,
+  applied: AppliedFilters,
 ): Row[] {
   const projects = demo.projects.filter(
     (project) => allowsPlace(demo, "investor", home, project) && (!sector || project.sector === sector),
@@ -454,7 +396,7 @@ function investorRows(
       allowsPlace(demo, "investor", home, request) &&
       (!sector || request.sector === sector),
   );
-  return finishRows(demo, home, order, [
+  return finishRows(demo, order, applied, [
     ...projects.map((project) => projectRow(demo, home, project)),
     ...requests.map((request) => requestRow(demo, home, request)),
   ]);
@@ -464,33 +406,63 @@ function workerRows(
   demo: ReturnType<typeof useDemo>,
   home: Home | null,
   mine: Skill[],
-  skill: Skill | null,
-  order: FeedOrder,
+  sector: Sector | null,
+  order: ListOrder,
+  applied: AppliedFilters,
 ): Row[] {
-  const skills = skill ? [skill] : mine;
-  const openSkills = skill === null && mine.length === 0;
+  const chosen = applied.skill && isSkill(applied.skill) ? applied.skill : null;
+  const skills = chosen ? [chosen] : mine;
+  const openSkills = !chosen && mine.length === 0;
   const projects = demo.projects.filter((project) => {
     if (!allowsPlace(demo, "worker", home, project)) return false;
+    if (sector && project.sector !== sector) return false;
     if (openSkills) return true;
     return project.needs.some((need) => skills.includes(need));
   });
   const requests = demo.requests.filter((request) => {
     if (request.status !== "open" || !allowsPlace(demo, "worker", home, request)) return false;
+    if (sector && request.sector !== sector) return false;
     if (openSkills) return true;
     return request.skills.some((item) => skills.includes(item));
   });
-  return finishRows(demo, home, order, [
+  return finishRows(demo, order, { ...applied, skill: null }, [
     ...projects.map((project) => projectRow(demo, home, project)),
     ...requests.map((request) => requestRow(demo, home, request)),
   ]);
 }
 
-function finishRows(demo: ReturnType<typeof useDemo>, home: Home | null, order: FeedOrder, rows: Row[]): Row[] {
+function finishRows(
+  demo: ReturnType<typeof useDemo>,
+  order: ListOrder,
+  applied: AppliedFilters,
+  rows: Row[],
+): Row[] {
   const hidden = new Set(demo.hiddenIds);
-  const visible = rows.filter((row) => !hidden.has(row.id));
-  if (order === "closest" || !demo.profileSet) return sortRows(visible);
+  const visible = rows.filter((row) => !hidden.has(row.id) && rowPasses(demo, row, applied));
+  if (order === "closest") return sortRows(visible);
   if (order === "newest") return orderCards(visible, "newest", Date.now());
+  if (!demo.profileSet) return sortRows(visible);
   return orderCards(visible, "for-you", Date.now());
+}
+
+function rowPasses(demo: ReturnType<typeof useDemo>, row: Row, applied: AppliedFilters): boolean {
+  if (row.kind === "project") {
+    return passesFilters({
+      kind: "project",
+      checks: row.project.checks,
+      readiness: row.project.readiness,
+      confirmedAmount: projectCommitted(row.project.committedJmd, demo.addedCommitments, row.project.id),
+      skillIds: row.project.needs,
+      filters: applied,
+    });
+  }
+  return passesFilters({
+    kind: "request",
+    readiness: row.request.readiness,
+    confirmedAmount: 0,
+    skillIds: row.request.skills,
+    filters: applied,
+  });
 }
 
 function scored(

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { chipLabel, countryRule, statusLabel, type CountryRule } from "@/lib/country-rules";
+import { chipLabel, countryRule, rulesSummary, statusLabel, type CountryRule } from "@/lib/country-rules";
 
 const chipClass =
   "inline-flex min-h-11 shrink-0 items-center self-center rounded-full border-2 border-border bg-card px-3 text-sm font-semibold whitespace-nowrap focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring";
@@ -80,14 +80,18 @@ export function RulesHere({ countryId }: { countryId: string }) {
   const rule = countryRule(countryId);
   if (!rule || rule.status === "blocked") return null;
   return (
-    <section id="rules-here" className="space-y-2 rounded-2xl border-2 border-border bg-card px-4 py-3">
-      <h2 className="text-lg font-semibold">Rules here</h2>
-      <p className="text-base">{statusLabel(rule.status)}</p>
-      <p className="text-base">{noteLine(rule)}</p>
-      {rule.investNote ? <p className="text-base">{rule.investNote}</p> : null}
-      {sourceList(rule)}
-      <p className="text-sm text-muted-foreground">Checked {rule.checkedOn}</p>
-      <p className="text-sm text-muted-foreground">Fundwork does not give legal advice.</p>
-    </section>
+    <details id="rules-here" className="rounded-2xl border-2 border-border bg-card">
+      <summary className="flex min-h-14 cursor-pointer list-none items-center px-4 py-3 text-base font-semibold [&::-webkit-details-marker]:hidden">
+        {rulesSummary(rule)}
+      </summary>
+      <div className="space-y-2 px-4 pb-4">
+        <p className="text-base">{statusLabel(rule.status)}</p>
+        <p className="text-base">{noteLine(rule)}</p>
+        {rule.investNote ? <p className="text-base">{rule.investNote}</p> : null}
+        {sourceList(rule)}
+        <p className="text-sm text-muted-foreground">Checked {rule.checkedOn}</p>
+        <p className="text-sm text-muted-foreground">Fundwork does not give legal advice.</p>
+      </div>
+    </details>
   );
 }

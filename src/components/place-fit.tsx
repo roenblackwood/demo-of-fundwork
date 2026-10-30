@@ -149,15 +149,16 @@ export function SectorHint({ placeId }: { placeId: string }) {
 export function ThisPlace({
   countryId,
   parishId,
+  collapsed = false,
 }: {
   countryId: string;
   parishId: string | null;
+  collapsed?: boolean;
 }) {
   const fit = fitForPlace(parishId, countryId);
   const risks = fit?.risks ?? [];
-  return (
-    <section className="space-y-3">
-      <h2 className={sectionTitle}>This place</h2>
+  const body = (
+    <>
       {risks.length === 0 ? <p className="text-lg">{NOT_WRITTEN}</p> : null}
       {risks.map((item) => (
         <p key={item.line} className="text-lg">
@@ -165,6 +166,22 @@ export function ThisPlace({
         </p>
       ))}
       <FitFooter sources={riskSources(parishId, countryId)} />
+    </>
+  );
+  if (collapsed) {
+    return (
+      <details className="rounded-2xl border-2 border-border bg-card">
+        <summary className="flex min-h-14 cursor-pointer list-none items-center px-4 py-3 text-base font-semibold [&::-webkit-details-marker]:hidden">
+          This place
+        </summary>
+        <div className="space-y-3 px-4 pb-4">{body}</div>
+      </details>
+    );
+  }
+  return (
+    <section className="space-y-3">
+      <h2 className={sectionTitle}>This place</h2>
+      {body}
     </section>
   );
 }

@@ -33,13 +33,7 @@ export function JoinScreen({ id }: { id: string }) {
   const learnHref = `/learn/investor?next=${encodeURIComponent(`/requests/${id}/join`)}`;
   const [text, setText] = useState("");
   const [notice, setNotice] = useState("");
-  const nameKey = `${demo.userId}:${demo.profile.showName ? "1" : "0"}`;
-  const [showName, setShowName] = useState(demo.profile.showName);
-  const [shownFor, setShownFor] = useState(nameKey);
-  if (shownFor !== nameKey) {
-    setShownFor(nameKey);
-    setShowName(demo.profile.showName);
-  }
+  const [showName, setShowName] = useState(false);
 
   useEffect(() => {
     if (!demo.ready || demo.role !== "investor" || demo.investorBasicsDone) return;

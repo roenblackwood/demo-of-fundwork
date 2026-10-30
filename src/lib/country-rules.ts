@@ -41,11 +41,20 @@ export function chipLabel(status: CountryStatus): "Limited rules" | "Rules not c
   return null;
 }
 
-export function statusLabel(status: CountryStatus): "Open" | "Limited" | "Not checked" | "Blocked" {
-  if (status === "open") return "Open";
-  if (status === "limited") return "Limited";
-  if (status === "not-checked") return "Not checked";
+export function statusLabel(
+  status: CountryStatus,
+): "Open to Fundwork" | "Limited rules" | "Rules not checked yet" | "Blocked" {
+  if (status === "open") return "Open to Fundwork";
+  if (status === "limited") return "Limited rules";
+  if (status === "not-checked") return "Rules not checked yet";
   return "Blocked";
+}
+
+export function rulesSummary(rule: CountryRule): string {
+  if (rule.id === "jamaica" && rule.status === "open") return "Rules here: open, law not in force yet";
+  if (rule.status === "open") return "Rules here: open";
+  if (rule.status === "limited") return "Rules here: limited rules";
+  return "Rules here: rules not checked yet";
 }
 
 // Later: flag a country when checkedOn is more than 90 days old.

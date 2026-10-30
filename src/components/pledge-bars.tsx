@@ -42,7 +42,7 @@ export function CapitalBar({
           <Meter value={pledged} max={budget} tone="primary" />
         )}
       </div>
-      <p className={compact ? "text-[11px] leading-4" : "text-base"}>
+      <p className={compact ? "text-sm leading-5" : "text-base"}>
         {line}
         {about ? `, ${about}` : ""}
       </p>
@@ -69,7 +69,7 @@ export function BackersRow({ people }: { people: BackerMark[] }) {
         person.named ? (
           <span
             key={`${person.label}-${index}`}
-            className="grid size-8 place-items-center rounded-full bg-secondary text-xs font-semibold text-secondary-foreground"
+            className="grid size-8 place-items-center rounded-full bg-secondary text-sm font-semibold text-secondary-foreground"
             aria-label={person.label}
             title={person.label}
           >

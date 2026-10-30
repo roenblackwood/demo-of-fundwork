@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { PageBusy } from "@/components/busy";
+import { PhotoAdder } from "@/components/photo-box";
 import { FitFooter, SectorHint } from "@/components/place-fit";
 import { MoneyText, StepHeader, sectionTitle } from "@/components/parts";
 import { UseMyLocation } from "@/components/use-location";
@@ -833,6 +834,7 @@ function Summary({
         />
         <SummaryRow title="Languages" body={profile.languages.join(", ") || "None yet"} onEdit={() => onEdit(4)} />
         <SummaryRow title="Photos" body={profile.photos.length === 1 ? "1 photo" : `${profile.photos.length} photos`} onEdit={() => onEdit(5)} />
+        <ProfilePhotos />
         <TrackList track={track} />
       </div>
     );
@@ -858,6 +860,19 @@ function Summary({
       />
       <SummaryRow title="Name" body={profile.showName ? "Shown on projects you back." : "Hidden on projects you back."} onEdit={() => onEdit(5)} />
     </div>
+  );
+}
+
+function ProfilePhotos() {
+  const demo = useDemo();
+  if (demo.role !== "worker") return null;
+  return (
+    <PhotoAdder
+      subject="profile"
+      subjectId={demo.userId}
+      ownerId={demo.userId}
+      onSaved={() => demo.setProof({ fileName: "photo.webp", dataUrl: null, tooBig: false })}
+    />
   );
 }
 

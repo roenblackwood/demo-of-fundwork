@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { ActionBar, LearnMore, StepHeader, sectionTitle } from "@/components/parts";
+import { PhotoAdder } from "@/components/photo-box";
 import { buttonVariants } from "@/components/ui/button";
 import { proofTip } from "@/lib/ai";
 import { skillTitle } from "@/lib/catalog";
@@ -22,12 +23,11 @@ export function ProfileStep({
   townId: string;
   skill: Skill;
 }) {
-  const { ready, updateFlow, flow, proof, proofLabel, setProof } = useDemo();
+  const { ready, updateFlow, flow, proof, proofLabel, setProof, userId } = useDemo();
   const parish = getParish(placeId);
   const country = parish ? undefined : getCountry(placeId);
   const town = parish ? getTown(placeId, townId) : getCity(placeId, townId);
   const tip = proofTip(skill);
-  const [message, setMessage] = useState("");
   const areaName = parish?.name ?? country?.name;
 
   useEffect(() => {
@@ -41,30 +41,6 @@ export function ProfileStep({
   }, [ready, country?.id, parish, placeId, town, townId, skill, updateFlow]);
 
   if ((!parish && !country) || !town) return null;
-
-  function onFile(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setMessage("Choose a photo.");
-      return;
-    }
-    if (file.size > 800_000) {
-      setProof({ fileName: file.name, dataUrl: null, tooBig: true });
-      setMessage("That photo is large. We saved the name only in this demo.");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      setProof({
-        fileName: file.name,
-        dataUrl: typeof reader.result === "string" ? reader.result : null,
-        tooBig: false,
-      });
-      setMessage("");
-    };
-    reader.readAsDataURL(file);
-  }
 
   function toggleExtra(extra: Skill) {
     const current = flow?.extraSkills ?? [];
@@ -132,21 +108,12 @@ export function ProfileStep({
           {!proof && proofLabel ? (
             <p className="font-semibold">{proofLabel}</p>
           ) : null}
-          {message ? <p>{message}</p> : null}
-          <label
-            className={cn(
-              buttonVariants({ variant: "outline", size: "lg" }),
-              "w-full cursor-pointer",
-            )}
-          >
-            {proof || proofLabel ? "Add another photo" : "Add a photo"}
-            <input
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              onChange={onFile}
-            />
-          </label>
+          <PhotoAdder
+            subject="profile"
+            subjectId={userId}
+            ownerId={userId}
+            onSaved={() => setProof({ fileName: "photo.webp", dataUrl: null, tooBig: false })}
+          />
         </section>
         <LearnMore title="Why a photo matters">
           <p>

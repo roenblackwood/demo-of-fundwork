@@ -14,23 +14,27 @@ import {
 } from "@/components/parts";
 import { useSnackbar } from "@/components/snackbar";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { BeforeYouApply, YourPlan } from "@/components/guide-card";
-import { ReadinessReport } from "@/components/needs-panel";
+import { BeforeYouApply, WhatItTakes } from "@/components/guide-card";
+import { ProjectPhases, ReadinessReport } from "@/components/needs-panel";
+import { PageHero, PhotoAdder, usePhotos } from "@/components/photo-box";
+import { ThisPlace } from "@/components/place-fit";
 import { BackersRow, CapitalBar, TeamBar } from "@/components/pledge-bars";
+import { kindById } from "@/lib/blueprints";
 import { sectorTitle, sectorWeekly, skillTitle } from "@/lib/catalog";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
-import { firstName, nameWithInitial, postedDate } from "@/lib/format";
+import { firstName, nameWithInitial, placeLine, postedDate } from "@/lib/format";
 import { matchWorkers } from "@/lib/match";
 import { acceptedCount } from "@/lib/requests";
 import { activePledges, backerMarks, pledgedAmount } from "@/lib/pledges";
 import { currencyOf, getCountry, requestPlace } from "@/lib/seed";
-import { RulesChip, RulesHere } from "@/components/rules-panel";
+import { RulesHere } from "@/components/rules-panel";
 import type { Application } from "@/lib/types";
 
 export function RequestScreen({ id }: { id: string }) {
   const demo = useDemo();
   const show = useSnackbar();
+  const photos = usePhotos("request", id);
   const request = demo.requests.find((item) => item.id === id);
 
   if (!demo.ready) return <PageBusy />;
@@ -165,11 +169,18 @@ export function RequestScreen({ id }: { id: string }) {
     <div className="min-[840px]:grid min-[840px]:grid-cols-[minmax(0,1fr)_20rem] min-[840px]:items-start min-[840px]:gap-8">
     <div className="min-w-0 space-y-6">
       <StepHeader backHref={backHref} />
-      <SectorTile sector={request.sector} size="page" />
+      <PageHero
+        photo={photos[0] ?? null}
+        sectorTile={<SectorTile sector={request.sector} size="page" />}
+      />
       <div>
         <h1 className="font-display text-3xl leading-tight">
           {where ? `${sectorTitle(request.sector)} in ${where.town}` : sectorTitle(request.sector)}
         </h1>
+        <p className="mt-1 text-base text-muted-foreground">{where ? placeLine(where.town, where.parish) : "This place"}</p>
+        {kindById(request.sector, request.kind)?.title ? (
+          <p className="text-base">{kindById(request.sector, request.kind)?.title}</p>
+        ) : null}
         <div className="mt-3 flex items-center gap-3">
           <Avatar name={postedBy} />
           <div>
@@ -179,11 +190,8 @@ export function RequestScreen({ id }: { id: string }) {
             <p className="text-sm text-muted-foreground">{postedDate(request.createdAt)}</p>
           </div>
         </div>
-        <div className="mt-3">
-          <RulesChip countryId={request.countryId} />
-        </div>
       </div>
-      <RulesHere countryId={request.countryId} />
+      {request.note ? <p className="text-base leading-relaxed">{request.note}</p> : null}
       <div className="space-y-3">
         <CapitalBar pledged={pledged} budget={request.budget} investors={investors} currency={currency} />
         <TeamBar accepted={accepted} needed={request.workersNeeded} />
@@ -303,7 +311,7 @@ export function RequestScreen({ id }: { id: string }) {
           </li>
         ))}
       </ul>
-      {request.note ? <p className="text-lg leading-relaxed">{request.note}</p> : null}
+      <ProjectPhases sector={request.sector} kindId={request.kind} openPhase={0} />
       <ReadinessReport
         sector={request.sector}
         kindId={request.kind}
@@ -319,16 +327,24 @@ export function RequestScreen({ id }: { id: string }) {
           });
         }}
       />
-      <CapitalChip />
+      <WhatItTakes
+        countryId={request.countryId}
+        countryName={getCountry(request.countryId)?.name ?? "this country"}
+        sector={request.sector}
+        placeName={where?.town ?? "this place"}
+        projects={demo.projects}
+        collapsed
+      />
+      <ThisPlace countryId={request.countryId} parishId={request.parishId} collapsed />
+      <RulesHere countryId={request.countryId} />
       {isOwner ? (
-        <YourPlan
-          countryId={request.countryId}
-          countryName={getCountry(request.countryId)?.name ?? "this country"}
-          sector={request.sector}
-          placeName={where?.town ?? "this place"}
-          projects={demo.projects}
+        <PhotoAdder
+          subject="request"
+          subjectId={request.id}
+          ownerId={demo.userId}
         />
       ) : null}
+      <CapitalChip audience={isOwner ? "own-request" : "request"} />
       {isWorker && !related.some((item) => item.workerId === demo.userId && item.status === "accepted") ? (
         <BeforeYouApply
           requestId={request.id}
@@ -419,7 +435,7 @@ export function RequestScreen({ id }: { id: string }) {
       <TeamBar accepted={accepted} needed={request.workersNeeded} />
       <BackersRow people={marks} />
       {requestActions}
-      <CapitalChip />
+      <CapitalChip audience={isOwner ? "own-request" : "request"} />
     </aside>
     </div>
   );

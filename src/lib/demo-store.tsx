@@ -20,6 +20,7 @@ import {
   type WithdrawResult,
 } from "@/lib/pledges";
 import { openChecks, sectorWeekly } from "@/lib/catalog";
+import { clearPhotoStore } from "@/lib/photos";
 import { investorBasicsIds, stageLessons } from "@/lib/lessons";
 import {
   resolvedProfile,
@@ -823,7 +824,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         userId: nextUser,
         amount: input.amount,
         status: "pledged",
-        showName: input.showName !== false,
+        showName: input.showName === true,
         createdAt: stamp.createdAt,
       };
       return { ...current, pledges: [...known, pledge] };
@@ -1321,6 +1322,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     window.localStorage.removeItem(V3_KEY);
     window.localStorage.removeItem(V2_KEY);
     window.localStorage.removeItem(V1_KEY);
+    void clearPhotoStore().catch(() => undefined);
   }, []);
 
   const value = useMemo<DemoValue>(() => {

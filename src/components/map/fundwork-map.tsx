@@ -615,7 +615,7 @@ export function FundworkMap({
         layout: {
           "text-field": ["get", "name"],
           "text-font": ["Noto Sans Regular"],
-          "text-size": 12,
+          "text-size": 14,
           "text-offset": [0, 1.05],
           "text-anchor": "top",
           "text-optional": true,

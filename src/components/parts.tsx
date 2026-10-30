@@ -13,7 +13,7 @@ import type { Check as TrustCheck, CheckState, Sector } from "@/lib/types";
 /** Section headings share this size. Pages space them with space-y-6. */
 export const sectionTitle = "text-xl font-semibold";
 
-// Real photos can replace sector tiles later. Not in this pass.
+// The first saved photo replaces this tile on a card or a detail page.
 
 export function SectorTile({
   sector,
@@ -26,7 +26,7 @@ export function SectorTile({
   const Icon = mark.icon;
   if (size === "page") {
     return (
-      <div className={cn("flex h-28 items-center gap-4 rounded-2xl px-4", mark.tile)} aria-hidden>
+      <div className={cn("flex h-24 items-center gap-4 rounded-2xl px-4 min-[840px]:h-40", mark.tile)} aria-hidden>
         <Icon className="size-12 shrink-0" strokeWidth={1.75} />
         <p className="text-xl font-semibold">{sectorTitle(sector)}</p>
       </div>
@@ -260,15 +260,19 @@ export function ApplicationStatusLabel({
   );
 }
 
-export function CapitalChip() {
+export function CapitalChip({ audience = "own-request" }: { audience?: "project" | "own-request" | "request" }) {
+  const line =
+    audience === "project"
+      ? "Money counts once we see it on the chain. You send it yourself."
+      : audience === "own-request"
+        ? "You send it yourself. We check it on the chain. For now this request shows the amount you entered."
+        : "You send it yourself. We check it on the chain.";
   return (
     <div className="space-y-2">
       <span className="inline-flex min-h-8 items-center rounded-full bg-wait px-3 py-1 text-sm font-semibold text-wait-foreground">
         Capital not checked yet.
       </span>
-      <p className="text-base text-muted-foreground">
-        You send it yourself. We check it on the chain. For now this request shows the amount you entered.
-      </p>
+      <p className="text-base text-muted-foreground">{line}</p>
     </div>
   );
 }
@@ -298,7 +302,7 @@ export function TrustBadges({
           <li
             key={check.id}
             className={cn(
-              "inline-flex items-center gap-0.5 rounded-full px-1.5 py-0 text-[11px] leading-4 font-semibold whitespace-nowrap",
+              "inline-flex items-center gap-0.5 rounded-full px-1.5 py-0 text-sm leading-5 font-semibold whitespace-nowrap",
               checkTone(check.state),
             )}
           >
