@@ -1,6 +1,6 @@
 /** Routes that need a signed-in person in live mode. Lists and project pages stay open. */
 export function needsSession(pathname: string): boolean {
-  if (pathname === "/you" || pathname.startsWith("/you/")) return true;
+  if (pathname.startsWith("/you/")) return true;
   if (pathname === "/invest/start" || pathname.startsWith("/invest/start/")) return true;
   if (pathname === "/work/available" || pathname.startsWith("/work/available/")) return true;
   if (/^\/requests\/[^/]+\/apply\/?$/.test(pathname)) return true;

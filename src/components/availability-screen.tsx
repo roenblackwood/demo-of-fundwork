@@ -14,6 +14,7 @@ import { savedLabel } from "@/lib/copy";
 import { useDemo } from "@/lib/demo-store";
 import { placeLine } from "@/lib/format";
 import { getCity, getParish, getTown, requestPlace } from "@/lib/seed";
+import { useProfileGate } from "@/components/profile-gate";
 import type { Skill } from "@/lib/types";
 
 type Step = "skills" | "note" | "posted";
@@ -23,6 +24,7 @@ const choiceClass =
 
 export function AvailabilityScreen({ placeId, townId }: { placeId: string; townId: string }) {
   const demo = useDemo();
+  const allowed = useProfileGate();
   const show = useSnackbar();
   const parish = getParish(placeId);
   const countryId = parish ? "jamaica" : placeId;
@@ -40,7 +42,7 @@ export function AvailabilityScreen({ placeId, townId }: { placeId: string; townI
   }, [step]);
 
   if (!town || !where) return null;
-  if (!demo.ready) return <PageBusy />;
+  if (!demo.ready || !allowed) return <PageBusy />;
 
   const primary = demo.flow?.skill || demo.homeSkill;
   const extras = demo.flow?.skill ? demo.flow.extraSkills : demo.homeExtraSkills;

@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ActionBar,
   ApplicationStatusLabel,
@@ -51,10 +52,12 @@ import {
 } from "@/lib/ownership";
 import { convertedBacking } from "@/lib/pledges";
 import { currencyOf, getCountry, projectPlace, seedCommitments } from "@/lib/seed";
+import { gatePath } from "@/lib/start-gate";
 import type { Skill } from "@/lib/types";
 
 export function ProjectScreen({ id }: { id: string }) {
   const demo = useDemo();
+  const router = useRouter();
   const show = useSnackbar();
   const photos = usePhotos("project", id);
   const project = demo.projects.find((item) => item.id === id);
@@ -147,7 +150,7 @@ export function ProjectScreen({ id }: { id: string }) {
   const projectActions = (
     <>
       {canCommit ? (
-        <Link href={`/projects/${project.id}/commit`} className={cn(buttonVariants({ size: "lg" }), "w-full")}>
+        <Link href={gatePath(`/projects/${project.id}/commit`, demo.profileSet)} className={cn(buttonVariants({ size: "lg" }), "w-full")}>
           Commit capital
         </Link>
       ) : null}
@@ -168,6 +171,10 @@ export function ProjectScreen({ id }: { id: string }) {
           aria-busy={demo.saving}
           onClick={() => {
             if (demo.saving) return;
+            if (!demo.profileSet) {
+              router.push(`/get-started?next=${encodeURIComponent(`/projects/${project.id}`)}&ask=${project.id}`);
+              return;
+            }
             void demo.askToJoin(project.id).then((ok) => {
               if (ok) show("Asked to join.");
             });

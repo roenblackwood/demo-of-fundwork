@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FilterBar } from "@/components/filter-bar";
+import { GetStartedButton } from "@/components/getting-started";
 import { ProjectCard } from "@/components/project-card";
 import { RequestCard } from "@/components/request-card";
 import { MapLoadNote, PlaceSearch, ShowMapButton } from "@/components/map/chrome";
@@ -373,6 +374,7 @@ export function HomeScreen() {
           <div className="flex h-full">
             <aside className="hidden h-full w-[400px] shrink-0 flex-col border-r border-border bg-background min-[840px]:flex">
               <div className="flex shrink-0 flex-col gap-2 p-3">
+                <GetStartedButton />
                 {renderFilters()}
                 <p className="text-sm text-muted-foreground">{label}</p>
               </div>
@@ -471,7 +473,12 @@ export function HomeScreen() {
               }
               stop={stop}
               onStop={chooseStop}
-              toolbar={renderFilters()}
+              toolbar={
+                <>
+                  <GetStartedButton />
+                  {renderFilters()}
+                </>
+              }
             >
               {openingList()}
             </ResultsSheet>
@@ -479,6 +486,7 @@ export function HomeScreen() {
             {failed ? (
               <div className="flex h-full flex-col gap-3 overflow-y-auto p-3 min-[840px]:hidden">
                 <PlaceSearch onPick={pickSearch} collapsible />
+                <GetStartedButton />
                 {renderFilters()}
                 <MapLoadNote onRetry={retryMap} />
                 <p className="text-sm text-muted-foreground">{label}</p>
@@ -494,6 +502,7 @@ export function HomeScreen() {
           <div className="min-[840px]:hidden">
             <PlaceSearch onPick={pickSearch} collapsible />
           </div>
+          <GetStartedButton />
           {renderFilters()}
           {lite && phase !== "loading" ? <ShowMapButton onClick={retryMap} /> : null}
           <p className="text-sm text-muted-foreground">{label}</p>

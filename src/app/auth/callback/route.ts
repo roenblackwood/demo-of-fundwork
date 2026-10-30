@@ -33,7 +33,7 @@ export async function GET(request: Request) {
 
   const { data: profile } = await supabase.from("profiles").select("id").eq("id", data.user.id).maybeSingle();
   if (!profile) {
-    return NextResponse.redirect(new URL(`/onboarding?next=${encodeURIComponent(next)}`, url.origin));
+    return NextResponse.redirect(new URL(`/get-started?resume=1&next=${encodeURIComponent(next)}`, url.origin));
   }
   return NextResponse.redirect(new URL(next, url.origin));
 }

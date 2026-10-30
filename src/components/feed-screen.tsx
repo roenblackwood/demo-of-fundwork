@@ -29,7 +29,9 @@ import {
   type PlacePick,
 } from "@/lib/profile";
 import type { ScorePart } from "@/lib/recommend";
+import { getRegion } from "@/lib/regions";
 import { getCity, getCountry, getParish, getTown } from "@/lib/seed";
+import { gatePath } from "@/lib/start-gate";
 import type { CapitalRequest, PathChoice, Project, Sector, Skill } from "@/lib/types";
 
 type Spot = {
@@ -191,7 +193,7 @@ export function FeedScreen({ mode }: { mode: PathChoice }) {
     !(mode === "investor" && demo.profileSet && !demo.nearMe) &&
     !(mode === "worker" && demo.profileSet && demo.seeEverywhere);
 
-  const actionHref = mode === "investor" ? startHref(home) : availableHref(home);
+  const actionHref = gatePath(mode === "investor" ? startHref(home) : availableHref(home), demo.profileSet);
   const actionLabel = mode === "investor" ? "Start a project" : "I am available";
   const actionTone = mode === "investor" ? "primary" : "work";
 
@@ -315,9 +317,23 @@ function countPhrase(count: number, word: string): string {
 }
 
 function workerSkills(demo: ReturnType<typeof useDemo>): Skill[] {
+  const fromProfile = demo.profile.skillLevels.map((item) => item.skill);
   const primary = demo.flow?.skill || demo.homeSkill;
   const extras = demo.flow?.skill ? demo.flow.extraSkills : demo.homeExtraSkills;
-  return [...new Set([primary, ...extras].filter((item): item is Skill => Boolean(item)))];
+  return [...new Set([primary, ...extras, ...fromProfile].filter((item): item is Skill => Boolean(item)))];
+}
+
+function investorPlaceLabel(places: string[]): string {
+  if (places.length === 0 || places.includes("anywhere")) return "Everywhere";
+  const names = places.flatMap((id) => {
+    const region = getRegion(id);
+    if (region) return [region.name];
+    const country = getCountry(id);
+    return country ? [country.name] : [];
+  });
+  if (names.length === 0) return "Everywhere";
+  if (names.length <= 2) return names.join(", ");
+  return `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
 }
 
 type Row = {
@@ -346,7 +362,7 @@ function placeChipLabel(
   mode: PathChoice,
   home: Home | null,
 ): string {
-  if (mode === "investor" && demo.profileSet && !demo.nearMe) return "Everywhere";
+  if (mode === "investor" && demo.profileSet && !demo.nearMe) return investorPlaceLabel(demo.profile.places);
   if (mode === "worker" && demo.profileSet && demo.seeEverywhere) return "Everywhere";
   if (mode === "worker" && demo.profileSet) return reachLabel(demo.profile.reach, personPlace(home));
   return home?.label ?? "Everywhere";

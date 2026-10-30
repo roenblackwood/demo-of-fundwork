@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { Bookmark, MoreHorizontal } from "lucide-react";
 import { useDemo } from "@/lib/demo-store";
 import type { ScorePart } from "@/lib/recommend";
@@ -17,6 +18,8 @@ export function CardNotes({
   parts?: ScorePart[];
 }) {
   const demo = useDemo();
+  const router = useRouter();
+  const pathname = usePathname();
   const saved = demo.savedIds.includes(id);
   const lines = parts ?? [];
   const [open, setOpen] = useState(false);
@@ -49,7 +52,17 @@ export function CardNotes({
           aria-label="Save"
           aria-pressed={saved}
           className="inline-flex size-11 items-center justify-center rounded-full text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
-          onClick={() => demo.saveItem(id, sector)}
+          onClick={() => {
+            if (!demo.profileSet) {
+              const params = new URLSearchParams();
+              params.set("next", pathname);
+              params.set("save", id);
+              params.set("sector", sector);
+              router.push(`/get-started?${params.toString()}`);
+              return;
+            }
+            demo.saveItem(id, sector);
+          }}
         >
           <Bookmark className={saved ? "size-5 fill-current" : "size-5"} aria-hidden />
         </button>

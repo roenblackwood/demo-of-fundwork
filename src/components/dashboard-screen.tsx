@@ -4,11 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PageBusy } from "@/components/busy";
-import { GettingStarted } from "@/components/getting-started";
+import { GetStartedCard, GettingStarted } from "@/components/getting-started";
 import { LessonList } from "@/components/lesson-card";
 import { ProjectCard } from "@/components/project-card";
 import { RequestCard } from "@/components/request-card";
-import { ApplicationStatusLabel, MoneyText, StatusLabel, sectionTitle } from "@/components/parts";
+import { ApplicationStatusLabel, Avatar, MoneyText, StatusLabel, sectionTitle } from "@/components/parts";
 import { ThisWeekNeed } from "@/components/this-week";
 import { useSnackbar } from "@/components/snackbar";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +26,7 @@ import { firstName, placeLine } from "@/lib/format";
 import { explorerUrl, sameAddress } from "@/lib/money";
 import { investorUnits, workerUnits } from "@/lib/ownership";
 import { acceptedCount, waitingCount } from "@/lib/requests";
+import { gatePath } from "@/lib/start-gate";
 import { currencyOf, requestPlace } from "@/lib/seed";
 import type { Application } from "@/lib/types";
 
@@ -33,6 +34,14 @@ export function DashboardScreen() {
   const demo = useDemo();
   const router = useRouter();
   if (!demo.ready) return <PageBusy />;
+  if (!demo.profileSet && !demo.role) {
+    return (
+      <div className="space-y-4">
+        <h1 className="font-display text-4xl leading-tight">Hello</h1>
+        <GetStartedCard />
+      </div>
+    );
+  }
 
   const greeting =
     firstName(demo.name) === "You" ? "Hello" : `Hello, ${firstName(demo.name)}`;
@@ -293,7 +302,7 @@ function PortfolioCard() {
 function SavedList() {
   const demo = useDemo();
   return (
-    <section className="space-y-3">
+    <section id="saved" className="space-y-3">
       <h2 className={sectionTitle}>Saved</h2>
       {demo.savedIds.length === 0 ? <p className="text-base">Nothing saved yet.</p> : null}
       {demo.savedIds.map((id) => {
@@ -334,7 +343,7 @@ function NeedsYou() {
   if (waiting.length === 0 && organized.length === 0) return null;
 
   return (
-    <section className="space-y-4">
+    <section id="needs-you" className="space-y-4">
       <h2 className={sectionTitle}>Needs you</h2>
       {waiting.map((application) => (
         <NeedRow key={application.id} application={application} show={show} />
@@ -387,11 +396,14 @@ function NeedRow({
   return (
     <article className="rounded-2xl bg-card p-4 ring-1 ring-foreground/10">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0">
-          <Link href={href} className="text-base font-semibold text-primary">
-            {work ? title : person}
-          </Link>
-          <p className="text-sm">{work ? "Invited. Waiting on you." : title}</p>
+        <div className="flex min-w-0 items-center gap-3">
+          <Avatar name={named} size="sm" />
+          <div className="min-w-0">
+            <Link href={href} className="text-base font-semibold text-primary">
+              {work ? title : person}
+            </Link>
+            <p className="text-sm">{work ? "Invited. Waiting on you." : title}</p>
+          </div>
         </div>
         {open ? (
           <div className="flex shrink-0 gap-2">
@@ -423,7 +435,7 @@ function GrowYourWork() {
   const parishId = demo.flow?.countryId ? (demo.flow.parishId ?? null) : demo.homeParishId;
   const townId = (demo.flow?.countryId ? demo.flow.townId : demo.homeTownId) || "";
   const place = parishId || countryId;
-  const href = townId && place ? `/invest/start/${place}/${townId}` : "/invest/start";
+  const href = gatePath(townId && place ? `/invest/start/${place}/${townId}` : "/invest/start", demo.profileSet);
   return (
     <section className="space-y-4">
       <h2 className={sectionTitle}>Grow your work</h2>
@@ -491,7 +503,7 @@ function YourRequests() {
       {mine.length === 0 ? (
         <>
           <p className="text-lg">You have not posted a request yet.</p>
-          <Link href="/invest/start" className={cn(buttonVariants({ variant: "outline", size: "lg" }), "w-full")}>
+          <Link href={gatePath("/invest/start", demo.profileSet)} className={cn(buttonVariants({ variant: "outline", size: "lg" }), "w-full")}>
             Start a project here
           </Link>
         </>
@@ -599,7 +611,7 @@ function YourAvailability() {
         <>
           <p className="text-lg">You have not posted that you are available.</p>
           <Link
-            href="/work/available"
+            href={gatePath("/work/available", demo.profileSet)}
             className={cn(buttonVariants({ variant: "outline", size: "lg" }), "w-full")}
           >
             Post that you are available

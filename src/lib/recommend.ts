@@ -185,7 +185,10 @@ export function scoreForInvestor(item: WorkItem, view: InvestorView, nowMs: numb
   const amount =
     view.minUsd > 0 && item.stillNeededUsd !== null && item.stillNeededUsd >= view.minUsd ? 20 : 0;
   const anywhere = view.places.includes("anywhere");
-  const place = anywhere || view.places.includes(item.countryId) ? 15 : 0;
+  const place =
+    anywhere || view.places.includes(item.countryId) || (item.regionId !== "" && view.places.includes(item.regionId))
+      ? 15
+      : 0;
   const ready = Math.round(clamp01(item.readiness) * 15);
   const confirmed = item.confirmedIn ? 10 : 0;
   const momentum = Math.round(clamp01(item.fundedRatio) * 10);

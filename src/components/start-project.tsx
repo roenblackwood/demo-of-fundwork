@@ -13,11 +13,13 @@ import { sectorTitle } from "@/lib/catalog";
 import { useDemo } from "@/lib/demo-store";
 import { placeLine } from "@/lib/format";
 import { requestPlace } from "@/lib/seed";
+import { useProfileGate } from "@/components/profile-gate";
 
 export function StartProjectScreen({ id }: { id: string }) {
   const router = useRouter();
   const show = useSnackbar();
   const demo = useDemo();
+  const allowed = useProfileGate();
   const request = demo.requests.find((item) => item.id === id);
   const where = request ? requestPlace(request) : undefined;
   const town = where?.town ?? "this place";
@@ -25,7 +27,7 @@ export function StartProjectScreen({ id }: { id: string }) {
   const [name, setName] = useState<string | null>(null);
   const value = name ?? suggested;
 
-  if (!demo.ready) return <PageBusy />;
+  if (!demo.ready || !allowed) return <PageBusy />;
   if (!request) {
     return (
       <div className="space-y-4">

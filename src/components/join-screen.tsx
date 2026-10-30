@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PageBusy } from "@/components/busy";
@@ -12,6 +12,7 @@ import { useDemo } from "@/lib/demo-store";
 import { money, placeLine } from "@/lib/format";
 import { leftToPledge } from "@/lib/pledges";
 import { currencyOf, requestPlace } from "@/lib/seed";
+import { useProfileGate } from "@/components/profile-gate";
 
 function readAmount(text: string): number | null {
   const digits = text.replace(/[^\d]/g, "");
@@ -29,19 +30,14 @@ function formatAmountInput(text: string): string {
 export function JoinScreen({ id }: { id: string }) {
   const demo = useDemo();
   const router = useRouter();
+  const allowed = useProfileGate();
   const request = demo.requests.find((item) => item.id === id);
   const learnHref = `/learn/investor?next=${encodeURIComponent(`/requests/${id}/join`)}`;
   const [text, setText] = useState("");
   const [notice, setNotice] = useState("");
   const [showName, setShowName] = useState(false);
 
-  useEffect(() => {
-    if (!demo.ready || demo.role !== "investor" || demo.investorBasicsDone) return;
-    router.replace(learnHref);
-  }, [demo.ready, demo.role, demo.investorBasicsDone, learnHref, router]);
-
-  if (!demo.ready) return <PageBusy />;
-  if (demo.role === "investor" && !demo.investorBasicsDone) return <PageBusy />;
+  if (!demo.ready || !allowed) return <PageBusy />;
   if (!request) {
     return (
       <div className="space-y-4">

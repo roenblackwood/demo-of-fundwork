@@ -52,6 +52,14 @@ export async function saveProfile(input: {
   return !error;
 }
 
+export async function setLiveRole(role: PathChoice): Promise<boolean> {
+  const id = await callerId();
+  if (!id || (role !== "investor" && role !== "worker")) return false;
+  const supabase = await serverSupabase();
+  const { error } = await supabase.from("profiles").update({ role }).eq("id", id);
+  return !error;
+}
+
 export async function saveDisplayName(name: string): Promise<boolean> {
   const id = await callerId();
   const trimmed = name.trim().slice(0, 80);

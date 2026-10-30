@@ -35,6 +35,7 @@ import { priceRange } from "@/lib/guides";
 import { aboutUsd } from "@/lib/rates";
 import { sectorSources, suitedSector } from "@/lib/region-fit";
 import { currencyOf, getCity, getCountry, getParish, getTown, requestPlace } from "@/lib/seed";
+import { useProfileGate } from "@/components/profile-gate";
 import type { Readiness, Sector, SiteStatus, Skill } from "@/lib/types";
 
 type Step = "sector" | "kind" | "site" | "team" | "budget" | "note" | "review" | "posted";
@@ -70,6 +71,7 @@ const OPEN_PANEL: Step[] = ["kind", "site", "team", "budget"];
 
 export function StartRequestScreen({ placeId, townId }: { placeId: string; townId: string }) {
   const demo = useDemo();
+  const allowed = useProfileGate();
   const show = useSnackbar();
   const parish = getParish(placeId);
   const countryId = parish ? "jamaica" : placeId;
@@ -117,7 +119,7 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
   }, [step]);
 
   if (!town || !where) return null;
-  if (!demo.ready) return <PageBusy />;
+  if (!demo.ready || !allowed) return <PageBusy />;
 
   const backPlace = `/invest/start/${placeId}`;
   const range = sector ? priceRange(countryId, sector, demo.projects) : null;

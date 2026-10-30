@@ -23,30 +23,32 @@ function profileHref(flow: {
   return "/work/place";
 }
 
+export function GetStartedCard() {
+  return (
+    <div className="space-y-3 rounded-2xl bg-card p-4 ring-1 ring-foreground/10">
+      <h2 className={sectionTitle}>Get started</h2>
+      <p className="text-base">Tell us your role and where to look.</p>
+      <Link href="/get-started" className={cn(buttonVariants({ size: "lg" }), "w-full")}>
+        Get started
+      </Link>
+    </div>
+  );
+}
+
+export function GetStartedButton() {
+  const demo = useDemo();
+  if (!demo.ready || demo.profileSet) return null;
+  return (
+    <Link href="/get-started" className={cn(buttonVariants({ size: "sm" }), "w-full")}>
+      Get started
+    </Link>
+  );
+}
+
 export function GettingStarted() {
   const demo = useDemo();
 
-  if (!demo.role) {
-    return (
-      <div className="space-y-4">
-        <h2 className={sectionTitle}>What do you want to do?</h2>
-        <Link
-          href="/invest"
-          onClick={() => demo.startPath("investor")}
-          className={cn(buttonVariants({ size: "lg" }), "w-full")}
-        >
-          I want to invest
-        </Link>
-        <Link
-          href="/work"
-          onClick={() => demo.startPath("worker")}
-          className={cn(buttonVariants({ variant: "workOutline", size: "lg" }), "w-full")}
-        >
-          I want to work
-        </Link>
-      </div>
-    );
-  }
+  if (!demo.role) return <GetStartedCard />;
 
   if (demo.role === "investor") {
     const placed = Boolean(demo.flow?.countryId || demo.homeCountryId);

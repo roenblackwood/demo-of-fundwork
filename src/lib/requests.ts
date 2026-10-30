@@ -103,6 +103,33 @@ export function statusForTeam(request: CapitalRequest, applications: Application
   return "open";
 }
 
+export function needsYouCount(
+  role: PathChoice | null,
+  userId: string,
+  requests: CapitalRequest[],
+  applications: Application[],
+  projects: Project[],
+): number {
+  if (role === "investor") {
+    const requestIds = new Set(requests.filter((item) => item.userId === userId).map((item) => item.id));
+    const projectIds = new Set(projects.filter((item) => item.organizerId === userId).map((item) => item.id));
+    const waiting = applications.filter(
+      (item) =>
+        item.origin === "applied" &&
+        item.status === "waiting" &&
+        ((item.requestId !== null && requestIds.has(item.requestId)) ||
+          (item.projectId !== null && projectIds.has(item.projectId))),
+    ).length;
+    return waiting + projectIds.size;
+  }
+  if (role === "worker") {
+    return applications.filter(
+      (item) => item.workerId === userId && item.origin === "invited" && item.status === "waiting",
+    ).length;
+  }
+  return 0;
+}
+
 export function youHasUpdate(
   role: PathChoice | null,
   userId: string,

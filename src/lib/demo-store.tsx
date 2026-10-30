@@ -102,6 +102,7 @@ type Session = {
   mode: "new" | "sample";
   sampleId: string | null;
   path: PathChoice | null;
+  roleLock: PathChoice | null;
   displayName: string;
   flow: Flow | null;
   proofs: Record<string, Proof>;
@@ -157,6 +158,7 @@ const initialSession: Session = {
   mode: "new",
   sampleId: null,
   path: null,
+  roleLock: null,
   displayName: "",
   flow: null,
   proofs: {},
@@ -305,6 +307,7 @@ function normalize(input: Partial<Session>): Session {
     path: input.path ?? null,
     sampleId: input.sampleId ?? null,
     displayName: input.displayName ?? "",
+    roleLock: input.roleLock === "investor" || input.roleLock === "worker" ? input.roleLock : null,
   };
   return ensureLead(session);
 }
@@ -558,19 +561,61 @@ function nextAsk(
   return { ...current, applications: [...current.applications, application] };
 }
 
+function listedSkills(skills: (Skill | null | undefined)[]): Skill[] {
+  return [...new Set(skills.filter((item): item is Skill => Boolean(item)))];
+}
+
 function workerSkills(session: Session): Skill[] {
   const sample = session.mode === "sample" && session.sampleId ? getUser(session.sampleId) : undefined;
-  if (sample?.role === "worker") {
-    return [sample.skill, ...sample.extraSkills].filter((item): item is Skill => Boolean(item));
+  const fromProfile = (session.profiles[currentUserId(session)]?.skillLevels ?? []).map((item) => item.skill);
+  if (sample?.role === "worker" && session.roleLock !== "investor") {
+    return listedSkills([sample.skill, ...sample.extraSkills, ...fromProfile]);
   }
-  return [session.flow?.skill, ...(session.flow?.extraSkills ?? [])].filter(
-    (item): item is Skill => Boolean(item),
-  );
+  return listedSkills([session.flow?.skill, ...(session.flow?.extraSkills ?? []), ...fromProfile]);
 }
 
 function roleOf(session: Session): PathChoice | null {
+  if (session.roleLock === "investor" || session.roleLock === "worker") return session.roleLock;
   const sample = session.mode === "sample" && session.sampleId ? getUser(session.sampleId) : undefined;
   return sample?.role ?? session.path;
+}
+
+export type StartDraft = {
+  name: string;
+  role: PathChoice;
+  profile: PersonProfile;
+  place: { countryId: string; parishId: string | null; townId: string } | null;
+  skill: Skill | null;
+  extraSkills: Skill[];
+};
+
+function applyStart(current: Session, draft: StartDraft): Session {
+  const id = currentUserId(current);
+  const name = draft.name.trim().slice(0, 80);
+  const profile: PersonProfile = { ...draft.profile, done: true };
+  const flow: Flow | null =
+    draft.place || draft.skill
+      ? {
+          ...current.flow,
+          ...(draft.place
+            ? {
+                countryId: draft.place.countryId,
+                parishId: draft.place.parishId ?? undefined,
+                townId: draft.place.townId,
+              }
+            : {}),
+          ...(draft.skill ? { skill: draft.skill } : {}),
+          extraSkills: draft.extraSkills,
+        }
+      : current.flow;
+  return {
+    ...current,
+    displayName: current.mode === "sample" ? current.displayName : name,
+    path: draft.role,
+    roleLock: draft.role,
+    profiles: { ...current.profiles, [id]: profile },
+    flow,
+  };
 }
 
 function applyPath(session: Session, path: PathChoice): Session {
@@ -660,6 +705,8 @@ export type DemoValue = {
   setSeeEverywhere: (on: boolean) => void;
   setNearMe: (on: boolean) => void;
   setHomeTown: (place: { countryId: string; parishId: string | null; townId: string }) => void;
+  completeStart: (draft: StartDraft) => Promise<boolean>;
+  switchRole: () => void;
   useSample: (id: string) => void;
   useNewPerson: () => void;
   reset: () => void;
@@ -1296,6 +1343,22 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
+  const completeStart = useCallback((draft: StartDraft) => {
+    const next = applyStart(sessionRef.current, draft);
+    sessionRef.current = next;
+    setSession((latest) => applyStart(latest, draft));
+    return Promise.resolve(true);
+  }, []);
+
+  const switchRole = useCallback(() => {
+    const role = roleOf(sessionRef.current);
+    if (role !== "investor" && role !== "worker") return;
+    const nextRole: PathChoice = role === "investor" ? "worker" : "investor";
+    const next = { ...sessionRef.current, roleLock: nextRole, path: nextRole };
+    sessionRef.current = next;
+    setSession(() => next);
+  }, []);
+
   const useSample = useCallback((id: string) => {
     const user = getUser(id);
     if (!user) return;
@@ -1304,6 +1367,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       mode: "sample",
       sampleId: id,
       path: user.role,
+      roleLock: null,
     }));
   }, []);
 
@@ -1312,6 +1376,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       ...current,
       mode: "new",
       sampleId: null,
+      roleLock: null,
     }));
   }, []);
 
@@ -1334,7 +1399,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     const name = sample?.name || session.displayName || "You";
     const book = session.signals[userId] ?? { saved: [], hidden: [] };
     const resolved = resolvedProfile(userId, session.profiles[userId]);
-    const role = sample?.role ?? session.path;
+    const role = roleOf(session);
     const proof = session.proofs[userId] ?? null;
     const commitments = [
       ...seedCommitments().filter((item) => item.userId === userId),
@@ -1433,6 +1498,8 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       setSeeEverywhere,
       setNearMe,
       setHomeTown,
+      completeStart,
+      switchRole,
       useSample,
       useNewPerson,
       reset,
@@ -1474,6 +1541,8 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     setSeeEverywhere,
     setNearMe,
     setHomeTown,
+    completeStart,
+    switchRole,
   ]);
 
   return <DemoContext.Provider value={value}>{children}</DemoContext.Provider>;

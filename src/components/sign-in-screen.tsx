@@ -30,7 +30,7 @@ export function SignInScreen() {
     void supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
       const { data: profile } = await supabase.from("profiles").select("id").eq("id", data.user.id).maybeSingle();
-      const href = profile ? dest : `/onboarding?next=${encodeURIComponent(dest)}`;
+      const href = profile ? dest : `/get-started?resume=1&next=${encodeURIComponent(dest)}`;
       router.replace(href);
     });
   }, [router]);

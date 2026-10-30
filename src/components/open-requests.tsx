@@ -6,13 +6,15 @@ import { RequestCard } from "@/components/request-card";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
+import { gatePath } from "@/lib/start-gate";
 import { matchRequests } from "@/lib/match";
 import type { Skill } from "@/lib/types";
 
 function skillsFor(demo: ReturnType<typeof useDemo>): Skill[] {
+  const fromProfile = demo.profile.skillLevels.map((item) => item.skill);
   const primary = demo.flow?.skill || demo.homeSkill;
   const extras = demo.flow?.skill ? demo.flow.extraSkills : demo.homeExtraSkills;
-  return [...new Set([primary, ...extras].filter((item): item is Skill => Boolean(item)))];
+  return [...new Set([primary, ...extras, ...fromProfile].filter((item): item is Skill => Boolean(item)))];
 }
 
 export function OpenRequests({
@@ -58,7 +60,7 @@ export function OpenRequests({
         </div>
       )}
       <Link
-        href="/work/available"
+        href={gatePath("/work/available", demo.profileSet)}
         className={cn(buttonVariants({ variant: "workOutline", size: "lg" }), "w-full")}
       >
         Post that you are available

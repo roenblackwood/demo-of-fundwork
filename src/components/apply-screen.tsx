@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { UseDraftButton } from "@/components/guide-card";
 import { skillTitle } from "@/lib/catalog";
+import { START_CHOICES, toolsForSkills, type StartWhen } from "@/lib/profile";
+import { useProfileGate } from "@/components/profile-gate";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
 import { firstName, placeLine } from "@/lib/format";
@@ -24,11 +26,15 @@ export function ApplyScreen({ id }: { id: string }) {
   const router = useRouter();
   const show = useSnackbar();
   const demo = useDemo();
+  const allowed = useProfileGate();
   const request = demo.requests.find((item) => item.id === id);
+  const [tools, setTools] = useState<string[]>([]);
+  const [days, setDays] = useState<number | null>(null);
+  const [startWhen, setStartWhen] = useState<StartWhen | null>(null);
   const [skill, setSkill] = useState<Skill | null>(null);
   const [message, setMessage] = useState("");
 
-  if (!demo.ready) return <PageBusy />;
+  if (!demo.ready || !allowed) return <PageBusy />;
   if (!request) {
     return (
       <div className="space-y-4">
@@ -42,7 +48,10 @@ export function ApplyScreen({ id }: { id: string }) {
   const place = where ? placeLine(where.town, where.parish) : "This place";
   const primary = demo.flow?.skill || demo.homeSkill;
   const extras = demo.flow?.skill ? demo.flow.extraSkills : demo.homeExtraSkills;
-  const mine = [...new Set([primary, ...extras].filter((item): item is Skill => Boolean(item)))];
+  const fromProfile = demo.profile.skillLevels.map((item) => item.skill);
+  const mine = [...new Set([primary, ...extras, ...fromProfile].filter((item): item is Skill => Boolean(item)))];
+  const askSetup =
+    demo.profile.tools.length === 0 && demo.profile.daysPerWeek === null && demo.profile.startWhen === null;
   const fits = mine.filter((item) => request.skills.includes(item));
   const already = demo.applications.find(
     (item) => item.requestId === request.id && item.workerId === demo.userId && item.status !== "declined",
@@ -72,6 +81,27 @@ export function ApplyScreen({ id }: { id: string }) {
         <p className="text-lg">You already have an application on this request.</p>
       ) : fits.length === 0 ? (
         <p className="text-lg leading-relaxed">None of your skills fit this request.</p>
+      ) : askSetup ? (
+        <SetupQuestion
+          skills={mine}
+          tools={tools}
+          days={days}
+          startWhen={startWhen}
+          onTools={setTools}
+          onDays={setDays}
+          onStart={setStartWhen}
+          onSave={() => {
+            void demo.savePersonProfile({
+              ...demo.profile,
+              tools,
+              daysPerWeek: days,
+              startWhen: startWhen ?? "later",
+            });
+          }}
+          onSkip={() => {
+            void demo.savePersonProfile({ ...demo.profile, startWhen: "later" });
+          }}
+        />
       ) : (
         <>
           <div className="space-y-3">
@@ -115,6 +145,91 @@ export function ApplyScreen({ id }: { id: string }) {
           </ActionBar>
         </>
       )}
+    </div>
+  );
+}
+
+function SetupQuestion({
+  skills,
+  tools,
+  days,
+  startWhen,
+  onTools,
+  onDays,
+  onStart,
+  onSave,
+  onSkip,
+}: {
+  skills: Skill[];
+  tools: string[];
+  days: number | null;
+  startWhen: StartWhen | null;
+  onTools: (next: string[]) => void;
+  onDays: (next: number) => void;
+  onStart: (next: StartWhen) => void;
+  onSave: () => void;
+  onSkip: () => void;
+}) {
+  const groups = toolsForSkills(skills);
+  return (
+    <div className="space-y-4">
+      <h2 className="text-xl font-semibold">What do you bring, and when can you start?</h2>
+      {groups.map((group) => (
+        <div key={group.skill} className="space-y-2">
+          <p className="font-semibold">{skillTitle(group.skill)}</p>
+          <div className="flex flex-wrap gap-2">
+            {group.tools.map((tool) => {
+              const on = tools.includes(tool);
+              return (
+                <button
+                  key={tool}
+                  type="button"
+                  aria-pressed={on}
+                  className={cn(choiceClass, "w-auto", on ? "border-work bg-secondary" : "border-border bg-card")}
+                  onClick={() => onTools(on ? tools.filter((item) => item !== tool) : [...tools, tool])}
+                >
+                  {tool}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+      <div className="space-y-2">
+        <p className="font-semibold">Days a week</p>
+        <div className="flex flex-wrap gap-2">
+          {[1, 2, 3, 4, 5, 6, 7].map((day) => (
+            <button
+              key={day}
+              type="button"
+              aria-pressed={days === day}
+              className={cn(choiceClass, "w-14 justify-center", days === day ? "border-work bg-secondary" : "border-border bg-card")}
+              onClick={() => onDays(day)}
+            >
+              {day}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="space-y-2">
+        {START_CHOICES.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            aria-pressed={startWhen === item.id}
+            className={cn(choiceClass, startWhen === item.id ? "border-work bg-secondary" : "border-border bg-card")}
+            onClick={() => onStart(item.id)}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+      <Button variant="work" size="lg" className="w-full" onClick={onSave}>
+        Save
+      </Button>
+      <Button variant="outline" size="lg" className="w-full" onClick={onSkip}>
+        Skip
+      </Button>
     </div>
   );
 }

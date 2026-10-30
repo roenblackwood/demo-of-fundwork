@@ -3,7 +3,9 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { PageBusy } from "@/components/busy";
 import { PlaceScreen, type PickedPlace } from "@/components/map/place-screen";
+import { useProfileGate } from "@/components/profile-gate";
 import { WhatWorksButton } from "@/components/place-fit";
 import { ChoiceLink, StepHeader } from "@/components/parts";
 import { CountryRuleRow, RulesChip, RulesHere } from "@/components/rules-panel";
@@ -51,8 +53,10 @@ export function RegionStep({
   mode: PathChoice;
   purpose?: PlacePurpose;
 }) {
+  const allowed = useProfileGate(purpose !== "browse");
   const router = useRouter();
   const { updateFlow } = useDemo();
+  if (!allowed) return <PageBusy />;
 
   function chooseTown(place: PickedPlace) {
     updateFlow({
@@ -90,7 +94,9 @@ export function CountryStep({
   mode: PathChoice;
   purpose?: PlacePurpose;
 }) {
+  const allowed = useProfileGate(purpose !== "browse");
   const { updateFlow } = useDemo();
+  if (!allowed) return <PageBusy />;
   const region = getRegion(regionId);
   const root = pathRoot(mode, purpose);
 
@@ -141,6 +147,7 @@ export function ParishStep({
   mode: PathChoice;
   purpose?: PlacePurpose;
 }) {
+  const allowed = useProfileGate(purpose !== "browse");
   const { updateFlow } = useDemo();
   const [finding, setFinding] = useState(false);
   const [query, setQuery] = useState("");
@@ -150,6 +157,7 @@ export function ParishStep({
     if (!text) return parishes;
     return parishes.filter((parish) => parish.name.toLowerCase().includes(text));
   }, [parishes, query]);
+  if (!allowed) return <PageBusy />;
   const title = mode === "investor" ? "Which parish?" : "Where do you want to work?";
   const root = pathRoot(mode, purpose);
 
@@ -221,8 +229,10 @@ export function TownStep({
   mode: PathChoice;
   purpose?: PlacePurpose;
 }) {
+  const allowed = useProfileGate(purpose !== "browse");
   const { updateFlow } = useDemo();
   const parish = getParish(parishId);
+  if (!allowed) return <PageBusy />;
   if (!parish) return null;
   const root = pathRoot(mode, purpose);
 
@@ -271,8 +281,10 @@ export function CityStep({
   mode: PathChoice;
   purpose?: PlacePurpose;
 }) {
+  const allowed = useProfileGate(purpose !== "browse");
   const { updateFlow, projects: allProjects } = useDemo();
   const country = getCountry(countryId);
+  if (!allowed) return <PageBusy />;
   if (!country) return null;
   const root = pathRoot(mode, purpose);
   const region = getRegion(country.regionId);

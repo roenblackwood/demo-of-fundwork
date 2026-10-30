@@ -13,7 +13,9 @@ import {
   withdrawRequestPledge as withdrawRequestPledgeAction,
   saveDisplayName,
   saveHomeTown,
+  saveProfile,
   saveProfileDetails,
+  setLiveRole,
   setSignal,
   markPhaseDone as markPhaseDoneAction,
   savePhaseSplit as savePhaseSplitAction,
@@ -53,7 +55,8 @@ import {
 import { notifySaveError } from "@/components/snackbar";
 import { capitalReserved } from "@/lib/ownership";
 import { convertedBacking, joinBlock, withdrawBlock } from "@/lib/pledges";
-import { askedPlace, rememberLivePeople } from "@/lib/seed";
+import { REGIONS, leadCountry, type RegionId } from "@/lib/regions";
+import { askedPlace, getCountry, getParish, getParishes, rememberLivePeople } from "@/lib/seed";
 import type { RequestPledge } from "@/lib/types";
 import { browserSupabase } from "@/lib/supabase/browser";
 import type {
@@ -135,6 +138,21 @@ const emptySnapshot: Snapshot = {
   savedIds: [],
   hidden: [],
 };
+
+function investorTown(places: string[]): { countryId: string; parishId: string | null; townId: string } | null {
+  const picked = places.find((id) => REGIONS.some((region) => region.id === id));
+  const region = (picked ?? "caribbean") as RegionId;
+  if (!picked || region === "caribbean") {
+    const parish = getParish("westmoreland") ?? getParishes()[0];
+    const town = parish?.towns[0];
+    if (!parish || !town) return null;
+    return { countryId: "jamaica", parishId: parish.id, townId: town.id };
+  }
+  const country = getCountry(leadCountry(region));
+  const city = country?.cities[0];
+  if (!country || !city) return null;
+  return { countryId: country.id, parishId: null, townId: city.id };
+}
 
 function textList(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
@@ -749,7 +767,8 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
         );
         const mine = [seen.homeSkill, ...seen.homeExtraSkills].filter((item): item is Skill => Boolean(item));
         const fromFlow = [flow?.skill, ...(flow?.extraSkills ?? [])].filter((item): item is Skill => Boolean(item));
-        const skills = fromFlow.length > 0 ? fromFlow : mine;
+        const fromProfile = (seen.profile?.skillLevels ?? []).map((item) => item.skill);
+        const skills = [...new Set([...fromFlow, ...mine, ...fromProfile])];
         const skill = project?.needs.find((item) => skills.includes(item)) ?? skills[0] ?? project?.needs[0];
         const local = Boolean(
           project &&
@@ -901,6 +920,68 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
           townId: place.townId,
         }));
         void saveHomeTown(place).then((ok) => {
+          if (!ok) notifySaveError();
+          return reload();
+        });
+      },
+      completeStart: async (draft) => {
+        const name = draft.name.trim().slice(0, 80);
+        if (!name) return false;
+        const place = draft.place ?? (draft.role === "investor" ? investorTown(draft.profile.places) : null);
+        if (!place) return false;
+        const profile = { ...draft.profile, done: true };
+        flowStarted.current = true;
+        setPath(draft.role);
+        if (draft.role === "worker" && draft.place) {
+          setFlow({
+            countryId: draft.place.countryId,
+            parishId: draft.place.parishId ?? undefined,
+            townId: draft.place.townId,
+            skill: draft.skill ?? undefined,
+            extraSkills: draft.extraSkills,
+          });
+        }
+        const optimistic = {
+          ...snapshotRef.current,
+          name,
+          role: draft.role,
+          profile,
+          homeCountryId: draft.role === "worker" ? place.countryId : snapshotRef.current.homeCountryId,
+          homeParishId: draft.role === "worker" ? place.parishId : snapshotRef.current.homeParishId,
+          homeTownId: draft.role === "worker" ? place.townId : snapshotRef.current.homeTownId,
+          homeSkill: draft.skill,
+          homeExtraSkills: draft.extraSkills,
+        };
+        snapshotRef.current = optimistic;
+        setSnapshot(optimistic);
+        const saved = await saveProfile({
+          name,
+          role: draft.role,
+          countryId: place.countryId,
+          parishId: place.parishId,
+          townId: place.townId,
+          skill: draft.skill,
+          extraSkills: draft.extraSkills,
+        });
+        if (!saved) {
+          notifySaveError();
+          await reload();
+          return false;
+        }
+        const details = await saveProfileDetails(profile);
+        if (!details) notifySaveError();
+        await reload();
+        return details;
+      },
+      switchRole: () => {
+        const seen = snapshotRef.current;
+        const current = seen.role ?? path;
+        if (current !== "investor" && current !== "worker") return;
+        const next: PathChoice = current === "investor" ? "worker" : "investor";
+        setPath(next);
+        snapshotRef.current = { ...seen, role: next };
+        setSnapshot((item) => ({ ...item, role: next }));
+        void setLiveRole(next).then((ok) => {
           if (!ok) notifySaveError();
           return reload();
         });

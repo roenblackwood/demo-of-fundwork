@@ -28,6 +28,7 @@ import { matchWorkers } from "@/lib/match";
 import { acceptedCount } from "@/lib/requests";
 import { activePledges, backerMarks, pledgedAmount } from "@/lib/pledges";
 import { currencyOf, getCountry, requestPlace } from "@/lib/seed";
+import { gatePath } from "@/lib/start-gate";
 import { RulesHere } from "@/components/rules-panel";
 import type { Application } from "@/lib/types";
 
@@ -74,12 +75,12 @@ export function RequestScreen({ id }: { id: string }) {
   const requestActions = (
     <>
       {isOwner && request.status === "team-ready" && !request.projectId ? (
-        <Link href={`/requests/${request.id}/start`} className={cn(buttonVariants({ size: "lg" }), "w-full")}>
+        <Link href={gatePath(`/requests/${request.id}/start`, demo.profileSet)} className={cn(buttonVariants({ size: "lg" }), "w-full")}>
           Start the project
         </Link>
       ) : null}
       {canJoin ? (
-        <Link href={`/requests/${request.id}/join`} className={cn(buttonVariants({ size: "lg" }), "w-full")}>
+        <Link href={gatePath(`/requests/${request.id}/join`, demo.profileSet)} className={cn(buttonVariants({ size: "lg" }), "w-full")}>
           Join this request
         </Link>
       ) : null}
@@ -123,7 +124,7 @@ export function RequestScreen({ id }: { id: string }) {
       ) : null}
       {isWorker && !active && request.status === "open" ? (
         <Link
-          href={`/requests/${request.id}/apply`}
+          href={gatePath(`/requests/${request.id}/apply`, demo.profileSet)}
           className={cn(buttonVariants({ variant: "work", size: "lg" }), "w-full")}
         >
           Apply
@@ -131,8 +132,7 @@ export function RequestScreen({ id }: { id: string }) {
       ) : null}
       {demo.role === null && request.status === "open" ? (
         <Link
-          href={`/requests/${request.id}/apply`}
-          onClick={() => demo.startPath("worker")}
+          href={gatePath(`/requests/${request.id}/apply`, demo.profileSet)}
           className={cn(buttonVariants({ variant: "work", size: "lg" }), "w-full")}
         >
           I can do this work
@@ -140,16 +140,10 @@ export function RequestScreen({ id }: { id: string }) {
       ) : null}
       {demo.role === null ? (
         <Link
-          href={`/invest/start/${request.parishId ?? request.countryId}/${request.townId}?sector=${request.sector}`}
-          onClick={() => {
-            demo.startPath("investor");
-            demo.updateFlow({
-              countryId: request.countryId,
-              parishId: request.parishId ?? undefined,
-              townId: request.townId,
-              sector: request.sector,
-            });
-          }}
+          href={gatePath(
+            `/invest/start/${request.parishId ?? request.countryId}/${request.townId}?sector=${request.sector}`,
+            demo.profileSet,
+          )}
           className={cn(buttonVariants({ variant: "outline", size: "lg" }), "w-full")}
         >
           Start one like this

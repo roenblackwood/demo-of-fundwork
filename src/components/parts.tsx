@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Check, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Plus, UserRound } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress, ProgressLabel } from "@/components/ui/progress";
@@ -39,13 +39,44 @@ export function SectorTile({
   );
 }
 
-export function Avatar({ name }: { name: string }) {
+const AVATAR_SIZE = {
+  sm: "size-7",
+  md: "size-9",
+  lg: "size-10",
+  row: "size-8",
+} as const;
+
+export function Avatar({
+  name,
+  src,
+  size = "lg",
+  inverse = false,
+}: {
+  name: string;
+  src?: string | null;
+  size?: keyof typeof AVATAR_SIZE;
+  inverse?: boolean;
+}) {
+  const trimmed = name.trim();
+  const unnamed = trimmed.length === 0 || trimmed.toLowerCase() === "you";
+  const letters = unnamed ? "" : initials(trimmed);
   return (
     <span
-      className="grid size-10 shrink-0 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground"
+      className={cn(
+        "grid shrink-0 place-items-center overflow-hidden rounded-full text-sm font-semibold",
+        inverse ? "bg-primary-foreground text-primary" : "bg-primary text-primary-foreground",
+        AVATAR_SIZE[size],
+      )}
       aria-hidden
     >
-      {initials(name)}
+      {src ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={src} alt="" className="size-full object-cover" />
+      ) : letters ? (
+        letters
+      ) : (
+        <UserRound className={size === "sm" || size === "row" ? "size-4" : "size-5"} aria-hidden />
+      )}
     </span>
   );
 }

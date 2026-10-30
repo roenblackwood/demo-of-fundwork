@@ -1,4 +1,4 @@
-import { initials } from "@/lib/format";
+import { Avatar } from "@/components/parts";
 import { aboutUsd } from "@/lib/rates";
 import { capitalSentence, teamSentence, type BackerMark } from "@/lib/pledges";
 import { cn } from "cn";
@@ -67,13 +67,8 @@ export function BackersRow({ people }: { people: BackerMark[] }) {
     <div className="flex items-center gap-1" aria-label="Backers">
       {shown.map((person, index) =>
         person.named ? (
-          <span
-            key={`${person.label}-${index}`}
-            className="grid size-8 place-items-center rounded-full bg-secondary text-sm font-semibold text-secondary-foreground"
-            aria-label={person.label}
-            title={person.label}
-          >
-            {initials(person.label)}
+          <span key={`${person.label}-${index}`} className="inline-flex" aria-label={person.label} title={person.label}>
+            <Avatar name={person.label} size="row" />
           </span>
         ) : (
           <span

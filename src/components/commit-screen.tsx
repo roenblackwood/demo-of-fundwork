@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
@@ -17,10 +17,14 @@ import { isLive } from "@/lib/mode";
 import { capitalReserved, investorUnits, moneyStillOpen } from "@/lib/ownership";
 import { convertedBacking } from "@/lib/pledges";
 import { currencyOf } from "@/lib/seed";
+import { useProfileGate } from "@/components/profile-gate";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export function CommitScreen({ id }: { id: string }) {
   const router = useRouter();
   const demo = useDemo();
+  const allowed = useProfileGate();
   const project = demo.projects.find((item) => item.id === id);
   const [amount, setAmount] = useState<number | null>(null);
   const nameKey = `${demo.userId}:${demo.profile.showName ? "1" : "0"}`;
@@ -31,13 +35,12 @@ export function CommitScreen({ id }: { id: string }) {
     setShowName(demo.profile.showName);
   }
   const learnHref = `/learn/investor?next=${encodeURIComponent(`/projects/${id}/commit`)}`;
+  const needsRange = demo.profile.minUsd === null && demo.profile.maxUsd === null;
+  const [low, setLow] = useState("");
+  const [high, setHigh] = useState("");
+  const [rangeNote, setRangeNote] = useState("");
 
-  useEffect(() => {
-    if (!demo.ready || demo.investorBasicsDone) return;
-    router.replace(learnHref);
-  }, [demo.ready, demo.investorBasicsDone, learnHref, router]);
-
-  if (!demo.ready || !demo.investorBasicsDone) return <PageBusy />;
+  if (!demo.ready || !allowed) return <PageBusy />;
   if (!project) {
     return (
       <div className="space-y-4">
@@ -58,6 +61,20 @@ export function CommitScreen({ id }: { id: string }) {
   const units = amount ? investorUnits(amount, project.goalJmd) : 0;
   const hasProjectWallet = demo.projectWallets.some((item) => item.projectId === project.id);
 
+  function saveRange(skip: boolean) {
+    if (skip) {
+      void demo.savePersonProfile({ ...demo.profile, minUsd: 0, maxUsd: 0 });
+      return;
+    }
+    const min = Number(low.replace(/[^\d]/g, ""));
+    const max = Number(high.replace(/[^\d]/g, ""));
+    if (!low.trim() || !high.trim() || !Number.isFinite(min) || !Number.isFinite(max) || min < 0 || max < min) {
+      setRangeNote("Enter both amounts, or skip.");
+      return;
+    }
+    void demo.savePersonProfile({ ...demo.profile, minUsd: min, maxUsd: max });
+  }
+
   async function save() {
     if (!project || !amount || demo.saving) return;
     const ok = await demo.addCommitment({
@@ -77,11 +94,30 @@ export function CommitScreen({ id }: { id: string }) {
     <div className="space-y-6">
       <StepHeader
         backHref={`/projects/${project.id}`}
-        title="How much?"
+        title={needsRange ? "What do you usually put in?" : "How much?"}
         hint={project.name}
       />
-      <p className="text-lg leading-relaxed">{COMMIT_LINE}</p>
-      {!open ? (
+      {needsRange ? (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="range-low">From, US$</Label>
+            <Input id="range-low" inputMode="numeric" value={low} onChange={(event) => setLow(event.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="range-high">Up to, US$</Label>
+            <Input id="range-high" inputMode="numeric" value={high} onChange={(event) => setHigh(event.target.value)} />
+          </div>
+          {rangeNote ? <p className="text-base">{rangeNote}</p> : null}
+          <Button type="button" size="lg" className="w-full" onClick={() => saveRange(false)}>
+            Save
+          </Button>
+          <Button type="button" size="lg" variant="outline" className="w-full" onClick={() => saveRange(true)}>
+            Skip
+          </Button>
+        </div>
+      ) : null}
+      {needsRange ? null : <p className="text-lg leading-relaxed">{COMMIT_LINE}</p>}
+      {needsRange ? null : !open ? (
         <p className="text-lg">The money they asked for is already in.</p>
       ) : (
         <div className="space-y-3">
@@ -127,7 +163,7 @@ export function CommitScreen({ id }: { id: string }) {
           })}
         </div>
       )}
-      {open ? (
+      {!needsRange && open ? (
         <p className="text-base text-muted-foreground">{moneyNote()}</p>
       ) : null}
       {amount ? (
@@ -136,7 +172,7 @@ export function CommitScreen({ id }: { id: string }) {
           {hasProjectWallet ? "once a confirmed payment covers it." : "once the organizer accepts it."}
         </p>
       ) : null}
-      {open ? (
+      {!needsRange && open ? (
         <ActionBar>
           {/* In demo mode the first commitment is saved right away. Live mode holds the first commitment of a new account for 24 hours before it counts. */}
           {isLive() && demo.commitments.length === 0 ? (

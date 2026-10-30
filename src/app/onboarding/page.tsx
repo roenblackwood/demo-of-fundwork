@@ -1,8 +1,15 @@
 import { redirect } from "next/navigation";
-import { OnboardingScreen } from "@/components/onboarding-screen";
-import { isLive } from "@/lib/mode";
 
-export default function Page() {
-  if (!isLive()) redirect("/");
-  return <OnboardingScreen />;
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const params = await searchParams;
+  const next = params.next;
+  const dest =
+    next && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/onboarding")
+      ? `?next=${encodeURIComponent(next)}`
+      : "";
+  redirect(`/get-started${dest}`);
 }
