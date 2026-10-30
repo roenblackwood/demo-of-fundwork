@@ -1,6 +1,7 @@
 "use server";
 
 import { cleanReadiness, isSite, kindById } from "@/lib/blueprints";
+import { profileToRow, type PersonProfile } from "@/lib/profile";
 import { defaultPhases } from "@/lib/capital";
 import { isSector, isSkill } from "@/lib/catalog";
 import { askedPlace } from "@/lib/seed";
@@ -183,7 +184,65 @@ async function ensureProjectPhases(projectId: string): Promise<void> {
   });
 }
 
-export async function postCommitment(input: { projectId: string; amount: number }): Promise<boolean> {
+export async function saveProfileDetails(profile: PersonProfile): Promise<boolean> {
+  const id = await callerId();
+  if (!id) return false;
+  const supabase = await serverSupabase();
+  const { error } = await supabase.from("profile_details").upsert(
+    profileToRow(id, { ...profile, done: true }),
+    { onConflict: "user_id" },
+  );
+  return !error;
+}
+
+export async function saveHomeTown(input: {
+  countryId: string;
+  parishId: string | null;
+  townId: string;
+}): Promise<boolean> {
+  const id = await callerId();
+  if (!id || !askedPlace(input.countryId, input.parishId, input.townId)) return false;
+  const supabase = await serverSupabase();
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      country_id: input.countryId,
+      parish_id: input.parishId,
+      town_id: input.townId,
+    })
+    .eq("id", id);
+  return !error;
+}
+
+export async function setSignal(input: {
+  itemId: string;
+  kind: "saved" | "hidden" | "clear";
+  sector: string;
+}): Promise<boolean> {
+  const id = await callerId();
+  if (!id || !input.itemId) return false;
+  const supabase = await serverSupabase();
+  if (input.kind === "clear") {
+    const { error } = await supabase.from("user_signals").delete().eq("user_id", id).eq("item_id", input.itemId);
+    return !error;
+  }
+  const { error } = await supabase.from("user_signals").upsert(
+    {
+      user_id: id,
+      item_id: input.itemId,
+      kind: input.kind,
+      sector: input.sector,
+    },
+    { onConflict: "user_id,item_id" },
+  );
+  return !error;
+}
+
+export async function postCommitment(input: {
+  projectId: string;
+  amount: number;
+  showName?: boolean;
+}): Promise<boolean> {
   const id = await callerId();
   if (!id || !(input.amount > 0) || !input.projectId) return false;
   const supabase = await serverSupabase();
@@ -194,6 +253,7 @@ export async function postCommitment(input: { projectId: string; amount: number 
     project_id: input.projectId,
     amount: input.amount,
     status: "pledged",
+    show_name: input.showName !== false,
   });
   return !error;
 }

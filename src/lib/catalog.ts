@@ -236,8 +236,26 @@ export const SKILL_TOOLS: Record<Skill, string> = {
   care: "Gloves and a clean cloth.",
 };
 
+/** Choosable tools for a skill. The sentence in SKILL_TOOLS stays for the short tip. */
+export const SKILL_TOOL_LIST: Record<Skill, string[]> = {
+  building: ["A tape", "A hammer", "Work gloves"],
+  farming: ["A hoe", "A fork", "Boots"],
+  cooking: ["Pots", "A knife", "A clean board"],
+  "guest-house": ["Clean linen", "A broom", "A notepad"],
+  front: ["A notebook", "A calendar"],
+  power: ["A meter", "Insulated tools"],
+  water: ["A wrench", "Pipe fittings"],
+  internet: ["A cable tester", "A ladder"],
+  teaching: ["A board", "Paper"],
+  care: ["Gloves", "A clean cloth"],
+};
+
 export function skillTools(id: Skill): string {
   return SKILL_TOOLS[id];
+}
+
+export function toolChoices(id: Skill): string[] {
+  return [...SKILL_TOOL_LIST[id]];
 }
 
 export function workPresetLabel(id: WorkPreset): string {

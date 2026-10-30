@@ -1,18 +1,28 @@
 "use client";
 
 import Link from "next/link";
+import { CardNotes } from "@/components/card-notes";
 import { MoneyText, TrustBadges } from "@/components/parts";
 import { sectorTitle, SECTOR_MARKS } from "@/lib/catalog";
 import { useDemo } from "@/lib/demo-store";
 import { placeLine } from "@/lib/format";
 import { moneyStillOpen, projectCommitted } from "@/lib/ownership";
+import type { ScorePart } from "@/lib/recommend";
 import { currencyOf, projectPlace } from "@/lib/seed";
 import type { Project } from "@/lib/types";
 import { cn } from "cn";
 
 // Nice to have: a photo in place of the sector tile, the way YouTube leads with a thumbnail.
 
-export function ProjectCard({ project }: { project: Project }) {
+export function ProjectCard({
+  project,
+  reason,
+  parts,
+}: {
+  project: Project;
+  reason?: string;
+  parts?: ScorePart[];
+}) {
   const { addedCommitments } = useDemo();
   const where = projectPlace(project);
   const currency = currencyOf(project.countryId);
@@ -24,9 +34,13 @@ export function ProjectCard({ project }: { project: Project }) {
   const Icon = mark.icon;
 
   return (
+    <div
+      data-sector={project.sector}
+      className="rounded-2xl bg-card ring-1 ring-foreground/10 hover:bg-secondary"
+    >
     <Link
       href={`/projects/${project.id}`}
-      className="flex items-start gap-2 rounded-2xl bg-card px-2 py-1 ring-1 ring-foreground/10 hover:bg-secondary focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
+      className="flex items-start gap-2 px-2 py-1 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
     >
       <span className={cn("grid size-16 shrink-0 place-items-center rounded-xl", mark.tile)} aria-hidden>
         <Icon className="size-7" strokeWidth={1.75} />
@@ -59,5 +73,7 @@ export function ProjectCard({ project }: { project: Project }) {
         </span>
       </span>
     </Link>
+    <CardNotes id={project.id} sector={project.sector} reason={reason} parts={parts} />
+    </div>
   );
 }

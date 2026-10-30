@@ -14,6 +14,13 @@ import { amountsFor, defaultPhases, phasesFor, readinessChangeNote, splitPledge 
 import { openChecks, sectorWeekly } from "@/lib/catalog";
 import { investorBasicsIds, stageLessons } from "@/lib/lessons";
 import {
+  resolvedProfile,
+  sectorDown as sectorDownOf,
+  storedProfile,
+  trackFor,
+  type PersonProfile,
+} from "@/lib/profile";
+import {
   closeWeek as closeWeekPlan,
   emptyProgress,
   finishLessons,
@@ -100,6 +107,10 @@ type Session = {
   withdrawnIds: string[];
   openedProject: boolean;
   progress: ProgressState;
+  profiles: Record<string, PersonProfile>;
+  signals: Record<string, { saved: string[]; hidden: { id: string; sector: string }[] }>;
+  seeEverywhere: Record<string, boolean>;
+  nearMe: Record<string, boolean>;
 };
 
 type Persisted = {
@@ -149,12 +160,57 @@ const initialSession: Session = {
   withdrawnIds: [],
   openedProject: false,
   progress: emptyProgress(),
+  profiles: {},
+  signals: {},
+  seeEverywhere: {},
+  nearMe: {},
 };
 
 function isSession(value: unknown): value is Partial<Session> {
   if (!value || typeof value !== "object") return false;
   const session = value as Partial<Session>;
   return session.mode === "new" || session.mode === "sample";
+}
+
+function flagMap(value: unknown): Record<string, boolean> {
+  if (!value || typeof value !== "object") return {};
+  const out: Record<string, boolean> = {};
+  for (const [key, flag] of Object.entries(value)) {
+    if (flag === true) out[key] = true;
+  }
+  return out;
+}
+
+function cleanProfiles(value: unknown): Record<string, PersonProfile> {
+  if (!value || typeof value !== "object") return {};
+  const out: Record<string, PersonProfile> = {};
+  for (const [key, row] of Object.entries(value)) {
+    const profile = storedProfile(row);
+    if (profile) out[key] = profile;
+  }
+  return out;
+}
+
+function cleanSignals(value: unknown): Session["signals"] {
+  if (!value || typeof value !== "object") return {};
+  const out: Session["signals"] = {};
+  for (const [key, row] of Object.entries(value as Record<string, unknown>)) {
+    if (!row || typeof row !== "object") continue;
+    const saved = Array.isArray((row as { saved?: unknown }).saved)
+      ? (row as { saved: unknown[] }).saved.filter((item): item is string => typeof item === "string")
+      : [];
+    const hidden = Array.isArray((row as { hidden?: unknown }).hidden)
+      ? (row as { hidden: unknown[] }).hidden.flatMap((item) => {
+          if (!item || typeof item !== "object") return [];
+          const id = (item as { id?: unknown }).id;
+          const sector = (item as { sector?: unknown }).sector;
+          if (typeof id !== "string" || typeof sector !== "string") return [];
+          return [{ id, sector }];
+        })
+      : [];
+    out[key] = { saved, hidden };
+  }
+  return out;
 }
 
 function normalize(input: Partial<Session>): Session {
@@ -197,6 +253,10 @@ function normalize(input: Partial<Session>): Session {
     withdrawnIds: Array.isArray(input.withdrawnIds) ? input.withdrawnIds : [],
     openedProject: input.openedProject ?? false,
     progress: normalizeProgress(input.progress),
+    profiles: cleanProfiles(input.profiles),
+    signals: cleanSignals(input.signals),
+    seeEverywhere: flagMap(input.seeEverywhere),
+    nearMe: flagMap(input.nearMe),
     path: input.path ?? null,
     sampleId: input.sampleId ?? null,
     displayName: input.displayName ?? "",
@@ -529,6 +589,20 @@ export type DemoValue = {
   markPhaseDone: (projectId: string) => boolean;
   askToJoin: (projectId: string) => Promise<boolean>;
   markOpened: () => void;
+  profile: PersonProfile;
+  profileSet: boolean;
+  savedIds: string[];
+  hiddenIds: string[];
+  sectorDown: Record<string, number>;
+  seeEverywhere: boolean;
+  nearMe: boolean;
+  track: { accepted: number; projects: number; payouts: number };
+  savePersonProfile: (profile: PersonProfile) => void | Promise<void>;
+  saveItem: (id: string, sector: string) => void;
+  hideItem: (id: string, sector: string) => void;
+  setSeeEverywhere: (on: boolean) => void;
+  setNearMe: (on: boolean) => void;
+  setHomeTown: (place: { countryId: string; parishId: string | null; townId: string }) => void;
   useSample: (id: string) => void;
   useNewPerson: () => void;
   reset: () => void;
@@ -982,6 +1056,74 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     return saved;
   }, []);
 
+  const savePersonProfile = useCallback((profile: PersonProfile) => {
+    setSession((current) => {
+      const id = currentUserId(current);
+      return { ...current, profiles: { ...current.profiles, [id]: profile } };
+    });
+  }, []);
+
+  const saveItem = useCallback((itemId: string) => {
+    setSession((current) => {
+      const id = currentUserId(current);
+      const book = current.signals[id] ?? { saved: [], hidden: [] };
+      const saved = book.saved.includes(itemId)
+        ? book.saved.filter((item) => item !== itemId)
+        : [...book.saved, itemId];
+      return {
+        ...current,
+        signals: {
+          ...current.signals,
+          [id]: { saved, hidden: book.hidden.filter((item) => item.id !== itemId) },
+        },
+      };
+    });
+  }, []);
+
+  const hideItem = useCallback((itemId: string, sector: string) => {
+    setSession((current) => {
+      const id = currentUserId(current);
+      const book = current.signals[id] ?? { saved: [], hidden: [] };
+      const hidden = book.hidden.some((item) => item.id === itemId)
+        ? book.hidden
+        : [...book.hidden, { id: itemId, sector }];
+      return {
+        ...current,
+        signals: {
+          ...current.signals,
+          [id]: { saved: book.saved.filter((item) => item !== itemId), hidden },
+        },
+      };
+    });
+  }, []);
+
+  const setSeeEverywhere = useCallback((on: boolean) => {
+    setSession((current) => {
+      const id = currentUserId(current);
+      return { ...current, seeEverywhere: { ...current.seeEverywhere, [id]: on } };
+    });
+  }, []);
+
+  const setNearMe = useCallback((on: boolean) => {
+    setSession((current) => {
+      const id = currentUserId(current);
+      return { ...current, nearMe: { ...current.nearMe, [id]: on } };
+    });
+  }, []);
+
+  const setHomeTown = useCallback((place: { countryId: string; parishId: string | null; townId: string }) => {
+    setSession((current) => ({
+      ...current,
+      flow: {
+        extraSkills: current.flow?.extraSkills ?? [],
+        ...current.flow,
+        countryId: place.countryId,
+        parishId: place.parishId ?? undefined,
+        townId: place.townId,
+      },
+    }));
+  }, []);
+
   const useSample = useCallback((id: string) => {
     const user = getUser(id);
     if (!user) return;
@@ -1016,6 +1158,8 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         : undefined;
     const userId = sample?.id ?? "you";
     const name = sample?.name || session.displayName || "You";
+    const book = session.signals[userId] ?? { saved: [], hidden: [] };
+    const resolved = resolvedProfile(userId, session.profiles[userId]);
     const role = sample?.role ?? session.path;
     const proof = session.proofs[userId] ?? null;
     const commitments = [
@@ -1097,6 +1241,20 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       markPhaseDone,
       askToJoin,
       markOpened,
+      profile: resolved.profile,
+      profileSet: resolved.set,
+      savedIds: book.saved,
+      hiddenIds: book.hidden.map((item) => item.id),
+      sectorDown: sectorDownOf(book.hidden),
+      seeEverywhere: session.seeEverywhere[userId] === true,
+      nearMe: session.nearMe[userId] === true,
+      track: trackFor(userId, contributions, []),
+      savePersonProfile,
+      saveItem,
+      hideItem,
+      setSeeEverywhere,
+      setNearMe,
+      setHomeTown,
       useSample,
       useNewPerson,
       reset,
@@ -1129,6 +1287,12 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     useNewPerson,
     useSample,
     withdrawApplication,
+    savePersonProfile,
+    saveItem,
+    hideItem,
+    setSeeEverywhere,
+    setNearMe,
+    setHomeTown,
   ]);
 
   return <DemoContext.Provider value={value}>{children}</DemoContext.Provider>;

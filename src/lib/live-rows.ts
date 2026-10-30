@@ -294,6 +294,7 @@ export function mapCommitment(row: Row): Commitment | null {
     status,
     createdAt: text(row.created_at) ?? "",
     countsAt: text(row.counts_at),
+    showName: row.show_name !== false,
   };
 }
 

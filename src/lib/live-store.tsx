@@ -9,6 +9,9 @@ import {
   postContribution,
   postRequest,
   saveDisplayName,
+  saveHomeTown,
+  saveProfileDetails,
+  setSignal,
   markPhaseDone as markPhaseDoneAction,
   savePhaseSplit as savePhaseSplitAction,
   setReadiness as setReadinessAction,
@@ -19,6 +22,13 @@ import {
 import { cleanReadiness, isSite, kindById } from "@/lib/blueprints";
 import { phasesFor, readinessChangeNote } from "@/lib/capital";
 import { isSkill } from "@/lib/catalog";
+import {
+  profileFromRow,
+  resolvedProfile,
+  sectorDown as sectorDownOf,
+  trackFor,
+  type PersonProfile,
+} from "@/lib/profile";
 import { investorBasicsIds, stageLessons } from "@/lib/lessons";
 import type { WeekPlan } from "@/lib/progress";
 import { DemoContext, type AvailabilityDraft, type DemoValue, type Flow, type Proof, type RequestDraft } from "@/lib/demo-store";
@@ -77,6 +87,9 @@ type Snapshot = {
   projectWallets: ProjectWallet[];
   payments: Payment[];
   names: Record<string, string>;
+  profile: PersonProfile | null;
+  savedIds: string[];
+  hidden: { id: string; sector: string }[];
 };
 
 let reloadLive: (() => Promise<void>) | null = null;
@@ -109,6 +122,9 @@ const emptySnapshot: Snapshot = {
   projectWallets: [],
   payments: [],
   names: {},
+  profile: null,
+  savedIds: [],
+  hidden: [],
 };
 
 function textList(value: unknown): string[] {
@@ -143,7 +159,7 @@ async function loadSnapshot(): Promise<Snapshot> {
   const supabase = browserSupabase();
   const { data: auth } = await supabase.auth.getUser();
   const user = auth.user;
-  const [projectRows, memberRows, requestRows, applicationRows, availabilityRows, peopleRows, commitmentRows, contributionRows, mine, goalRows, lessonRows, walletRows, projectWalletRows, paymentRows, trancheRows] =
+  const [projectRows, memberRows, requestRows, applicationRows, availabilityRows, peopleRows, commitmentRows, contributionRows, mine, goalRows, lessonRows, walletRows, projectWalletRows, paymentRows, trancheRows, detailRows, signalRows] =
     await Promise.all([
       supabase.from("projects").select("*"),
       supabase.from("project_members").select("project_id, worker_id"),
@@ -162,6 +178,10 @@ async function loadSnapshot(): Promise<Snapshot> {
       user ? supabase.from("project_wallets").select("*") : Promise.resolve({ data: [] }),
       user ? supabase.from("payments").select("*") : Promise.resolve({ data: [] }),
       user ? supabase.from("capital_tranches").select("*") : Promise.resolve({ data: [] }),
+      user
+        ? supabase.from("profile_details").select("*").eq("user_id", user.id).maybeSingle()
+        : Promise.resolve({ data: null }),
+      user ? supabase.from("user_signals").select("item_id, kind, sector") : Promise.resolve({ data: [] }),
     ]);
 
   const people = rowsOf(peopleRows).flatMap((row) => {
@@ -276,6 +296,14 @@ async function loadSnapshot(): Promise<Snapshot> {
       const item = mapPayment(row);
       return item ? [item] : [];
     }),
+    profile: profileFromRow(detailRows.data as Record<string, unknown> | null),
+    savedIds: rowsOf(signalRows).flatMap((row) =>
+      row.kind === "saved" && typeof row.item_id === "string" ? [row.item_id] : [],
+    ),
+    hidden: rowsOf(signalRows).flatMap((row) => {
+      if (row.kind !== "hidden" || typeof row.item_id !== "string") return [];
+      return [{ id: row.item_id, sector: typeof row.sector === "string" ? row.sector : "" }];
+    }),
   };
 }
 
@@ -307,6 +335,8 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
   const [snapshot, setSnapshot] = useState<Snapshot>(emptySnapshot);
   const [flow, setFlow] = useState<Flow | null>(null);
   const [path, setPath] = useState<PathChoice | null>(null);
+  const [seeEverywhere, setSeeEverywhereState] = useState(false);
+  const [nearMe, setNearMeState] = useState(false);
   const [proof, setProofState] = useState<Proof | null>(null);
   const [openedProject, setOpenedProject] = useState(false);
   const snapshotRef = useRef(snapshot);
@@ -460,7 +490,11 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
           commitment.amountJmd > 0 &&
           seen.projects.some((project) => project.id === commitment.projectId);
         return commitFlag(local, () =>
-          postCommitment({ projectId: commitment.projectId, amount: commitment.amountJmd }),
+          postCommitment({
+            projectId: commitment.projectId,
+            amount: commitment.amountJmd,
+            showName: commitment.showName,
+          }),
         );
       },
       addContribution: (contribution) => {
@@ -756,11 +790,52 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
         })();
         return true;
       },
+      profile: resolvedProfile(current.userId, current.profile ?? undefined).profile,
+      profileSet: resolvedProfile(current.userId, current.profile ?? undefined).set,
+      savedIds: current.savedIds,
+      hiddenIds: current.hidden.map((item) => item.id),
+      sectorDown: sectorDownOf(current.hidden),
+      seeEverywhere,
+      nearMe,
+      track: trackFor(current.userId, current.contributions, current.payments),
+      savePersonProfile: async (profile) => {
+        const ok = await saveProfileDetails(profile);
+        if (!ok) notifySaveError();
+        else await reload();
+      },
+      saveItem: (itemId, sector) => {
+        const saved = current.savedIds.includes(itemId);
+        void setSignal({ itemId, kind: saved ? "clear" : "saved", sector }).then((ok) => {
+          if (!ok) notifySaveError();
+          return reload();
+        });
+      },
+      hideItem: (itemId, sector) => {
+        void setSignal({ itemId, kind: "hidden", sector }).then((ok) => {
+          if (!ok) notifySaveError();
+          return reload();
+        });
+      },
+      setSeeEverywhere: setSeeEverywhereState,
+      setNearMe: setNearMeState,
+      setHomeTown: (place) => {
+        setFlow((item) => ({
+          extraSkills: item?.extraSkills ?? [],
+          ...item,
+          countryId: place.countryId,
+          parishId: place.parishId ?? undefined,
+          townId: place.townId,
+        }));
+        void saveHomeTown(place).then((ok) => {
+          if (!ok) notifySaveError();
+          return reload();
+        });
+      },
       useSample: () => {},
       useNewPerson: () => {},
       reset: () => {},
     };
-  }, [commitFlag, commitId, flow, openedProject, path, proof, ready, reload, saving, snapshot]);
+  }, [commitFlag, commitId, flow, nearMe, openedProject, path, proof, ready, reload, saving, seeEverywhere, snapshot]);
 
   return <DemoContext.Provider value={value}>{children}</DemoContext.Provider>;
 }

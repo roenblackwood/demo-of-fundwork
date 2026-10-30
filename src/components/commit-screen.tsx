@@ -22,6 +22,13 @@ export function CommitScreen({ id }: { id: string }) {
   const demo = useDemo();
   const project = demo.projects.find((item) => item.id === id);
   const [amount, setAmount] = useState<number | null>(null);
+  const nameKey = `${demo.userId}:${demo.profile.showName ? "1" : "0"}`;
+  const [showName, setShowName] = useState(demo.profile.showName);
+  const [shownFor, setShownFor] = useState(nameKey);
+  if (shownFor !== nameKey) {
+    setShownFor(nameKey);
+    setShowName(demo.profile.showName);
+  }
   const learnHref = `/learn/investor?next=${encodeURIComponent(`/projects/${id}/commit`)}`;
 
   useEffect(() => {
@@ -60,6 +67,7 @@ export function CommitScreen({ id }: { id: string }) {
       amountJmd: amount,
       status: "pledged",
       createdAt: new Date().toISOString(),
+      showName,
     });
     if (!ok) return;
     router.push(`/projects/${project.id}/committed`);
@@ -136,6 +144,15 @@ export function CommitScreen({ id }: { id: string }) {
               This is your first one. We hold it for 24 hours so you can think it over.
             </p>
           ) : null}
+          <label className="flex min-h-11 items-center gap-3 text-base">
+            <input
+              type="checkbox"
+              className="size-5"
+              checked={showName}
+              onChange={(event) => setShowName(event.target.checked)}
+            />
+            Show my name on projects I back
+          </label>
           <Button
             type="button"
             size="lg"

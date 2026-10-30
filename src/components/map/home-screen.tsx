@@ -11,6 +11,7 @@ import { useDemo } from "@/lib/demo-store";
 import {
   REGION_CAMERA,
   WORLD_ZOOM,
+  boundsAround,
   countryZoom,
   type FlyRequest,
   type FlyTarget,
@@ -27,7 +28,30 @@ import {
   type SearchHit,
   type Spot,
 } from "@/lib/openings";
+import {
+  explainItem,
+  itemFromProject,
+  itemFromRequest,
+  orderCards,
+  regionOf,
+  workerAllows,
+} from "@/lib/profile";
+import type { ScorePart } from "@/lib/recommend";
+import { showcaseById } from "@/lib/regions";
+import { getCity, getParish, getTown } from "@/lib/seed";
 import type { Sector } from "@/lib/types";
+import { cn } from "cn";
+
+type HomeOrder = "for-you" | "closest" | "newest";
+
+type NotedOpening = Opening & {
+  score: number;
+  reasons: string[];
+  parts: ScorePart[];
+};
+
+const orderChip =
+  "inline-flex min-h-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-border bg-card px-3 text-base font-semibold whitespace-nowrap hover:border-primary focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring";
 
 function homeSpot(input: {
   flow: { countryId?: string; parishId?: string; townId?: string } | null;
@@ -56,10 +80,14 @@ function OpeningCard({
   row,
   selected,
   onHover,
+  reason,
+  parts,
 }: {
   row: Opening;
   selected: boolean;
   onHover: (id: string | null) => void;
+  reason?: string;
+  parts?: ScorePart[];
 }) {
   function enter() {
     if (window.matchMedia("(min-width: 840px)").matches) onHover(row.id);
@@ -70,15 +98,15 @@ function OpeningCard({
   const frame = selected ? "rounded-2xl ring-2 ring-primary" : "";
   if (row.project) {
     return (
-      <div data-opening={row.id} className={frame} onMouseEnter={enter} onMouseLeave={leave}>
-        <ProjectCard project={row.project} />
+      <div data-opening={row.id} data-sector={row.sector} className={frame} onMouseEnter={enter} onMouseLeave={leave}>
+        <ProjectCard project={row.project} reason={reason} parts={parts} />
       </div>
     );
   }
   if (row.request) {
     return (
-      <div data-opening={row.id} className={frame} onMouseEnter={enter} onMouseLeave={leave}>
-        <RequestCard request={row.request} />
+      <div data-opening={row.id} data-sector={row.sector} className={frame} onMouseEnter={enter} onMouseLeave={leave}>
+        <RequestCard request={row.request} reason={reason} parts={parts} />
       </div>
     );
   }
@@ -99,6 +127,13 @@ export function HomeScreen() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [stop, setStop] = useState<SheetStop>("peek");
   const [fly, setFly] = useState<FlyRequest | null>(null);
+  const profileKey = `${demo.userId}:${demo.profileSet ? "1" : "0"}`;
+  const [order, setOrder] = useState<HomeOrder>(demo.profileSet ? "for-you" : "closest");
+  const [orderKey, setOrderKey] = useState(profileKey);
+  if (orderKey !== profileKey) {
+    setOrderKey(profileKey);
+    setOrder(demo.profileSet ? "for-you" : "closest");
+  }
   const token = useRef(0);
   const flew = useRef(false);
 
@@ -130,17 +165,21 @@ export function HomeScreen() {
     }
   }, []);
 
+  useEffect(() => {
+    if (!demo.ready || flew.current) return;
+    const target = reachTarget(demo);
+    if (!target) return;
+    flew.current = true;
+    token.current += 1;
+    setFly({ ...target, token: token.current });
+  }, [demo]);
+
   function chooseStop(next: SheetStop) {
     setStop(next);
     writeSheetStop(next);
   }
 
-  const rows = useMemo(() => {
-    const spot = homeSpot(demo);
-    const projects = demo.projects.map((project) => openingFromProject(project, demo.addedCommitments, spot));
-    const requests = demo.requests.map((request) => openingFromRequest(request, spot));
-    return orderOpenings([...projects, ...requests].filter((row): row is Opening => Boolean(row)));
-  }, [demo]);
+  const rows = useMemo(() => noteRows(demo), [demo]);
 
   const regionLock = listed ? null : regionId;
   const filtered = useMemo(() => {
@@ -153,10 +192,11 @@ export function HomeScreen() {
     });
   }, [rows, lens, sector, regionLock]);
   const visible = inBounds(filtered, listed);
+  const ordered = orderNoted(visible as NotedOpening[], order, demo.profileSet);
   const selected = selectedId ? rows.find((row) => row.id === selectedId) : undefined;
   const shown = selected
-    ? [selected, ...visible.filter((row) => row.id !== selected.id)]
-    : visible;
+    ? [selected, ...ordered.filter((row) => row.id !== selected.id)]
+    : ordered;
   const label = openLine(visible.length, regionCount(visible));
 
   function ask(next: FlyTarget) {
@@ -209,10 +249,89 @@ export function HomeScreen() {
   const away = Boolean(regionId) || zoom >= WORLD_ZOOM;
   const mapLive = phase === "loading" || phase === "map";
 
+  function toggleEverywhere() {
+    const next = !demo.seeEverywhere;
+    demo.setSeeEverywhere(next);
+    if (next) goWorld();
+    else {
+      const target = reachTarget({ ...demo, seeEverywhere: false });
+      if (target) ask(target);
+    }
+  }
+
+  function toggleNear() {
+    const next = !demo.nearMe;
+    demo.setNearMe(next);
+    if (!next) {
+      goWorld();
+      return;
+    }
+    const spot = homeSpot(demo);
+    const point = spot?.parishId
+      ? getTown(spot.parishId, spot.townId)
+      : spot
+        ? getCity(spot.countryId, spot.townId)
+        : undefined;
+    if (point) ask({ kind: "center", center: [point.lng, point.lat], zoom: 11 });
+  }
+
   const openingList = () => (
-    <div className="space-y-2">
-      {shown.map((row) => (
-        <OpeningCard key={row.id} row={row} selected={selectedId === row.id} onHover={setSelectedId} />
+    <div className="space-y-2" data-order={order}>
+      {shown.map((row) => {
+        const noted = row as NotedOpening;
+        const explain = order === "for-you" && noted.reasons?.length ? noted.reasons.join(" · ") : undefined;
+        return (
+          <OpeningCard
+            key={row.id}
+            row={row}
+            selected={selectedId === row.id}
+            onHover={setSelectedId}
+            reason={explain}
+            parts={explain ? noted.parts : undefined}
+          />
+        );
+      })}
+    </div>
+  );
+
+  const orderRow = (
+    <div className="flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Order">
+      {demo.role === "worker" && demo.profileSet ? (
+        <button
+          type="button"
+          aria-pressed={demo.seeEverywhere}
+          onClick={toggleEverywhere}
+          className={cn(orderChip, demo.seeEverywhere && "border-work bg-work text-work-foreground hover:border-work")}
+        >
+          See everywhere
+        </button>
+      ) : null}
+      {demo.role === "investor" && demo.profileSet ? (
+        <button
+          type="button"
+          aria-pressed={demo.nearMe}
+          onClick={toggleNear}
+          className={cn(orderChip, demo.nearMe && "border-primary bg-primary text-primary-foreground hover:border-primary")}
+        >
+          Near me
+        </button>
+      ) : null}
+      {(
+        [
+          ["for-you", "For you"],
+          ["closest", "Closest"],
+          ["newest", "Newest"],
+        ] as const
+      ).map(([id, label]) => (
+        <button
+          key={id}
+          type="button"
+          aria-pressed={order === id}
+          onClick={() => setOrder(id)}
+          className={cn(orderChip, order === id && "border-foreground bg-foreground text-background hover:border-foreground")}
+        >
+          {label}
+        </button>
       ))}
     </div>
   );
@@ -241,6 +360,7 @@ export function HomeScreen() {
                   onRegion={goRegion}
                   wrap
                 />
+                {orderRow}
                 <p className="text-sm text-muted-foreground">{label}</p>
               </div>
               <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 pb-3">{openingList()}</div>
@@ -295,6 +415,7 @@ export function HomeScreen() {
                   onSector={setSector}
                   onRegion={goRegion}
                 />
+                {orderRow}
               </div>
             </div>
             {areaMoved ? (
@@ -351,6 +472,7 @@ export function HomeScreen() {
               setBlockedName(null);
             }}
           />
+          {orderRow}
           {failed ? <MapLoadNote onRetry={showMap} /> : null}
           {lite && !failed && phase !== "loading" ? <ShowMapButton onClick={showMap} /> : null}
           <p className="text-sm text-muted-foreground">{label}</p>
@@ -359,4 +481,96 @@ export function HomeScreen() {
       )}
     </>
   );
+}
+
+function orderNoted(rows: NotedOpening[], order: HomeOrder, profileSet: boolean): NotedOpening[] {
+  if (!profileSet || order === "closest") return orderOpenings(rows) as NotedOpening[];
+  return orderCards(rows, order, Date.now());
+}
+
+function noteRows(demo: ReturnType<typeof useDemo>): NotedOpening[] {
+  const spot = homeSpot(demo);
+  const hidden = new Set(demo.hiddenIds);
+  const projects = demo.projects.map((project) => openingFromProject(project, demo.addedCommitments, spot));
+  const requests = demo.requests.map((request) => openingFromRequest(request, spot));
+  return [...projects, ...requests].flatMap((row) => {
+    if (!row || hidden.has(row.id) || !allowsHome(demo, row)) return [];
+    return [annotate(demo, row)];
+  });
+}
+
+function allowsHome(demo: ReturnType<typeof useDemo>, row: Opening): boolean {
+  const spot = homeSpot(demo);
+  if (demo.role === "worker" && demo.profileSet) {
+    return workerAllows(demo.profile, spot, demo.seeEverywhere, row);
+  }
+  if (demo.role === "investor" && demo.profileSet && demo.nearMe) {
+    if (!spot?.townId) return false;
+    return (
+      row.countryId === spot.countryId &&
+      row.townId === spot.townId &&
+      (row.parishId ?? null) === (spot.parishId ?? null)
+    );
+  }
+  return true;
+}
+
+function annotate(demo: ReturnType<typeof useDemo>, row: Opening): NotedOpening {
+  const empty = { ...row, score: 0, reasons: [] as string[], parts: [] as ScorePart[] };
+  if (!demo.profileSet) return empty;
+  const item = row.project
+    ? itemFromProject(row.project, demo.addedCommitments)
+    : row.request
+      ? itemFromRequest(row.request, demo.applications)
+      : null;
+  if (!item) return empty;
+  const explained = explainItem(
+    item,
+    demo.role === "worker" || demo.role === "investor" ? demo.role : null,
+    demo.profile,
+    homeSpot(demo),
+    demo.seeEverywhere,
+    demo.sectorDown[row.sector] ?? 0,
+    Date.now(),
+  );
+  return {
+    ...row,
+    score: explained?.score ?? 0,
+    reasons: explained?.reasons ?? [],
+    parts: explained?.parts ?? [],
+  };
+}
+
+function reachTarget(demo: ReturnType<typeof useDemo>): FlyTarget | null {
+  if (demo.role !== "worker" || !demo.profileSet || demo.seeEverywhere) return null;
+  const spot = homeSpot(demo);
+  if (!spot?.townId) return null;
+  const reach = demo.profile.reach;
+  if (reach === "town" || (reach === "parish" && !spot.parishId)) {
+    const point = spot.parishId ? getTown(spot.parishId, spot.townId) : getCity(spot.countryId, spot.townId);
+    if (!point) return null;
+    return { kind: "center", center: [point.lng, point.lat], zoom: 11 };
+  }
+  if (reach === "parish" && spot.parishId) {
+    const parish = getParish(spot.parishId);
+    if (!parish || parish.towns.length === 0) return null;
+    const lats = parish.towns.map((town) => town.lat);
+    const lngs = parish.towns.map((town) => town.lng);
+    const midLat = (Math.min(...lats) + Math.max(...lats)) / 2;
+    const midLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
+    const span = Math.max(0.35, (Math.max(...lats) - Math.min(...lats)) / 2, (Math.max(...lngs) - Math.min(...lngs)) / 2);
+    return { kind: "bounds", bounds: boundsAround(midLat, midLng, span + 0.15), maxZoom: 10 };
+  }
+  if (reach === "country") {
+    const country = showcaseById(spot.countryId);
+    if (!country) return null;
+    return {
+      kind: "center",
+      center: [country.coordinates[0], country.coordinates[1]],
+      zoom: countryZoom(spot.countryId),
+    };
+  }
+  const camera = REGION_CAMERA[regionOf(spot.countryId)];
+  if (!camera) return null;
+  return { kind: "center", center: camera.center, zoom: camera.zoom };
 }

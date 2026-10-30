@@ -180,6 +180,8 @@ export type Commitment = {
   createdAt: string;
   /** When this commitment starts to count. Absent means it can count now. */
   countsAt?: string | null;
+  /** When false, the project page hides this person's name. Absent means show it. */
+  showName?: boolean;
   tranches?: Tranche[];
 };
 

@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { PageBusy } from "@/components/busy";
 import { GettingStarted } from "@/components/getting-started";
 import { LessonList } from "@/components/lesson-card";
+import { ProjectCard } from "@/components/project-card";
+import { RequestCard } from "@/components/request-card";
 import { ApplicationStatusLabel, MoneyText, StatusLabel, sectionTitle } from "@/components/parts";
 import { ThisWeekNeed } from "@/components/this-week";
 import { useSnackbar } from "@/components/snackbar";
@@ -39,9 +41,14 @@ export function DashboardScreen() {
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-4xl leading-tight">{greeting}</h1>
-        <Link href="/you/wallet" className="mt-3 inline-flex min-h-11 items-center font-semibold text-primary">
-          Check a wallet
-        </Link>
+        <div className="mt-3 flex flex-wrap gap-x-4">
+          <Link href="/you/profile" className="inline-flex min-h-11 items-center font-semibold text-primary">
+            Your profile
+          </Link>
+          <Link href="/you/wallet" className="inline-flex min-h-11 items-center font-semibold text-primary">
+            Check a wallet
+          </Link>
+        </div>
         <div className="mt-3 flex flex-wrap gap-2">
           {demo.verified ? (
             <Badge className="border-transparent bg-trust text-trust-foreground">
@@ -59,6 +66,8 @@ export function DashboardScreen() {
           ) : null}
         </div>
       </div>
+
+      <SavedList />
 
       <NeedsYou />
 
@@ -239,6 +248,23 @@ export function DashboardScreen() {
         </section>
       )}
     </div>
+  );
+}
+
+function SavedList() {
+  const demo = useDemo();
+  return (
+    <section className="space-y-3">
+      <h2 className={sectionTitle}>Saved</h2>
+      {demo.savedIds.length === 0 ? <p className="text-base">Nothing saved yet.</p> : null}
+      {demo.savedIds.map((id) => {
+        const project = demo.projects.find((item) => item.id === id);
+        if (project) return <ProjectCard key={id} project={project} />;
+        const request = demo.requests.find((item) => item.id === id);
+        if (request) return <RequestCard key={id} request={request} />;
+        return null;
+      })}
+    </section>
   );
 }
 

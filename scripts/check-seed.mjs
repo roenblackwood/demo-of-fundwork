@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
 const seed = JSON.parse(readFileSync(new URL("../data/seed.json", import.meta.url), "utf8"));
@@ -627,6 +628,11 @@ if (errors.length) {
   console.error(errors.join("\n"));
   process.exit(1);
 }
+
+const recommendTest = spawnSync(process.execPath, ["--test", new URL("./test-recommend.mjs", import.meta.url).pathname], {
+  stdio: "inherit",
+});
+if (recommendTest.status !== 0) process.exit(recommendTest.status ?? 1);
 
 console.log(
   `Seed ok: ${seed.parishes.length} parishes, ${seed.countries.length} countries, ${seed.projects.length} projects, ${seed.users.length} sample people, ${seed.requests.length} requests.`,

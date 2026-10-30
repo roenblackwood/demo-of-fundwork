@@ -118,11 +118,19 @@ export function ProjectScreen({ id }: { id: string }) {
           : "Money you commit turns into ownership units once the organizer accepts it."
         : "Money and work both turn into ownership units.";
 
-  const backers = new Set(
-    [...seedCommitments(), ...demo.addedCommitments]
-      .filter((item) => item.projectId === project.id)
-      .map((item) => item.userId),
-  ).size;
+  const backerRows = [...seedCommitments(), ...demo.addedCommitments].filter(
+    (item) => item.projectId === project.id,
+  );
+  const backers = new Set(backerRows.map((item) => item.userId)).size;
+  const backerNames = [
+    ...new Set(
+      backerRows.flatMap((item) => {
+        if (item.showName === false) return [];
+        const name = demo.displayNameFor(item.userId);
+        return name ? [name] : [];
+      }),
+    ),
+  ];
   const projectActions = (
     <>
       {canCommit ? (
@@ -193,6 +201,10 @@ export function ProjectScreen({ id }: { id: string }) {
         <FundingPills
           labels={fundingLabels(committed, project.goalJmd, project.workStarted)}
         />
+        <p className="text-base font-semibold">
+          {backers} {backers === 1 ? "backer" : "backers"}
+        </p>
+        {backerNames.length > 0 ? <p className="text-base">{backerNames.join(", ")}</p> : null}
         <Link href={`/projects/${project.id}/money`} className="inline-flex min-h-11 items-center font-semibold text-primary">
           See the money
         </Link>
@@ -418,6 +430,7 @@ export function ProjectScreen({ id }: { id: string }) {
       <p className="text-base font-semibold">
         {backers} {backers === 1 ? "backer" : "backers"}
       </p>
+      {backerNames.length > 0 ? <p className="text-base">{backerNames.join(", ")}</p> : null}
       {projectActions}
       <CapitalChip />
     </aside>

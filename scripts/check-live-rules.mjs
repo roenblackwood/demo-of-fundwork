@@ -124,6 +124,8 @@ async function cleanup() {
     await admin.from("applications").delete().in("project_id", projectIds);
   }
   if (userIds.length > 0) {
+    await admin.from("user_signals").delete().in("user_id", userIds);
+    await admin.from("profile_details").delete().in("user_id", userIds);
     await admin.from("lesson_progress").delete().in("user_id", userIds);
     await admin.from("weekly_goals").delete().in("user_id", userIds);
     await admin.from("contributions").delete().in("user_id", userIds);
@@ -157,6 +159,51 @@ try {
   const investor = await makeUser("investor", "Marcia Bennett");
   const member = await makeUser("worker", "Keisha Palmer");
   const outsider = await makeUser("worker", "Omar Grant");
+
+  const details = await member.client.from("profile_details").insert({
+    user_id: member.id,
+    reach: "parish",
+    skill_levels: [{ skill: "building", level: "experienced" }],
+    tools: ["A hammer"],
+    languages: ["English"],
+    days_per_week: 4,
+    start_when: "now",
+    amount_min_usd: 5000,
+    show_name: false,
+    photos: [],
+  });
+  const privateRead = await investor.client.from("profile_details").select("*").eq("user_id", member.id);
+  const publicRead = await investor.client
+    .from("public_profile_details")
+    .select("*")
+    .eq("user_id", member.id)
+    .maybeSingle();
+  const publicKeys = publicRead.data ? Object.keys(publicRead.data) : [];
+  report(
+    !details.error &&
+      (privateRead.data ?? []).length === 0 &&
+      publicRead.data?.reach === "parish" &&
+      publicKeys.includes("skill_levels") &&
+      publicKeys.includes("languages") &&
+      publicKeys.includes("tools") &&
+      !publicKeys.includes("amount_min_usd") &&
+      !publicKeys.includes("days_per_week") &&
+      !publicKeys.includes("show_name") &&
+      !publicKeys.includes("photos"),
+    "Another person cannot read private profile fields.",
+  );
+  const signalInsert = await member.client.from("user_signals").insert({
+    user_id: member.id,
+    item_id: `hidden-${stamp}`,
+    kind: "hidden",
+    sector: "lodging",
+  });
+  const peeked = await investor.client.from("user_signals").select("*").eq("user_id", member.id);
+  const ownSignals = await member.client.from("user_signals").select("item_id").eq("user_id", member.id);
+  report(
+    !signalInsert.error && (peeked.data ?? []).length === 0 && (ownSignals.data ?? []).length === 1,
+    "Another person cannot read saved or hidden items.",
+  );
 
   const projects = await admin.from("projects").insert([
     {
