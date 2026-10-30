@@ -6,6 +6,7 @@ import {
   ActionBar,
   ApplicationStatusLabel,
   Avatar,
+  CapitalChip,
   FundingPills,
   LearnMore,
   MoneyText,
@@ -117,8 +118,49 @@ export function ProjectScreen({ id }: { id: string }) {
           : "Money you commit turns into ownership units once the organizer accepts it."
         : "Money and work both turn into ownership units.";
 
+  const backers = new Set(
+    [...seedCommitments(), ...demo.addedCommitments]
+      .filter((item) => item.projectId === project.id)
+      .map((item) => item.userId),
+  ).size;
+  const projectActions = (
+    <>
+      {canCommit ? (
+        <Link href={`/projects/${project.id}/commit`} className={cn(buttonVariants({ size: "lg" }), "w-full")}>
+          Commit capital
+        </Link>
+      ) : null}
+      {showWork ? (
+        <Link
+          href={`/projects/${project.id}/log`}
+          className={cn(buttonVariants({ variant: canCommit ? "workOutline" : "work", size: "lg" }), "w-full")}
+        >
+          Log work
+        </Link>
+      ) : null}
+      {askJoin && !join ? (
+        <Button
+          variant="work"
+          size="lg"
+          className="w-full"
+          disabled={demo.saving}
+          aria-busy={demo.saving}
+          onClick={() => {
+            if (demo.saving) return;
+            void demo.askToJoin(project.id).then((ok) => {
+              if (ok) show("Asked to join.");
+            });
+          }}
+        >
+          Ask to join
+        </Button>
+      ) : null}
+    </>
+  );
+
   return (
-    <div className="space-y-6">
+    <div className="min-[840px]:grid min-[840px]:grid-cols-[minmax(0,1fr)_20rem] min-[840px]:items-start min-[840px]:gap-8">
+    <div className="min-w-0 space-y-6">
       <StepHeader backHref={backHref} />
       <SectorTile sector={project.sector} size="page" />
       <div>
@@ -359,46 +401,26 @@ export function ProjectScreen({ id }: { id: string }) {
           </div>
         ))}
       </LearnMore>
-      {canCommit || showWork || (askJoin && !join) ? (
-        <ActionBar>
-          {canCommit ? (
-            <Link
-              href={`/projects/${project.id}/commit`}
-              className={cn(buttonVariants({ size: "lg" }), "w-full")}
-            >
-              Commit capital
-            </Link>
-          ) : null}
-          {showWork ? (
-            <Link
-              href={`/projects/${project.id}/log`}
-              className={cn(
-                buttonVariants({ variant: canCommit ? "workOutline" : "work", size: "lg" }),
-                "w-full",
-              )}
-            >
-              Log work
-            </Link>
-          ) : null}
-          {askJoin && !join ? (
-            <Button
-              variant="work"
-              size="lg"
-              className="w-full"
-              disabled={demo.saving}
-              aria-busy={demo.saving}
-              onClick={() => {
-                if (demo.saving) return;
-                void demo.askToJoin(project.id).then((ok) => {
-                  if (ok) show("Asked to join.");
-                });
-              }}
-            >
-              Ask to join
-            </Button>
-          ) : null}
-        </ActionBar>
+      {canCommit || showWork || (askJoin && !join) ? <ActionBar hideExpanded>{projectActions}</ActionBar> : null}
+    </div>
+    <aside className="sticky top-20 hidden space-y-3 self-start rounded-2xl bg-card p-4 ring-1 ring-foreground/10 min-[840px]:block">
+      <p className="text-2xl font-semibold leading-tight">
+        {stillOpen > 0 ? `${moneyShort(stillOpen, currency)} still needed` : "The money they asked for is in"}
+      </p>
+      <Progress value={percent} aria-label="Money committed">
+        <ProgressLabel className="text-sm">
+          {moneyShort(committed, currency)} of {moneyShort(project.goalJmd, currency)}
+        </ProgressLabel>
+      </Progress>
+      {stillOpen > 0 && aboutUsd(stillOpen, currency) ? (
+        <p className="text-base text-muted-foreground">{aboutUsd(stillOpen, currency)}</p>
       ) : null}
+      <p className="text-base font-semibold">
+        {backers} {backers === 1 ? "backer" : "backers"}
+      </p>
+      {projectActions}
+      <CapitalChip />
+    </aside>
     </div>
   );
 }

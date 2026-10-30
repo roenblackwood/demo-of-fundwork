@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ProjectCard } from "@/components/project-card";
 import { RequestCard } from "@/components/request-card";
-import { FilterChips, PlaceSearch, RegionChipRow, ShowMapButton } from "@/components/map/chrome";
+import { FilterChips, MapLoadNote, PlaceSearch, ShowMapButton } from "@/components/map/chrome";
 import { useMapPhase } from "@/components/map/lite";
 import { MapView } from "@/components/map/map-view";
 import { readSheetStop, ResultsSheet, writeSheetStop, type SheetStop } from "@/components/map/results-sheet";
@@ -52,17 +52,32 @@ function homeSpot(input: {
   return null;
 }
 
-function OpeningCard({ row }: { row: Opening }) {
+function OpeningCard({
+  row,
+  selected,
+  onHover,
+}: {
+  row: Opening;
+  selected: boolean;
+  onHover: (id: string | null) => void;
+}) {
+  function enter() {
+    if (window.matchMedia("(min-width: 840px)").matches) onHover(row.id);
+  }
+  function leave() {
+    if (window.matchMedia("(min-width: 840px)").matches) onHover(null);
+  }
+  const frame = selected ? "rounded-2xl ring-2 ring-primary" : "";
   if (row.project) {
     return (
-      <div id={`opening-${row.id}`}>
+      <div data-opening={row.id} className={frame} onMouseEnter={enter} onMouseLeave={leave}>
         <ProjectCard project={row.project} />
       </div>
     );
   }
   if (row.request) {
     return (
-      <div id={`opening-${row.id}`}>
+      <div data-opening={row.id} className={frame} onMouseEnter={enter} onMouseLeave={leave}>
         <RequestCard request={row.request} />
       </div>
     );
@@ -72,7 +87,7 @@ function OpeningCard({ row }: { row: Opening }) {
 
 export function HomeScreen() {
   const demo = useDemo();
-  const { phase, lite, showMap, mapReady, mapFailed } = useMapPhase();
+  const { phase, lite, failed, showMap, mapReady, mapFailed } = useMapPhase();
   const [lens, setLens] = useState<"invest" | "work" | null>(null);
   const [sector, setSector] = useState<Sector | null>(null);
   const [regionId, setRegionId] = useState<string | null>(null);
@@ -94,6 +109,25 @@ export function HomeScreen() {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setStop(saved);
     }
+    const raw = sessionStorage.getItem("fundwork-place");
+    if (!raw) return;
+    sessionStorage.removeItem("fundwork-place");
+    try {
+      const hit = JSON.parse(raw) as SearchHit;
+      setRegionId(hit.regionId);
+      setSelectedId(null);
+      setBlockedName(null);
+      flew.current = true;
+      token.current += 1;
+      setFly({
+        kind: "center",
+        center: [hit.lng, hit.lat],
+        zoom: hit.kind === "town" ? 11 : hit.zoom || countryZoom(hit.countryId),
+        token: token.current,
+      });
+    } catch {
+      // Ignore a bad stored place.
+    }
   }, []);
 
   function chooseStop(next: SheetStop) {
@@ -108,15 +142,16 @@ export function HomeScreen() {
     return orderOpenings([...projects, ...requests].filter((row): row is Opening => Boolean(row)));
   }, [demo]);
 
+  const regionLock = listed ? null : regionId;
   const filtered = useMemo(() => {
     return rows.filter((row) => {
       if (lens === "invest" && row.kind !== "project") return false;
       if (lens === "work" && row.kind !== "request") return false;
       if (sector && row.sector !== sector) return false;
-      if (!listed && regionId && row.regionId !== regionId) return false;
+      if (regionLock && row.regionId !== regionLock) return false;
       return true;
     });
-  }, [rows, lens, sector, listed, regionId]);
+  }, [rows, lens, sector, regionLock]);
   const visible = inBounds(filtered, listed);
   const selected = selectedId ? rows.find((row) => row.id === selectedId) : undefined;
   const shown = selected
@@ -165,17 +200,19 @@ export function HomeScreen() {
     setBlockedName(null);
     chooseStop("half");
     window.requestAnimationFrame(() => {
-      document.getElementById(`opening-${id}`)?.scrollIntoView({ block: "start" });
+      const nodes = document.querySelectorAll<HTMLElement>(`[data-opening="${CSS.escape(id)}"]`);
+      const visible = [...nodes].find((node) => node.getClientRects().length > 0);
+      visible?.scrollIntoView({ block: "nearest" });
     });
   }
 
   const away = Boolean(regionId) || zoom >= WORLD_ZOOM;
   const mapLive = phase === "loading" || phase === "map";
 
-  const list = (
+  const openingList = () => (
     <div className="space-y-2">
       {shown.map((row) => (
-        <OpeningCard key={row.id} row={row} />
+        <OpeningCard key={row.id} row={row} selected={selectedId === row.id} onHover={setSelectedId} />
       ))}
     </div>
   );
@@ -186,12 +223,29 @@ export function HomeScreen() {
         <div
           className={
             phase === "map"
-              ? "fixed inset-x-0 top-14 bottom-16 z-20"
-              : "fixed inset-x-0 top-14 bottom-16 z-20 invisible"
+              ? "fixed top-[var(--fw-top)] right-0 bottom-[var(--fw-bottom)] left-[var(--fw-left)] z-20"
+              : "fixed top-[var(--fw-top)] right-0 bottom-[var(--fw-bottom)] left-[var(--fw-left)] z-20 invisible"
           }
           aria-hidden={phase !== "map"}
         >
-          <div className="relative h-full">
+          <div className="flex h-full">
+            <aside className="hidden h-full w-[400px] shrink-0 flex-col border-r border-border bg-background min-[840px]:flex">
+              <div className="flex shrink-0 flex-col gap-2 p-3">
+                <PlaceSearch onPick={pickSearch} />
+                <FilterChips
+                  lens={lens}
+                  sector={sector}
+                  regionId={regionId}
+                  onLens={setLens}
+                  onSector={setSector}
+                  onRegion={goRegion}
+                  wrap
+                />
+                <p className="text-sm text-muted-foreground">{label}</p>
+              </div>
+              <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 pb-3">{openingList()}</div>
+            </aside>
+            <div className="relative h-full min-w-0 flex-1">
             <MapView
               points={filtered}
               showMarkers
@@ -230,11 +284,17 @@ export function HomeScreen() {
               onPoint={pickPoint}
               onFail={mapFailed}
             />
-            <div className="pointer-events-none absolute inset-x-0 top-0 z-10">
-              <div className="pointer-events-auto mx-auto flex w-full max-w-lg flex-col gap-2 px-3 pt-3">
-                <PlaceSearch onPick={pickSearch} />
-                <FilterChips lens={lens} sector={sector} onLens={setLens} onSector={setSector} />
-                {regionId ? null : <RegionChipRow selected={regionId} onSelect={goRegion} />}
+            <div data-fw-pad="top" className="pointer-events-none absolute inset-x-0 top-0 z-10 min-[840px]:hidden">
+              <div className="pointer-events-auto mx-auto flex w-full max-w-lg flex-col gap-2 px-3 pt-3 min-[600px]:mx-0 min-[600px]:max-w-[480px]">
+                <PlaceSearch onPick={pickSearch} collapsible />
+                <FilterChips
+                  lens={lens}
+                  sector={sector}
+                  regionId={regionId}
+                  onLens={setLens}
+                  onSector={setSector}
+                  onRegion={goRegion}
+                />
               </div>
             </div>
             {areaMoved ? (
@@ -270,19 +330,31 @@ export function HomeScreen() {
               stop={stop}
               onStop={chooseStop}
             >
-              {list}
+              {openingList()}
             </ResultsSheet>
+            </div>
           </div>
         </div>
       ) : null}
       {phase === "map" ? null : (
         <div className="flex flex-1 flex-col gap-3">
-          <PlaceSearch onPick={pickSearch} />
-          <FilterChips lens={lens} sector={sector} onLens={setLens} onSector={setSector} />
-          <RegionChipRow selected={regionId} onSelect={setRegionId} />
-          {lite ? <ShowMapButton onClick={showMap} /> : null}
+          <PlaceSearch onPick={pickSearch} collapsible />
+          <FilterChips
+            lens={lens}
+            sector={sector}
+            regionId={regionId}
+            onLens={setLens}
+            onSector={setSector}
+            onRegion={(id) => {
+              setRegionId(id);
+              setSelectedId(null);
+              setBlockedName(null);
+            }}
+          />
+          {failed ? <MapLoadNote onRetry={showMap} /> : null}
+          {lite && !failed && phase !== "loading" ? <ShowMapButton onClick={showMap} /> : null}
           <p className="text-sm text-muted-foreground">{label}</p>
-          {list}
+          {openingList()}
         </div>
       )}
     </>

@@ -207,12 +207,12 @@ export function WhatThisNeeds({
 
   return (
     <section aria-label="What this needs">
-      <div className="sticky top-14 z-20 -mx-5 border-b border-border bg-background px-5">
+      <div className="sticky top-14 z-20 -mx-5 border-b border-border bg-background px-5 min-[600px]:hidden">
         <button
           type="button"
           aria-expanded={open}
           onClick={onToggle}
-          className="flex min-h-11 w-full items-center justify-between gap-3 text-left"
+          className="flex min-h-11 w-full items-center justify-between gap-3 text-left focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
         >
           <span className="sr-only">What this needs</span>
           <span className="truncate text-sm text-muted-foreground">{summary}</span>
@@ -221,8 +221,12 @@ export function WhatThisNeeds({
           </span>
         </button>
       </div>
+      <div className="hidden min-[600px]:block">
+        <h2 className="text-lg font-semibold">What this needs</h2>
+        <p className="text-sm text-muted-foreground">{summary}</p>
+      </div>
       {!guide ? <p className="pt-3 text-base leading-relaxed text-muted-foreground">{uncheckedNote(countryName)}</p> : null}
-      {open ? (
+      <div className={cn(!open && "hidden", "min-[600px]:block")}>
         <div className="space-y-4 pt-4">
           {/* Later: photos of the site. */}
           <div className="space-y-2">
@@ -344,7 +348,7 @@ export function WhatThisNeeds({
             ) : null}
           </div>
         </div>
-      ) : null}
+      </div>
     </section>
   );
 }

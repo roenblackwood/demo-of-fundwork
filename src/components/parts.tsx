@@ -83,7 +83,7 @@ export function FloatingAction({
   tone: "primary" | "work";
 }) {
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20">
+    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 min-[600px]:hidden">
       <div className="mx-auto flex w-full max-w-lg justify-end px-5 pb-3">
         <Link
           href={href}
@@ -409,12 +409,23 @@ export function Checklist({
   );
 }
 
-export function ActionBar({ children }: { children: React.ReactNode }) {
+export function ActionBar({
+  children,
+  hideExpanded = false,
+}: {
+  children: React.ReactNode;
+  hideExpanded?: boolean;
+}) {
   return (
     <>
-      <div className="h-40 shrink-0" aria-hidden />
-      <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 border-t border-border bg-background/95 px-5 py-3 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-lg flex-col gap-2">{children}</div>
+      <div className={cn("h-40 shrink-0", hideExpanded && "min-[840px]:hidden")} aria-hidden />
+      <div
+        className={cn(
+          "fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 border-t border-border bg-background/95 px-5 py-3 backdrop-blur min-[600px]:bottom-0 min-[600px]:left-20 min-[840px]:left-0",
+          hideExpanded && "min-[840px]:hidden",
+        )}
+      >
+        <div className="mx-auto flex w-full max-w-lg flex-col gap-2 min-[600px]:max-w-2xl">{children}</div>
       </div>
     </>
   );

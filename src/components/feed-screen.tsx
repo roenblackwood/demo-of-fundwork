@@ -1,18 +1,22 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronDown, MapPin } from "lucide-react";
 import { PageBusy } from "@/components/busy";
+import { MapView } from "@/components/map/map-view";
 import { FloatingAction } from "@/components/parts";
 import { ProjectCard } from "@/components/project-card";
 import { RequestCard } from "@/components/request-card";
+import { buttonVariants } from "@/components/ui/button";
 import { SECTORS, SKILLS, isSector, isSkill, skillTitle } from "@/lib/catalog";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
 import { placeLine } from "@/lib/format";
 import { bandRank } from "@/lib/match";
 import { projectCommitted } from "@/lib/ownership";
+import { openingFromProject, openingFromRequest } from "@/lib/openings";
 import { getCity, getCountry, getParish, getTown } from "@/lib/seed";
 import type { CapitalRequest, PathChoice, Project, Sector, Skill } from "@/lib/types";
 
@@ -89,7 +93,7 @@ function availableHref(home: Home | null): string {
 }
 
 const chipClass =
-  "inline-flex min-h-11 shrink-0 items-center rounded-full px-3 text-base font-semibold whitespace-nowrap focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring";
+  "inline-flex min-h-11 shrink-0 cursor-pointer items-center rounded-full px-3 text-base font-semibold whitespace-nowrap hover:border-primary focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring";
 
 export function FeedScreen({ mode }: { mode: PathChoice }) {
   const demo = useDemo();
@@ -102,9 +106,34 @@ export function FeedScreen({ mode }: { mode: PathChoice }) {
   const mine = workerSkills(demo);
   const skill = skillParam && isSkill(skillParam) && mine.includes(skillParam) ? skillParam : null;
 
-  if (!demo.ready) return <PageBusy />;
+  const [desk, setDesk] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(min-width: 840px)");
+    const apply = () => setDesk(query.matches);
+    apply();
+    query.addEventListener("change", apply);
+    return () => query.removeEventListener("change", apply);
+  }, []);
 
-  const rows = mode === "investor" ? investorRows(demo, home, sector) : workerRows(demo, home, mine, skill);
+  const rows = useMemo(
+    () => (mode === "investor" ? investorRows(demo, home, sector) : workerRows(demo, home, mine, skill)),
+    [mode, demo, home, sector, mine, skill],
+  );
+  const mapPoints = useMemo(() => {
+    const spot = home
+      ? { countryId: home.countryId, parishId: home.parishId, townId: home.townId }
+      : null;
+    return rows.flatMap((row) => {
+      if (row.kind === "project") {
+        const opening = openingFromProject(row.project, demo.addedCommitments, spot);
+        return opening ? [opening] : [];
+      }
+      const opening = openingFromRequest(row.request, spot);
+      return opening ? [opening] : [];
+    });
+  }, [rows, home, demo.addedCommitments]);
+
+  if (!demo.ready) return <PageBusy />;
   const placeHref = mode === "investor" ? "/invest/place" : "/work/place";
 
   function setQuery(key: "sector" | "skill", value: string | null) {
@@ -128,9 +157,26 @@ export function FeedScreen({ mode }: { mode: PathChoice }) {
     router.replace(mode === "investor" ? "/invest" : "/work");
   }
 
+  const actionHref = mode === "investor" ? startHref(home) : availableHref(home);
+  const actionLabel = mode === "investor" ? "Start a project" : "I am available";
+  const actionTone = mode === "investor" ? "primary" : "work";
+
   return (
     <div>
-      <h1 className="sr-only">{mode === "investor" ? "Projects" : "Work"}</h1>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h1 className="sr-only text-xl font-semibold min-[600px]:not-sr-only">
+          {mode === "investor" ? "Invest" : "Work"}
+        </h1>
+        <Link
+          href={actionHref}
+          className={cn(
+            buttonVariants({ size: "default", variant: actionTone === "work" ? "work" : "default" }),
+            "ml-auto hidden min-[600px]:inline-flex",
+          )}
+        >
+          {actionLabel}
+        </Link>
+      </div>
       <div className="flex gap-2 overflow-x-auto pb-1">
         <Link href={placeHref} className={cn(chipClass, "gap-1.5 border-2 border-border bg-card")}>
           <MapPin className="size-4 shrink-0" aria-hidden />
@@ -205,26 +251,43 @@ export function FeedScreen({ mode }: { mode: PathChoice }) {
         <button
           type="button"
           onClick={clearFilters}
-          className="mt-4 inline-flex min-h-11 items-center font-semibold whitespace-nowrap text-primary"
+          className="mt-4 inline-flex min-h-11 items-center font-semibold whitespace-nowrap text-primary focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
         >
           Clear filters
         </button>
       ) : (
-        <div className="mt-2 space-y-1 pb-24">
-          {rows.map((row) =>
-            row.kind === "project" ? (
-              <ProjectCard key={`project-${row.project.id}`} project={row.project} />
-            ) : (
-              <RequestCard key={`request-${row.request.id}`} request={row.request} />
-            ),
-          )}
+        <div className="mt-2 min-[840px]:flex min-[840px]:items-start min-[840px]:gap-4">
+          <div className="grid min-w-0 grid-cols-1 gap-2 pb-24 min-[600px]:grid-cols-2 min-[600px]:pb-4 min-[840px]:w-3/5">
+            {rows.map((row) =>
+              row.kind === "project" ? (
+                <ProjectCard key={`project-${row.project.id}`} project={row.project} />
+              ) : (
+                <RequestCard key={`request-${row.request.id}`} request={row.request} />
+              ),
+            )}
+          </div>
+          {desk ? (
+            <div className="hidden min-h-[28rem] w-2/5 min-[840px]:block">
+              <div className="sticky top-20 h-[calc(100dvh-7rem)] overflow-hidden rounded-2xl">
+                <MapView
+                  points={mapPoints}
+                  showMarkers
+                  selectedId={null}
+                  regionId={null}
+                  fly={null}
+                  onReady={() => undefined}
+                  onMove={() => undefined}
+                  onRegion={() => undefined}
+                  onBlocked={() => undefined}
+                  onPoint={() => undefined}
+                  onFail={() => undefined}
+                />
+              </div>
+            </div>
+          ) : null}
         </div>
       )}
-      <FloatingAction
-        href={mode === "investor" ? startHref(home) : availableHref(home)}
-        label={mode === "investor" ? "Start a project" : "I am available"}
-        tone={mode === "investor" ? "primary" : "work"}
-      />
+      <FloatingAction href={actionHref} label={actionLabel} tone={actionTone} />
     </div>
   );
 }

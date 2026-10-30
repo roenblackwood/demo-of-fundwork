@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { StepHeader } from "@/components/parts";
-import { PlaceSearch, RegionChipRow, ShowMapButton } from "@/components/map/chrome";
+import { MapLoadNote, PlaceSearch, RegionChipRow, ShowMapButton } from "@/components/map/chrome";
 import { useMapPhase } from "@/components/map/lite";
 import { MapView } from "@/components/map/map-view";
 import { readSheetStop, ResultsSheet, writeSheetStop, type SheetStop } from "@/components/map/results-sheet";
@@ -40,7 +40,7 @@ export function PlaceScreen({
   onBack?: () => void;
   onTown: (place: PickedPlace) => void;
 }) {
-  const { phase, lite, showMap, mapReady, mapFailed } = useMapPhase();
+  const { phase, lite, failed, showMap, mapReady, mapFailed } = useMapPhase();
   const [level, setLevel] = useState<Level>("regions");
   const [regionId, setRegionId] = useState<string | null>(null);
   const [countryId, setCountryId] = useState<string | null>(null);
@@ -196,8 +196,8 @@ export function PlaceScreen({
         <div
           className={
             phase === "map"
-              ? "fixed inset-x-0 top-14 bottom-16 z-20 flex flex-col bg-background"
-              : "fixed inset-x-0 top-14 bottom-16 z-20 flex flex-col invisible"
+              ? "fixed top-[var(--fw-top)] right-0 bottom-[var(--fw-bottom)] left-[var(--fw-left)] z-20 flex flex-col bg-background"
+              : "fixed top-[var(--fw-top)] right-0 bottom-[var(--fw-bottom)] left-[var(--fw-left)] z-20 flex flex-col invisible"
           }
           aria-hidden={phase !== "map"}
         >
@@ -257,10 +257,15 @@ export function PlaceScreen({
           <div className="mb-4">
             <PlaceSearch onPick={pickSearch} />
           </div>
-          {lite ? (
+          {failed ? (
+            <div className="mb-4">
+              <MapLoadNote onRetry={showMap} />
+            </div>
+          ) : null}
+          {lite && !failed ? (
             <div className="mb-4 space-y-3">
               <RegionChipRow selected={regionId} onSelect={chooseRegion} />
-              <ShowMapButton onClick={showMap} />
+              {phase !== "loading" ? <ShowMapButton onClick={showMap} /> : null}
             </div>
           ) : null}
           {choices}

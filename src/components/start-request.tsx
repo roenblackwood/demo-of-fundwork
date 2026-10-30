@@ -579,11 +579,14 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
                 : () => setStep("note");
 
   return (
-    <div className="space-y-6">
-      {header(title, back)}
-      {panel}
-      {body}
-      {action}
+    <div className="min-[840px]:grid min-[840px]:grid-cols-[minmax(0,640px)_minmax(16rem,1fr)] min-[840px]:items-start min-[840px]:gap-8">
+      <div className="min-w-0 space-y-6">
+        {header(title, back)}
+        <div className="min-[840px]:hidden">{panel}</div>
+        {body}
+        {action}
+      </div>
+      <div className="sticky top-20 hidden min-[840px]:block">{panel}</div>
     </div>
   );
 }

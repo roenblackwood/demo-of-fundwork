@@ -28,12 +28,14 @@ function webglMissing(): boolean {
 export function useMapPhase(): {
   phase: MapPhase;
   lite: boolean;
+  failed: boolean;
   showMap: () => void;
   mapReady: () => void;
   mapFailed: () => void;
 } {
   const [phase, setPhase] = useState<MapPhase>("list");
   const [lite, setLite] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     const slow = connectionIsSlow() || webglMissing();
@@ -46,10 +48,18 @@ export function useMapPhase(): {
   return {
     phase,
     lite,
-    showMap: () => setPhase("loading"),
-    mapReady: () => setPhase("map"),
+    failed,
+    showMap: () => {
+      setFailed(false);
+      setPhase("loading");
+    },
+    mapReady: () => {
+      setFailed(false);
+      setPhase("map");
+    },
     mapFailed: () => {
       setLite(true);
+      setFailed(true);
       setPhase("list");
     },
   };

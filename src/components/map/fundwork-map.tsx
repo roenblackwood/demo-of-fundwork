@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { FeatureCollection } from "geojson";
-import { LngLat, Map as MapLibreMap, Marker, NavigationControl, setWorkerUrl } from "maplibre-gl";
+import type { FeatureCollection, Point } from "geojson";
+import { Map as MapLibreMap, NavigationControl, setWorkerUrl, type GeoJSONSource } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import regions from "@/lib/maps/regions-110m.json";
 import blocked from "@/lib/maps/blocked-110m.json";
@@ -17,6 +17,7 @@ import {
 } from "@/lib/map-camera";
 import type { MarkerPoint } from "@/lib/openings";
 
+// Later, host the tiles as a PMTiles file on our own CDN, so one tile host is not a single point of failure.
 const STYLE = "https://tiles.openfreemap.org/styles/liberty";
 const OCEAN = "#d7ebe3";
 const LAND = "#e6e0d4";
@@ -25,6 +26,18 @@ const CASING = "#e3dcd0";
 const OPEN = "#0e5c3a";
 const WORK = "#8c3418";
 const PAPER = "#fffcf7";
+const INK = "#1a2330";
+const EASE_MS = 450;
+const FLY_MS = 800;
+const LOAD_MS = 8000;
+
+const REGION_CIRCLES = "fw-region-circles";
+const REGION_LABELS = "fw-region-labels";
+const COUNTRY_CIRCLES = "fw-country-circles";
+const COUNTRY_LABELS = "fw-country-labels";
+const POINT_CIRCLES = "fw-point-circles";
+const POINT_LABELS = "fw-point-labels";
+const POINT_LAYERS = [REGION_CIRCLES, REGION_LABELS, COUNTRY_CIRCLES, COUNTRY_LABELS, POINT_CIRCLES, POINT_LABELS];
 
 export type MapViewState = {
   bounds: MapBounds;
@@ -39,6 +52,8 @@ type Handlers = {
   onPoint: (id: string) => void;
   onFail: () => void;
 };
+
+type Pad = { top: number; bottom: number; left: number; right: number };
 
 function readBounds(map: MapLibreMap): MapBounds {
   const bounds = map.getBounds();
@@ -59,31 +74,84 @@ function mercatorY(lat: number): number {
   return 0.5 - Math.log(Math.tan(Math.PI / 4 + rad / 2)) / (2 * Math.PI);
 }
 
-function latFromMercatorY(y: number): number {
-  return (Math.atan(Math.exp(Math.PI * (1 - 2 * y))) * 2 - Math.PI / 2) * (180 / Math.PI);
+function fitZoom(width: number, height: number): number {
+  const lngSpan = WORLD_BOUNDS.east - WORLD_BOUNDS.west;
+  const ySpan = Math.max(0.0001, mercatorY(WORLD_BOUNDS.south) - mercatorY(WORLD_BOUNDS.north));
+  const zoomX = Math.log2((Math.max(64, width) * 360) / (lngSpan * 512));
+  const zoomY = Math.log2(Math.max(64, height) / (ySpan * 512));
+  return Math.max(0, Math.min(zoomX, zoomY));
 }
 
-// The stock constraint zooms in until the world covers a tall screen.
-// On a phone that crops the side regions, so keep zoom 0 and center the world.
-function constrainView(container: HTMLElement, lngLat: LngLat, zoom: number) {
-  const nextZoom = Math.min(18, Math.max(0, zoom));
-  const width = container.clientWidth || 1;
-  const height = container.clientHeight || 1;
-  const world = 512 * 2 ** nextZoom;
-  let lng = lngLat.lng;
-  let lat = lngLat.lat;
-  const halfLng = ((width / world) * 360) / 2;
-  if (halfLng < 180) {
-    const limit = 180 - halfLng;
-    lng = Math.min(limit, Math.max(-limit, lng));
+function emptyGeo(): FeatureCollection<Point> {
+  return { type: "FeatureCollection", features: [] };
+}
+
+function spread(points: MarkerPoint[]): MarkerPoint[] {
+  const seen = new Map<string, number>();
+  return points.map((point) => {
+    const key = `${point.lat.toFixed(3)},${point.lng.toFixed(3)}`;
+    const slot = seen.get(key) ?? 0;
+    seen.set(key, slot + 1);
+    if (slot === 0) return point;
+    return { ...point, lng: point.lng + slot * 0.045 };
+  });
+}
+
+function pointsKey(points: MarkerPoint[], show: boolean): string {
+  if (!show) return "hidden";
+  return points
+    .map((point) => `${point.id}:${point.kind}:${point.lat.toFixed(5)}:${point.lng.toFixed(5)}`)
+    .sort()
+    .join("|");
+}
+
+function groupGeo(points: MarkerPoint[], mode: "region" | "country"): FeatureCollection<Point> {
+  const groups = new Map<string, MarkerPoint[]>();
+  for (const point of points) {
+    const key = mode === "region" ? point.regionId : point.countryId;
+    const list = groups.get(key) ?? [];
+    list.push(point);
+    groups.set(key, list);
   }
-  if (world <= height) {
-    lat = 0;
-  } else {
-    const halfY = height / 2 / world;
-    lat = latFromMercatorY(Math.min(1 - halfY, Math.max(halfY, mercatorY(lat))));
-  }
-  return { center: new LngLat(lng, lat), zoom: nextZoom };
+  return {
+    type: "FeatureCollection",
+    features: [...groups.entries()].map(([key, list]) => {
+      const lat = list.reduce((sum, point) => sum + point.lat, 0) / list.length;
+      const lng = list.reduce((sum, point) => sum + point.lng, 0) / list.length;
+      const workOnly = list.every((point) => point.kind === "request");
+      return {
+        type: "Feature",
+        id: key,
+        properties: {
+          key,
+          name: mode === "region" ? list[0].regionName : list[0].countryName,
+          count: list.length,
+          tone: workOnly ? "work" : "open",
+          west: Math.min(...list.map((point) => point.lng)),
+          east: Math.max(...list.map((point) => point.lng)),
+          south: Math.min(...list.map((point) => point.lat)),
+          north: Math.max(...list.map((point) => point.lat)),
+        },
+        geometry: { type: "Point", coordinates: [lng, lat] },
+      };
+    }),
+  };
+}
+
+function pointGeo(points: MarkerPoint[]): FeatureCollection<Point> {
+  return {
+    type: "FeatureCollection",
+    features: spread(points).map((point) => ({
+      type: "Feature",
+      id: point.id,
+      properties: {
+        id: point.id,
+        name: point.name,
+        tone: point.kind === "request" ? "work" : "open",
+      },
+      geometry: { type: "Point", coordinates: [point.lng, point.lat] },
+    })),
+  };
 }
 
 function paint(map: MapLibreMap, id: string, key: string, value: string | number) {
@@ -123,75 +191,43 @@ function restyle(map: MapLibreMap) {
   }
 }
 
-function levelOf(zoom: number, regionLocked: boolean): "region" | "country" | "point" {
-  if (zoom >= POINT_ZOOM) return "point";
-  if (regionLocked || zoom >= WORLD_ZOOM) return "country";
-  return "region";
+function setGeo(map: MapLibreMap, id: string, data: FeatureCollection<Point>) {
+  const source = map.getSource(id) as GeoJSONSource | undefined;
+  source?.setData(data);
 }
 
-function markerButton(label: string, selected: boolean): HTMLButtonElement {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "fw-marker";
-  button.dataset.fwMarker = "1";
-  button.setAttribute("aria-label", label);
-  button.setAttribute("aria-pressed", selected ? "true" : "false");
-  button.style.width = "44px";
-  button.style.height = "44px";
-  button.style.display = "grid";
-  button.style.placeItems = "center";
-  button.style.padding = "0";
-  button.style.border = "0";
-  button.style.background = "transparent";
-  button.style.cursor = "pointer";
-  return button;
-}
-
-function dot(color: string, selected: boolean): HTMLSpanElement {
-  const dotNode = document.createElement("span");
-  dotNode.style.width = selected ? "22px" : "16px";
-  dotNode.style.height = selected ? "22px" : "16px";
-  dotNode.style.borderRadius = "999px";
-  dotNode.style.background = color;
-  dotNode.style.border = `2px solid ${PAPER}`;
-  dotNode.style.boxShadow = "0 1px 3px rgb(26 35 48 / 0.28)";
-  return dotNode;
-}
-
-function countBubble(count: number, color: string): HTMLSpanElement {
-  const bubble = document.createElement("span");
-  bubble.textContent = String(count);
-  bubble.style.minWidth = "36px";
-  bubble.style.height = "36px";
-  bubble.style.padding = "0 8px";
-  bubble.style.borderRadius = "999px";
-  bubble.style.display = "grid";
-  bubble.style.placeItems = "center";
-  bubble.style.background = color;
-  bubble.style.color = PAPER;
-  bubble.style.fontWeight = "700";
-  bubble.style.fontSize = "14px";
-  bubble.style.border = `2px solid ${PAPER}`;
-  bubble.style.boxShadow = "0 1px 3px rgb(26 35 48 / 0.28)";
-  return bubble;
-}
-
-function spread(points: MarkerPoint[]): MarkerPoint[] {
-  const seen = new Map<string, number>();
-  return points.map((point) => {
-    const key = `${point.lat.toFixed(3)},${point.lng.toFixed(3)}`;
-    const slot = seen.get(key) ?? 0;
-    seen.set(key, slot + 1);
-    if (slot === 0) return point;
-    return { ...point, lng: point.lng + slot * 0.045 };
+function readPad(container: HTMLElement): Pad {
+  const frame = container.parentElement;
+  const box = container.getBoundingClientRect();
+  const pad: Pad = { top: 0, bottom: 0, left: 0, right: 0 };
+  if (!frame) return pad;
+  frame.querySelectorAll<HTMLElement>("[data-fw-pad]").forEach((node) => {
+    if (node.getClientRects().length === 0) return;
+    const rect = node.getBoundingClientRect();
+    const edge = node.dataset.fwPad;
+    if (edge === "top") pad.top = Math.max(pad.top, rect.bottom - box.top);
+    if (edge === "bottom") pad.bottom = Math.max(pad.bottom, box.bottom - rect.top);
+    if (edge === "left") pad.left = Math.max(pad.left, rect.right - box.left);
+    if (edge === "right") pad.right = Math.max(pad.right, box.right - rect.left);
   });
+  const height = box.height || container.clientHeight || 1;
+  const width = box.width || container.clientWidth || 1;
+  if (pad.top + pad.bottom > height - 80) pad.bottom = Math.max(0, height - 80 - pad.top);
+  if (pad.left + pad.right > width - 80) {
+    pad.left = Math.min(pad.left, width - 80);
+    pad.right = Math.max(0, width - 80 - pad.left);
+  }
+  pad.top = Math.max(0, Math.round(pad.top));
+  pad.bottom = Math.max(0, Math.round(pad.bottom));
+  pad.left = Math.max(0, Math.round(pad.left));
+  pad.right = Math.max(0, Math.round(pad.right));
+  return pad;
 }
 
 export function FundworkMap({
   points,
   showMarkers,
   selectedId,
-  regionId,
   fly,
   onReady,
   onMove,
@@ -214,15 +250,15 @@ export function FundworkMap({
 }) {
   const host = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
-  const markers = useRef<Marker[]>([]);
   const handlers = useRef<Handlers>({ onReady, onMove, onRegion, onBlocked, onPoint, onFail });
   const pointsRef = useRef(points);
   const showRef = useRef(showMarkers);
   const selectedRef = useRef(selectedId);
-  const regionRef = useRef(regionId);
   const syncRef = useRef<(() => void) | null>(null);
   const flyRef = useRef<((request: FlyRequest) => void) | null>(null);
   const pendingFly = useRef<FlyRequest | null>(null);
+  const dataKey = useRef("");
+  const selectedKey = useRef<string | null>(null);
 
   useEffect(() => {
     handlers.current = { onReady, onMove, onRegion, onBlocked, onPoint, onFail };
@@ -232,31 +268,31 @@ export function FundworkMap({
     pointsRef.current = points;
     showRef.current = showMarkers;
     selectedRef.current = selectedId;
-    regionRef.current = regionId;
     syncRef.current?.();
-  }, [points, showMarkers, selectedId, regionId]);
+  }, [points, showMarkers, selectedId]);
 
   useEffect(() => {
     const container = host.current;
     if (!container) return;
     let map: MapLibreMap;
+    let failed = false;
     try {
       // Turbopack serves this module from a chunk, so the default worker URL 404s.
       setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
       map = new MapLibreMap({
         container,
         style: STYLE,
-        center: [20, 0],
-        zoom: 0,
+        center: [20, 18],
+        zoom: 1.4,
         minZoom: 0,
+        maxZoom: 18,
         renderWorldCopies: false,
-        transformConstrain: (lngLat, zoom) => constrainView(container, lngLat, zoom),
         attributionControl: { compact: false },
         dragRotate: false,
         pitchWithRotate: false,
         touchPitch: false,
         maxPitch: 0,
-        fadeDuration: reducedMotion() ? 0 : 300,
+        fadeDuration: 0,
       });
     } catch {
       handlers.current.onFail();
@@ -271,7 +307,7 @@ export function FundworkMap({
     map.boxZoom.enable();
     map.keyboard.enable();
 
-    const wide = window.matchMedia("(min-width: 768px)");
+    const wide = window.matchMedia("(min-width: 600px)");
     const zoomControl = new NavigationControl({ showCompass: false, visualizePitch: false });
     const syncZoomControl = () => {
       const has = map.hasControl(zoomControl);
@@ -283,129 +319,183 @@ export function FundworkMap({
 
     let boot = true;
     let gesture = false;
+    let flying = false;
+    let styleOk = false;
+    let tileOk = false;
+    const fail = () => {
+      if (failed) return;
+      failed = true;
+      window.clearTimeout(timer);
+      handlers.current.onFail();
+    };
+    const timer = window.setTimeout(() => {
+      if (!styleOk || !tileOk) fail();
+    }, LOAD_MS);
+    const settled = () => {
+      if (styleOk && tileOk) window.clearTimeout(timer);
+    };
+
     map.on("movestart", (event) => {
       if (event.originalEvent) gesture = true;
     });
+    map.on("dragstart", () => {
+      if (flying) map.stop();
+    });
+    map.on("zoomstart", (event) => {
+      if (event.originalEvent && flying) map.stop();
+    });
     map.on("error", (event) => {
       const message = event.error?.message ?? "";
-      if (message.toLowerCase().includes("webgl")) handlers.current.onFail();
+      if (message.toLowerCase().includes("webgl")) fail();
+    });
+    map.on("sourcedata", (event) => {
+      const sourceId = event.sourceId ?? "";
+      if (!sourceId || sourceId === "regions" || sourceId === "blocked" || sourceId.startsWith("fw-")) return;
+      if (event.isSourceLoaded) {
+        tileOk = true;
+        settled();
+      }
     });
 
+    const applyLimits = () => {
+      map.resize();
+      const pad = readPad(container);
+      const width = container.clientWidth - pad.left - pad.right;
+      const height = container.clientHeight - pad.top - 36;
+      const minZoom = Math.min(8, fitZoom(width, height));
+      if (Number.isFinite(minZoom)) map.setMinZoom(minZoom);
+      map.setMaxBounds([
+        [WORLD_BOUNDS.west - 10, Math.max(-85, WORLD_BOUNDS.south - 8)],
+        [WORLD_BOUNDS.east + 10, Math.min(85, WORLD_BOUNDS.north + 8)],
+      ]);
+    };
+
+    const applyPad = () => {
+      const pad = readPad(container);
+      map.setPadding(pad);
+    };
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      const boxChanged = entries.some((entry) => entry.target === container);
+      applyPad();
+      if (boxChanged) applyLimits();
+    });
+    resizeObserver.observe(container);
+    const frame = container.parentElement;
+    const mutation = new MutationObserver(() => {
+      frame?.querySelectorAll("[data-fw-pad]").forEach((node) => resizeObserver.observe(node));
+      applyPad();
+    });
+    if (frame) {
+      mutation.observe(frame, { childList: true, subtree: true });
+      frame.querySelectorAll("[data-fw-pad]").forEach((node) => resizeObserver.observe(node));
+    }
+
+    const travel = (center: [number, number], zoom: number) => {
+      map.stop();
+      flying = true;
+      map.once("moveend", () => {
+        flying = false;
+      });
+      if (reducedMotion()) {
+        map.jumpTo({ center, zoom });
+        return;
+      }
+      const point = map.project(center);
+      const canvas = map.getCanvas();
+      const onScreen = point.x >= 0 && point.y >= 0 && point.x <= canvas.width && point.y <= canvas.height;
+      const close = Math.abs(zoom - map.getZoom()) < 2 && onScreen;
+      if (close) map.easeTo({ center, zoom, duration: EASE_MS });
+      else map.flyTo({ center, zoom, duration: FLY_MS });
+    };
+
+    const lookAt = (bounds: MapBounds, maxZoom: number) => {
+      const camera = map.cameraForBounds(
+        [
+          [bounds.west, bounds.south],
+          [bounds.east, bounds.north],
+        ],
+        { maxZoom },
+      );
+      if (!camera?.center || camera.zoom === undefined) return;
+      const center = camera.center;
+      const pair: [number, number] = Array.isArray(center)
+        ? [Number(center[0]), Number(center[1])]
+        : "lng" in center
+          ? [center.lng, center.lat]
+          : [center.lon, center.lat];
+      travel(pair, camera.zoom);
+    };
+
     const moveTo = (request: FlyTarget) => {
-      const duration = reducedMotion() ? 0 : 900;
       if (request.kind === "world") {
-        map.fitBounds(
-          [
-            [WORLD_BOUNDS.west, WORLD_BOUNDS.south],
-            [WORLD_BOUNDS.east, WORLD_BOUNDS.north],
-          ],
-          { padding: { top: 176, bottom: 148, left: 40, right: 40 }, maxZoom: 2.2, duration },
-        );
+        lookAt(WORLD_BOUNDS, 2.2);
         return;
       }
       if (request.kind === "center") {
-        if (duration === 0) map.jumpTo({ center: request.center, zoom: request.zoom });
-        else map.flyTo({ center: request.center, zoom: request.zoom, duration });
+        travel(request.center, request.zoom);
         return;
       }
-      map.fitBounds(
-        [
-          [request.bounds.west, request.bounds.south],
-          [request.bounds.east, request.bounds.north],
-        ],
-        { padding: { top: 188, bottom: 160, left: 48, right: 48 }, maxZoom: request.maxZoom, duration },
-      );
+      const bounds = { ...request.bounds };
+      if (bounds.east - bounds.west < 0.4) {
+        bounds.west -= 0.3;
+        bounds.east += 0.3;
+      }
+      if (bounds.north - bounds.south < 0.4) {
+        bounds.south -= 0.25;
+        bounds.north += 0.25;
+      }
+      lookAt(bounds, request.maxZoom);
     };
     flyRef.current = moveTo;
 
-    const focusMarker = (current: HTMLButtonElement, step: number) => {
-      const buttons = [...container.querySelectorAll<HTMLButtonElement>("[data-fw-marker]")];
-      const index = buttons.indexOf(current);
-      if (index < 0 || buttons.length === 0) return;
-      buttons[(index + step + buttons.length) % buttons.length]?.focus();
-    };
-
-    const drawMarkers = () => {
-      markers.current.forEach((marker) => marker.remove());
-      markers.current = [];
-      if (!showRef.current) return;
-      const zoom = map.getZoom();
-      const mode = levelOf(zoom, Boolean(regionRef.current));
-      const items = spread(pointsRef.current);
-      if (mode === "point") {
-        for (const point of items) {
-          const button = markerButton(`${point.name}, ${point.place}`, selectedRef.current === point.id);
-          button.append(dot(point.kind === "request" ? WORK : OPEN, selectedRef.current === point.id));
-          button.addEventListener("click", (event) => {
-            event.stopPropagation();
-            handlers.current.onPoint(point.id);
-          });
-          button.addEventListener("keydown", (event) => {
-            if (event.key !== "ArrowRight" && event.key !== "ArrowDown" && event.key !== "ArrowLeft" && event.key !== "ArrowUp") {
-              return;
-            }
-            event.preventDefault();
-            event.stopPropagation();
-            focusMarker(button, event.key === "ArrowRight" || event.key === "ArrowDown" ? 1 : -1);
-          });
-          markers.current.push(new Marker({ element: button }).setLngLat([point.lng, point.lat]).addTo(map));
+    const markSelected = () => {
+      const next = showRef.current ? selectedRef.current : null;
+      const previous = selectedKey.current;
+      selectedKey.current = next;
+      if (!map.getSource("fw-points")) return;
+      if (previous && previous !== next) {
+        try {
+          map.setFeatureState({ source: "fw-points", id: previous }, { selected: false });
+        } catch {
+          // The point was already replaced.
         }
-        return;
       }
-      const groups = new Map<string, MarkerPoint[]>();
-      for (const point of items) {
-        const key = mode === "region" ? point.regionId : point.countryId;
-        const list = groups.get(key) ?? [];
-        list.push(point);
-        groups.set(key, list);
-      }
-      for (const [key, list] of groups) {
-        const lat = list.reduce((sum, point) => sum + point.lat, 0) / list.length;
-        const lng = list.reduce((sum, point) => sum + point.lng, 0) / list.length;
-        const name = mode === "region" ? list[0].regionName : list[0].countryName;
-        const workOnly = list.every((point) => point.kind === "request");
-        const button = markerButton(`${list.length} open in ${name}`, false);
-        button.append(countBubble(list.length, workOnly ? WORK : OPEN));
-        button.addEventListener("click", (event) => {
-          event.stopPropagation();
-          if (mode === "region") {
-            handlers.current.onRegion(key);
-            const camera = REGION_CAMERA[key];
-            if (camera) moveTo({ kind: "center", center: camera.center, zoom: camera.zoom });
-            return;
-          }
-          const west = Math.min(...list.map((point) => point.lng));
-          const east = Math.max(...list.map((point) => point.lng));
-          const south = Math.min(...list.map((point) => point.lat));
-          const north = Math.max(...list.map((point) => point.lat));
-          moveTo({
-            kind: "bounds",
-            bounds: { west, south, east, north },
-            maxZoom: 8.4,
-          });
-        });
-        button.addEventListener("keydown", (event) => {
-          if (event.key !== "ArrowRight" && event.key !== "ArrowDown" && event.key !== "ArrowLeft" && event.key !== "ArrowUp") {
-            return;
-          }
-          event.preventDefault();
-          event.stopPropagation();
-          focusMarker(button, event.key === "ArrowRight" || event.key === "ArrowDown" ? 1 : -1);
-        });
-        markers.current.push(new Marker({ element: button }).setLngLat([lng, lat]).addTo(map));
+      if (next) {
+        try {
+          map.setFeatureState({ source: "fw-points", id: next }, { selected: true });
+        } catch {
+          // The point is not in the current data.
+        }
       }
     };
-    syncRef.current = drawMarkers;
 
-    const applyShade = () => {
-      if (!map.getLayer("regions-fill")) return;
-      const show = !regionRef.current && map.getZoom() < WORLD_ZOOM;
-      const visibility = show ? "visible" : "none";
-      map.setLayoutProperty("regions-fill", "visibility", visibility);
-      map.setLayoutProperty("regions-line", "visibility", visibility);
+    const syncData = () => {
+      if (!map.getSource("fw-points")) return;
+      const key = pointsKey(pointsRef.current, showRef.current);
+      if (key !== dataKey.current) {
+        dataKey.current = key;
+        const items = showRef.current ? pointsRef.current : [];
+        setGeo(map, "fw-region-totals", groupGeo(items, "region"));
+        setGeo(map, "fw-country-totals", groupGeo(items, "country"));
+        setGeo(map, "fw-points", pointGeo(items));
+        selectedKey.current = null;
+      }
+      markSelected();
+    };
+    syncRef.current = syncData;
+
+    const pointer = () => {
+      map.getCanvas().style.cursor = "pointer";
+    };
+    const plain = () => {
+      map.getCanvas().style.cursor = "";
     };
 
     map.on("load", () => {
+      if (failed) return;
+      styleOk = true;
+      settled();
       restyle(map);
       const before = map.getStyle()?.layers?.find((layer) => layer.type === "symbol")?.id;
       map.addSource("regions", { type: "geojson", data: regions as FeatureCollection });
@@ -414,6 +504,7 @@ export function FundworkMap({
           id: "regions-fill",
           type: "fill",
           source: "regions",
+          maxzoom: WORLD_ZOOM,
           paint: { "fill-color": "#9ec4b3", "fill-opacity": 0.78 },
         },
         before,
@@ -423,6 +514,7 @@ export function FundworkMap({
           id: "regions-line",
           type: "line",
           source: "regions",
+          maxzoom: WORLD_ZOOM,
           paint: { "line-color": "#f4f1e8", "line-width": 1.25 },
         },
         before,
@@ -446,43 +538,151 @@ export function FundworkMap({
         },
         before,
       );
+
+      const toneColor = ["match", ["get", "tone"], "work", WORK, OPEN] as const;
+      map.addSource("fw-region-totals", { type: "geojson", data: emptyGeo() });
+      map.addSource("fw-country-totals", { type: "geojson", data: emptyGeo() });
+      map.addSource("fw-points", { type: "geojson", data: emptyGeo(), promoteId: "id" });
+      map.addLayer({
+        id: REGION_CIRCLES,
+        type: "circle",
+        source: "fw-region-totals",
+        maxzoom: WORLD_ZOOM,
+        paint: {
+          "circle-radius": 18,
+          "circle-color": toneColor as never,
+          "circle-stroke-width": 2,
+          "circle-stroke-color": PAPER,
+        },
+      });
+      map.addLayer({
+        id: REGION_LABELS,
+        type: "symbol",
+        source: "fw-region-totals",
+        maxzoom: WORLD_ZOOM,
+        layout: {
+          "text-field": ["to-string", ["get", "count"]],
+          "text-font": ["Noto Sans Regular"],
+          "text-size": 14,
+          "text-allow-overlap": true,
+        },
+        paint: { "text-color": PAPER },
+      });
+      map.addLayer({
+        id: COUNTRY_CIRCLES,
+        type: "circle",
+        source: "fw-country-totals",
+        minzoom: WORLD_ZOOM,
+        maxzoom: POINT_ZOOM,
+        paint: {
+          "circle-radius": 18,
+          "circle-color": toneColor as never,
+          "circle-stroke-width": 2,
+          "circle-stroke-color": PAPER,
+        },
+      });
+      map.addLayer({
+        id: COUNTRY_LABELS,
+        type: "symbol",
+        source: "fw-country-totals",
+        minzoom: WORLD_ZOOM,
+        maxzoom: POINT_ZOOM,
+        layout: {
+          "text-field": ["to-string", ["get", "count"]],
+          "text-font": ["Noto Sans Regular"],
+          "text-size": 14,
+          "text-allow-overlap": true,
+        },
+        paint: { "text-color": PAPER },
+      });
+      map.addLayer({
+        id: POINT_CIRCLES,
+        type: "circle",
+        source: "fw-points",
+        minzoom: POINT_ZOOM,
+        paint: {
+          "circle-radius": ["case", ["boolean", ["feature-state", "selected"], false], 14, 8],
+          "circle-color": toneColor as never,
+          "circle-stroke-width": 2,
+          "circle-stroke-color": PAPER,
+        },
+      });
+      map.addLayer({
+        id: POINT_LABELS,
+        type: "symbol",
+        source: "fw-points",
+        minzoom: POINT_ZOOM,
+        layout: {
+          "text-field": ["get", "name"],
+          "text-font": ["Noto Sans Regular"],
+          "text-size": 12,
+          "text-offset": [0, 1.05],
+          "text-anchor": "top",
+          "text-optional": true,
+          "text-max-width": 12,
+        },
+        paint: { "text-color": INK, "text-halo-color": PAPER, "text-halo-width": 1.2 },
+      });
+
+      const openRegion = (id: string) => {
+        handlers.current.onRegion(id);
+        const camera = REGION_CAMERA[id];
+        if (camera) moveTo({ kind: "center", center: camera.center, zoom: camera.zoom });
+      };
       map.on("click", "blocked-fill", (event) => {
         const name = event.features?.[0]?.properties?.name;
-        if (typeof name !== "string") return;
-        handlers.current.onBlocked(name);
-      });
-      map.on("mouseenter", "blocked-fill", () => {
-        map.getCanvas().style.cursor = "pointer";
-      });
-      map.on("mouseleave", "blocked-fill", () => {
-        map.getCanvas().style.cursor = "";
+        if (typeof name === "string") handlers.current.onBlocked(name);
       });
       map.on("click", "regions-fill", (event) => {
-        if (regionRef.current || map.getZoom() >= WORLD_ZOOM) return;
-        const quiet = map.queryRenderedFeatures(event.point, { layers: ["blocked-fill"] });
+        if (map.getZoom() >= WORLD_ZOOM) return;
+        const quiet = map.queryRenderedFeatures(event.point, { layers: ["blocked-fill", REGION_CIRCLES] });
         if (quiet.length > 0) return;
         const value = event.features?.[0]?.properties?.regionId;
-        if (typeof value !== "string") return;
-        handlers.current.onRegion(value);
-        const camera = REGION_CAMERA[value];
-        if (camera) moveTo({ kind: "center", center: camera.center, zoom: camera.zoom });
+        if (typeof value === "string") openRegion(value);
       });
-      map.on("mouseenter", "regions-fill", () => {
-        if (!regionRef.current && map.getZoom() < WORLD_ZOOM) map.getCanvas().style.cursor = "pointer";
+      map.on("click", REGION_CIRCLES, (event) => {
+        const value = event.features?.[0]?.properties?.key;
+        if (typeof value === "string") openRegion(value);
       });
-      map.on("mouseleave", "regions-fill", () => {
-        map.getCanvas().style.cursor = "";
+      map.on("click", REGION_LABELS, (event) => {
+        const value = event.features?.[0]?.properties?.key;
+        if (typeof value === "string") openRegion(value);
       });
+      map.on("click", COUNTRY_CIRCLES, (event) => openCountry(event.features?.[0]?.properties));
+      map.on("click", COUNTRY_LABELS, (event) => openCountry(event.features?.[0]?.properties));
+      map.on("click", POINT_CIRCLES, (event) => {
+        const id = event.features?.[0]?.properties?.id;
+        if (typeof id === "string") handlers.current.onPoint(id);
+      });
+      map.on("click", POINT_LABELS, (event) => {
+        const id = event.features?.[0]?.properties?.id;
+        if (typeof id === "string") handlers.current.onPoint(id);
+      });
+      for (const layerId of ["blocked-fill", "regions-fill", ...POINT_LAYERS]) {
+        map.on("mouseenter", layerId, pointer);
+        map.on("mouseleave", layerId, plain);
+      }
+
       map.getCanvas().setAttribute("aria-label", "Map of open projects and requests");
+      applyPad();
+      applyLimits();
+      syncData();
       const waiting = pendingFly.current;
       pendingFly.current = null;
       moveTo(waiting ?? { kind: "world" });
-      applyShade();
     });
 
+    function openCountry(properties: GeoJSON.GeoJsonProperties | null | undefined) {
+      if (!properties) return;
+      const west = Number(properties.west);
+      const east = Number(properties.east);
+      const south = Number(properties.south);
+      const north = Number(properties.north);
+      if (![west, east, south, north].every((value) => Number.isFinite(value))) return;
+      moveTo({ kind: "bounds", bounds: { west, south, east, north }, maxZoom: 8.4 });
+    }
+
     map.on("moveend", () => {
-      applyShade();
-      drawMarkers();
       const view = { bounds: readBounds(map), zoom: map.getZoom() };
       if (boot) {
         boot = false;
@@ -495,8 +695,10 @@ export function FundworkMap({
     });
 
     return () => {
+      window.clearTimeout(timer);
       wide.removeEventListener("change", syncZoomControl);
-      markers.current.forEach((marker) => marker.remove());
+      resizeObserver.disconnect();
+      mutation.disconnect();
       syncRef.current = null;
       flyRef.current = null;
       map.remove();

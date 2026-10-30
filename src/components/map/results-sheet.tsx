@@ -57,7 +57,18 @@ export function ResultsSheet({
   }, []);
 
   useEffect(() => {
-    root.current?.parentElement?.style.setProperty("--fw-sheet", `${Math.min(height, Math.max(peek, frame - 72))}px`);
+    const node = root.current;
+    const parent = node?.parentElement;
+    if (!node || !parent) return;
+    const apply = () => {
+      const hidden = node.getClientRects().length === 0;
+      const next = hidden ? "0px" : `${Math.min(height, Math.max(peek, frame - 72))}px`;
+      parent.style.setProperty("--fw-sheet", next);
+    };
+    apply();
+    const query = window.matchMedia("(min-width: 840px)");
+    query.addEventListener("change", apply);
+    return () => query.removeEventListener("change", apply);
   }, [height, frame]);
 
   function step(direction: 1 | -1) {
@@ -75,7 +86,8 @@ export function ResultsSheet({
   return (
     <div
       ref={root}
-      className="absolute inset-x-0 bottom-0 z-10 mx-auto flex w-full max-w-lg flex-col rounded-t-3xl bg-background shadow-[0_-8px_24px_rgba(26,35,48,0.12)]"
+      data-fw-pad="bottom"
+      className="absolute inset-x-0 bottom-0 z-10 mx-auto flex w-full max-w-lg flex-col rounded-t-3xl bg-background shadow-[0_-8px_24px_rgba(26,35,48,0.12)] min-[600px]:inset-x-auto min-[600px]:left-0 min-[600px]:mx-0 min-[600px]:max-w-[480px] min-[840px]:hidden"
       style={{ height }}
     >
       <div

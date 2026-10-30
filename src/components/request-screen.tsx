@@ -54,8 +54,57 @@ export function RequestScreen({ id }: { id: string }) {
   const nearby = isOwner ? matchWorkers(request, demo.availability) : [];
   const postedBy = demo.displayNameFor(request.userId);
 
+  const requestActions = (
+    <>
+      {isOwner && request.status === "team-ready" && !request.projectId ? (
+        <Link href={`/requests/${request.id}/start`} className={cn(buttonVariants({ size: "lg" }), "w-full")}>
+          Start the project
+        </Link>
+      ) : null}
+      {isWorker && !active && request.status === "open" ? (
+        <Link
+          href={`/requests/${request.id}/apply`}
+          className={cn(buttonVariants({ variant: "work", size: "lg" }), "w-full")}
+        >
+          Apply
+        </Link>
+      ) : null}
+      {demo.role === null && request.status === "open" ? (
+        <Link
+          href={`/requests/${request.id}/apply`}
+          onClick={() => demo.startPath("worker")}
+          className={cn(buttonVariants({ variant: "work", size: "lg" }), "w-full")}
+        >
+          I can do this work
+        </Link>
+      ) : null}
+      {demo.role === null ? (
+        <Link
+          href={`/invest/start/${request.parishId ?? request.countryId}/${request.townId}?sector=${request.sector}`}
+          onClick={() => {
+            demo.startPath("investor");
+            demo.updateFlow({
+              countryId: request.countryId,
+              parishId: request.parishId ?? undefined,
+              townId: request.townId,
+              sector: request.sector,
+            });
+          }}
+          className={cn(buttonVariants({ variant: "outline", size: "lg" }), "w-full")}
+        >
+          Start one like this
+        </Link>
+      ) : null}
+    </>
+  );
+  const hasRequestActions =
+    (isOwner && request.status === "team-ready" && !request.projectId) ||
+    (isWorker && !active && request.status === "open") ||
+    demo.role === null;
+
   return (
-    <div className="space-y-6">
+    <div className="min-[840px]:grid min-[840px]:grid-cols-[minmax(0,1fr)_20rem] min-[840px]:items-start min-[840px]:gap-8">
+    <div className="min-w-0 space-y-6">
       <StepHeader backHref={backHref} />
       <SectorTile sector={request.sector} size="page" />
       <div>
@@ -305,51 +354,20 @@ export function RequestScreen({ id }: { id: string }) {
         </section>
       ) : null}
 
-      {isOwner && request.status === "team-ready" && !request.projectId ? (
-        <ActionBar>
-          <Link href={`/requests/${request.id}/start`} className={cn(buttonVariants({ size: "lg" }), "w-full")}>
-            Start the project
-          </Link>
-        </ActionBar>
+      {hasRequestActions ? <ActionBar hideExpanded>{requestActions}</ActionBar> : null}
+    </div>
+    <aside className="sticky top-20 hidden space-y-3 self-start rounded-2xl bg-card p-4 ring-1 ring-foreground/10 min-[840px]:block">
+      <p className="text-2xl font-semibold leading-tight">{money(request.budget, currency)} needed</p>
+      {aboutUsd(request.budget, currency) ? (
+        <p className="text-base text-muted-foreground">{aboutUsd(request.budget, currency)}</p>
       ) : null}
-      {isWorker && !active && request.status === "open" ? (
-        <ActionBar>
-          <Link
-            href={`/requests/${request.id}/apply`}
-            className={cn(buttonVariants({ variant: "work", size: "lg" }), "w-full")}
-          >
-            Apply
-          </Link>
-        </ActionBar>
-      ) : null}
-      {demo.role === null ? (
-        <ActionBar>
-          {request.status === "open" ? (
-            <Link
-              href={`/requests/${request.id}/apply`}
-              onClick={() => demo.startPath("worker")}
-              className={cn(buttonVariants({ variant: "work", size: "lg" }), "w-full")}
-            >
-              I can do this work
-            </Link>
-          ) : null}
-          <Link
-            href={`/invest/start/${request.parishId ?? request.countryId}/${request.townId}?sector=${request.sector}`}
-            onClick={() => {
-              demo.startPath("investor");
-              demo.updateFlow({
-                countryId: request.countryId,
-                parishId: request.parishId ?? undefined,
-                townId: request.townId,
-                sector: request.sector,
-              });
-            }}
-            className={cn(buttonVariants({ variant: "outline", size: "lg" }), "w-full")}
-          >
-            Start one like this
-          </Link>
-        </ActionBar>
-      ) : null}
+      <p className="text-base font-semibold">
+        {accepted} of {request.workersNeeded} workers
+      </p>
+      <p className="text-base font-semibold">No backers yet.</p>
+      {requestActions}
+      <CapitalChip />
+    </aside>
     </div>
   );
 }

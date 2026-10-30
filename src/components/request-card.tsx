@@ -17,7 +17,7 @@ export function RequestCard({ request, reason }: { request: CapitalRequest; reas
   return (
     <Link
       href={`/requests/${request.id}`}
-      className="flex items-start gap-2 rounded-2xl bg-card px-2 py-1 ring-1 ring-foreground/10 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
+      className="flex items-start gap-2 rounded-2xl bg-card px-2 py-1 ring-1 ring-foreground/10 hover:bg-secondary focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
     >
       <span className={cn("grid size-16 shrink-0 place-items-center rounded-xl", mark.tile)} aria-hidden>
         <Icon className="size-7" strokeWidth={1.75} />
