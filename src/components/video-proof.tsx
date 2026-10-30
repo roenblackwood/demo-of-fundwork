@@ -5,6 +5,7 @@ import { VideoRecorder } from "@/components/video-recorder";
 import { sectionTitle } from "@/components/parts";
 import { Button } from "@/components/ui/button";
 import { isLive } from "@/lib/mode";
+import { townName } from "@/lib/profile";
 import { useDemo } from "@/lib/demo-store";
 import {
   cachedVideos,
@@ -23,6 +24,14 @@ import {
   type ShownVideo,
 } from "@/lib/videos";
 import type { Project } from "@/lib/types";
+
+function NoSoundTag() {
+  return (
+    <span className="absolute top-3 left-3 rounded-full bg-background/95 px-2 py-1 text-sm font-semibold">
+      No sound
+    </span>
+  );
+}
 
 export function useVideos(): ShownVideo[] {
   const [rows, setRows] = useState<ShownVideo[]>(() => cachedVideos());
@@ -49,6 +58,8 @@ export function VideoProof({
   const [profileNote, setProfileNote] = useState("");
   if (!video) return null;
   const mine = video.ownerId === demo.userId;
+  const project = demo.projects.find((item) => item.id === video.projectId);
+  const town = project ? townName(project.countryId, project.parishId, project.townId) : "";
   return (
     <figure className="space-y-2">
       <div className="relative">
@@ -56,6 +67,7 @@ export function VideoProof({
           // eslint-disable-next-line @next/next/no-img-element
           <img src={video.posterUrl} alt={video.description} className="aspect-video w-full rounded-2xl object-cover" />
         ) : null}
+        {video.silent ? <NoSoundTag /> : null}
         <video
           src={video.videoUrl}
           poster={video.posterUrl || undefined}
@@ -87,7 +99,15 @@ export function VideoProof({
       <figcaption className="space-y-1">
         <p className="text-base">{video.description}</p>
         <p className="text-sm text-muted-foreground">Recorded in the app</p>
-        {video.atSite ? <p className="text-sm text-muted-foreground">Recorded at the site</p> : null}
+        {video.atSite ? (
+          // A signal only. It never changes acceptance and never counts toward readiness.
+          <div>
+            <p className="text-sm text-muted-foreground">Phone was near the site</p>
+            <p className="text-sm text-muted-foreground">
+              {`The phone's location was within 5 km of ${town || "the town"} when this was filmed. Fundwork does not keep the location.`}
+            </p>
+          </div>
+        ) : null}
         <p className="text-base font-semibold">{queueLabel(video.status, video.progress)}</p>
         {video.pinned ? <p className="text-sm font-semibold">Pinned</p> : null}
       </figcaption>

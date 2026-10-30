@@ -40,6 +40,12 @@ With the xAI key, an attacker could call the model and spend quota. They could r
 
 No key held by Fundwork can move anyone's money.
 
+## Video files
+
+A SHA-256 of the file stops the exact same file from being used twice.
+
+A perceptual fingerprint could catch edited copies later.
+
 ## Identity checks
 
 When identity checks come, use a licensed provider. Store only a checked flag and a date. Never store documents.

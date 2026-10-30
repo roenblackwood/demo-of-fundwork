@@ -9,7 +9,10 @@ create table public.videos (
   contribution_id uuid references public.contributions (id) on delete set null,
   phase text not null,
   description text not null check (char_length(btrim(description)) between 1 and 120),
+  -- Stops the exact same file from being used twice.
+  -- A perceptual fingerprint could catch edited copies later.
   sha256 text not null unique check (sha256 ~ '^[0-9a-f]{64}$'),
+  -- A signal only. It never changes acceptance and never counts toward readiness.
   at_site boolean not null default false,
   hidden boolean not null default false,
   pinned boolean not null default false,

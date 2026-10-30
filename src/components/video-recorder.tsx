@@ -24,6 +24,42 @@ import {
 const DUPLICATE = "This video was already used. Record a new one.";
 const CAP = "This phone can keep 5 videos. Remove one first.";
 const SIZE = "This video is too large. Record a shorter one.";
+const NO_SOUND = "No sound. The microphone is blocked or busy.";
+const AUDIO_MS = 5000;
+
+function stopStream(stream: MediaStream | null) {
+  stream?.getTracks().forEach((track) => track.stop());
+}
+
+async function requestMic(): Promise<MediaStream | null> {
+  if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) return null;
+  let drop = false;
+  const pending = navigator.mediaDevices.getUserMedia({ audio: true });
+  pending.then(
+    (stream) => {
+      if (drop) stopStream(stream);
+    },
+    () => undefined,
+  );
+  try {
+    return await new Promise<MediaStream>((resolve, reject) => {
+      const timer = window.setTimeout(() => reject(new Error("timeout")), AUDIO_MS);
+      pending.then(
+        (stream) => {
+          window.clearTimeout(timer);
+          resolve(stream);
+        },
+        (error) => {
+          window.clearTimeout(timer);
+          reject(error);
+        },
+      );
+    });
+  } catch {
+    drop = true;
+    return null;
+  }
+}
 
 type Stage = "consent" | "ready" | "recording" | "preparing" | "review";
 
@@ -43,9 +79,11 @@ export function VideoRecorder({
   const chunksRef = useRef<Blob[]>([]);
   const stopRef = useRef<() => void>(() => undefined);
   const siteRef = useRef<Promise<boolean>>(Promise.resolve(false));
+  const skipPrepareRef = useRef(false);
   const [stage, setStage] = useState<Stage>(videoConsent() ? "ready" : "consent");
   const [left, setLeft] = useState(VIDEO_MAX_SECONDS);
   const [muted, setMuted] = useState(false);
+  const [noSound, setNoSound] = useState(false);
   const [note, setNote] = useState("");
   const [description, setDescription] = useState("");
   const [clip, setClip] = useState<{ blob: Blob; poster: Blob; mime: "video/mp4" | "video/webm"; sha256: string } | null>(null);
@@ -74,6 +112,14 @@ export function VideoRecorder({
   });
 
   useEffect(() => {
+    const preview = previewRef.current;
+    const stream = streamRef.current;
+    if (stage !== "recording" || !preview || !stream) return;
+    preview.srcObject = stream;
+    void preview.play().catch(() => undefined);
+  }, [stage]);
+
+  useEffect(() => {
     if (stage !== "recording") return;
     const timer = window.setInterval(() => {
       setLeft((value) => {
@@ -87,7 +133,8 @@ export function VideoRecorder({
     return () => window.clearInterval(timer);
   }, [stage]);
 
-  async function start() {
+  async function start(heldMic?: MediaStream | null) {
+    skipPrepareRef.current = false;
     setNote("");
     const mime = recorderMime();
     if (!mime || typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
@@ -101,24 +148,16 @@ export function VideoRecorder({
       frameRate: { ideal: 30 },
     };
     try {
-      let stream: MediaStream;
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({ video, audio: true });
-      } catch {
-        stream = await navigator.mediaDevices.getUserMedia({ video, audio: false });
-        setNote("The microphone did not start. This clip has no sound.");
-      }
+      const picture = await navigator.mediaDevices.getUserMedia({ video, audio: false });
+      const mic = heldMic === undefined ? await requestMic() : heldMic;
+      const audible = Boolean(mic && mic.getAudioTracks().length > 0);
+      if (!audible) stopStream(mic);
+      const stream = new MediaStream([
+        ...picture.getVideoTracks(),
+        ...(audible && mic ? mic.getAudioTracks() : []),
+      ]);
       streamRef.current = stream;
       siteRef.current = atSiteNow(project);
-      const preview = previewRef.current;
-      if (preview) {
-        preview.srcObject = stream;
-        try {
-          await preview.play();
-        } catch {
-          // The recording still runs when the preview cannot play.
-        }
-      }
       chunksRef.current = [];
       const recorder = new MediaRecorder(stream, recorderOptions(mime));
       recorderRef.current = recorder;
@@ -126,20 +165,44 @@ export function VideoRecorder({
         if (event.data.size > 0) chunksRef.current.push(event.data);
       };
       recorder.onstop = () => {
+        const heard = (streamRef.current?.getAudioTracks().length ?? 0) > 0;
         const blob = new Blob(chunksRef.current, { type: mime });
         stopTracks();
+        if (skipPrepareRef.current) return;
+        setNoSound(!heard);
         setStage("preparing");
         void prepare(blob, mime);
       };
       recorder.start(1000);
       setLeft(VIDEO_MAX_SECONDS);
       setMuted(false);
+      setNoSound(!audible);
       setStage("recording");
     } catch {
       stopTracks();
+      stopStream(heldMic ?? null);
       setNote("The camera did not start. Try again.");
       setStage("ready");
     }
+  }
+
+  async function trySoundAgain() {
+    const mic = await requestMic();
+    if (!mic) return;
+    if (stage === "recording") {
+      skipPrepareRef.current = true;
+      const recorder = recorderRef.current;
+      if (recorder && recorder.state !== "inactive") {
+        await new Promise<void>((resolve) => {
+          recorder.addEventListener("stop", () => resolve(), { once: true });
+          recorder.stop();
+        });
+      }
+      skipPrepareRef.current = false;
+      stopTracks();
+    }
+    setClip(null);
+    await start(mic);
   }
 
   async function prepare(blob: Blob, mime: "video/mp4" | "video/webm") {
@@ -167,6 +230,7 @@ export function VideoRecorder({
     setClip(null);
     setDescription("");
     setNote("");
+    setNoSound(false);
     setStage("ready");
   }
 
@@ -179,6 +243,7 @@ export function VideoRecorder({
       phase,
       description,
       atSite: await siteRef.current,
+      silent: noSound,
       mime: clip.mime,
       blob: clip.blob,
       poster: clip.poster,
@@ -221,6 +286,7 @@ export function VideoRecorder({
       {stage === "recording" ? (
         <div className="space-y-3">
           <video ref={previewRef} muted playsInline className="aspect-video w-full rounded-2xl bg-muted" />
+          {noSound ? <NoSoundNote onRetry={() => void trySoundAgain()} /> : null}
           <div className="flex items-center gap-3">
             <div role="timer" aria-label={`${left} seconds left`} className="relative grid size-14 place-items-center">
               <svg viewBox="0 0 44 44" className="size-14" aria-hidden>
@@ -239,9 +305,11 @@ export function VideoRecorder({
               </svg>
               <span className="absolute text-sm font-semibold">{left}</span>
             </div>
-            <Button type="button" size="lg" variant="outline" onClick={toggleMute}>
-              {muted ? "Sound on" : "Mute"}
-            </Button>
+            {noSound ? null : (
+              <Button type="button" size="lg" variant="outline" onClick={toggleMute}>
+                {muted ? "Sound on" : "Mute"}
+              </Button>
+            )}
             <Button type="button" size="lg" variant="work" onClick={finishRecording}>
               Stop
             </Button>
@@ -252,9 +320,17 @@ export function VideoRecorder({
       {stage === "review" && clip ? (
         <div className="space-y-3">
           {posterUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={posterUrl} alt={description || "Recorded video"} className="aspect-video w-full rounded-2xl object-cover" />
+            <div className="relative">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={posterUrl} alt={description || "Recorded video"} className="aspect-video w-full rounded-2xl object-cover" />
+              {noSound ? (
+                <span className="absolute top-3 left-3 rounded-full bg-background/95 px-2 py-1 text-sm font-semibold">
+                  No sound
+                </span>
+              ) : null}
+            </div>
           ) : null}
+          {noSound ? <NoSoundNote onRetry={() => void trySoundAgain()} /> : null}
           <p className="text-base">{fileSizeText(clip.blob.size)}</p>
           <div className="space-y-2">
             <Label htmlFor="video-description">What does this show?</Label>
@@ -276,6 +352,17 @@ export function VideoRecorder({
         </div>
       ) : null}
       {note ? <p className="text-base">{note}</p> : null}
+    </div>
+  );
+}
+
+function NoSoundNote({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="space-y-2">
+      <p className="text-base">{NO_SOUND}</p>
+      <Button type="button" size="lg" variant="outline" className="w-full" onClick={onRetry}>
+        Try sound again
+      </Button>
     </div>
   );
 }

@@ -33,6 +33,7 @@ export type StoredVideo = {
   description: string;
   sha256: string;
   atSite: boolean;
+  silent: boolean;
   hidden: boolean;
   pinned: boolean;
   onProfile: boolean;
@@ -54,6 +55,7 @@ export type ShownVideo = {
   description: string;
   sha256: string;
   atSite: boolean;
+  silent: boolean;
   hidden: boolean;
   pinned: boolean;
   onProfile: boolean;
@@ -82,6 +84,7 @@ type SaveInput = {
   phase: string;
   description: string;
   atSite: boolean;
+  silent: boolean;
   mime: "video/mp4" | "video/webm";
   blob: Blob;
   poster: Blob;
@@ -172,6 +175,7 @@ function showOf(row: StoredVideo, previous?: ShownVideo): ShownVideo {
     description: row.description,
     sha256: row.sha256,
     atSite: row.atSite,
+    silent: row.silent === true,
     hidden: row.hidden,
     pinned: row.pinned,
     onProfile: row.onProfile,
@@ -290,7 +294,9 @@ export function townPoint(place: {
   return null;
 }
 
-/** True only when the phone is within 5 km. Coordinates are not stored. */
+/** True only when the phone is within 5 km. Coordinates are not stored.
+ *  A signal only. It never changes acceptance and never counts toward readiness.
+ */
 export function atSiteNow(place: {
   countryId: string;
   parishId: string | null;
@@ -441,6 +447,7 @@ async function mergeLive(local: StoredVideo[]): Promise<void> {
       description: typeof row.description === "string" ? row.description : "",
       sha256: typeof row.sha256 === "string" ? row.sha256 : "",
       atSite: row.at_site === true,
+      silent: false,
       hidden: row.hidden === true,
       pinned: row.pinned === true,
       onProfile: row.on_profile === true,
@@ -461,6 +468,8 @@ export async function saveVideo(input: SaveInput): Promise<SaveResult> {
   if (input.blob.size < 1 || input.blob.size > VIDEO_BYTES) return { ok: false, reason: "size" };
   const rows = await readAll();
   if (!isLive() && rows.length >= VIDEO_CAP) return { ok: false, reason: "cap" };
+  // Stops the exact same file from being used twice.
+  // A perceptual fingerprint could catch edited copies later.
   if (rows.some((row) => row.sha256 === input.sha256)) return { ok: false, reason: "duplicate" };
   if (isLive()) {
     const supabase = browserSupabase();
@@ -476,6 +485,7 @@ export async function saveVideo(input: SaveInput): Promise<SaveResult> {
     description,
     sha256: input.sha256,
     atSite: input.atSite,
+    silent: input.silent,
     hidden: false,
     pinned: false,
     onProfile: false,
