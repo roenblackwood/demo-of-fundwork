@@ -41,11 +41,25 @@ function roundSig(value: number, figs: number): number {
   return sign * Number(rounded.toFixed(digits));
 }
 
+/** Same rounding as aboutUsd. Null when the currency has no demo rate. */
+export function usdAmount(amount: number, currency: string): number | null {
+  const rate = USD_RATES[currency];
+  if (!rate || !Number.isFinite(amount)) return null;
+  return roundSig(amount / rate, 2);
+}
+
+/** A project above this figure needs more than one key. */
+export const MULTISIG_USD = 5000;
+
+export function needsMultisig(amount: number, currency: string): boolean {
+  const usd = usdAmount(amount, currency);
+  return usd !== null && usd > MULTISIG_USD;
+}
+
 /** "about US$31,000". Empty when the currency has no demo rate. */
 export function aboutUsd(amount: number, currency: string): string {
-  const rate = USD_RATES[currency];
-  if (!rate || !Number.isFinite(amount)) return "";
-  const usd = roundSig(amount / rate, 2);
+  const usd = usdAmount(amount, currency);
+  if (usd === null) return "";
   const text = usd.toLocaleString("en-US", { maximumFractionDigits: 2 });
   return `about US$${text}`;
 }

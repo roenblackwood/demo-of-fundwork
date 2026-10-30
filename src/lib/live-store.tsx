@@ -9,12 +9,15 @@ import {
   postContribution,
   postRequest,
   saveDisplayName,
+  markPhaseDone as markPhaseDoneAction,
+  savePhaseSplit as savePhaseSplitAction,
   setReadiness as setReadinessAction,
   setApplicationStatus as setApplicationStatusAction,
   startProject as startProjectAction,
   withdrawApplication as withdrawApplicationAction,
 } from "@/app/actions/live";
 import { cleanReadiness, isSite, kindById } from "@/lib/blueprints";
+import { phasesFor, readinessChangeNote } from "@/lib/capital";
 import { isSkill } from "@/lib/catalog";
 import { investorBasicsIds, stageLessons } from "@/lib/lessons";
 import type { WeekPlan } from "@/lib/progress";
@@ -29,6 +32,7 @@ import {
   mapProjectWallet,
   mapPublicPerson,
   mapRequest,
+  mapTranche,
   mapWallet,
   newest,
 } from "@/lib/live-rows";
@@ -139,7 +143,7 @@ async function loadSnapshot(): Promise<Snapshot> {
   const supabase = browserSupabase();
   const { data: auth } = await supabase.auth.getUser();
   const user = auth.user;
-  const [projectRows, memberRows, requestRows, applicationRows, availabilityRows, peopleRows, commitmentRows, contributionRows, mine, goalRows, lessonRows, walletRows, projectWalletRows, paymentRows] =
+  const [projectRows, memberRows, requestRows, applicationRows, availabilityRows, peopleRows, commitmentRows, contributionRows, mine, goalRows, lessonRows, walletRows, projectWalletRows, paymentRows, trancheRows] =
     await Promise.all([
       supabase.from("projects").select("*"),
       supabase.from("project_members").select("project_id, worker_id"),
@@ -155,8 +159,9 @@ async function loadSnapshot(): Promise<Snapshot> {
       user ? supabase.from("weekly_goals").select("*") : Promise.resolve({ data: [] }),
       user ? supabase.from("lesson_progress").select("lesson_id, seen_at, done_at") : Promise.resolve({ data: [] }),
       user ? supabase.from("wallets").select("*") : Promise.resolve({ data: [] }),
-      user ? supabase.from("project_wallets").select("project_id, chain, address") : Promise.resolve({ data: [] }),
+      user ? supabase.from("project_wallets").select("*") : Promise.resolve({ data: [] }),
       user ? supabase.from("payments").select("*") : Promise.resolve({ data: [] }),
+      user ? supabase.from("capital_tranches").select("*") : Promise.resolve({ data: [] }),
     ]);
 
   const people = rowsOf(peopleRows).flatMap((row) => {
@@ -175,9 +180,24 @@ async function loadSnapshot(): Promise<Snapshot> {
     teamByProject.set(projectId, team);
   }
 
+  const trancheList = rowsOf(trancheRows).flatMap((row) => {
+    const item = mapTranche(row);
+    return item ? [item] : [];
+  });
   const commitments = newest(rowsOf(commitmentRows).flatMap((row) => {
     const item = mapCommitment(row);
     return item ? [item] : [];
+  })).map((item) => ({
+    ...item,
+    tranches: trancheList
+      .filter((row) => row.commitmentId === item.id)
+      .sort((left, right) => left.position - right.position)
+      .map((row) => ({
+        phase: row.phase,
+        position: row.position,
+        amount: row.amount,
+        status: row.status,
+      })),
   }));
 
   const projects = rowsOf(projectRows).flatMap((row) => {
@@ -566,6 +586,37 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
         const ownsProject = Boolean(project && project.organizerId === seen.userId);
         const local = Boolean(readiness && ((input.requestId && ownsRequest) || (!input.requestId && ownsProject)));
         return commitFlag(local, () => setReadinessAction(input));
+      },
+      rememberPhaseBaseline: () => {},
+      savePhaseSplit: (input) => {
+        const seen = snapshotRef.current;
+        const project = seen.projects.find((item) => item.id === input.projectId);
+        const phases = project ? phasesFor(project) : [];
+        if (!seen.userId || !project || project.organizerId !== seen.userId || project.workStarted) return false;
+        if (input.shares.length !== phases.length || input.shares.some((share) => !(share > 0))) return false;
+        const confirmed = seen.addedCommitments.some(
+          (item) => item.projectId === project.id && item.tranches?.some((row) => row.status === "confirmed"),
+        );
+        if (confirmed) return false;
+        void (async () => {
+          const ok = await savePhaseSplitAction(input);
+          if (!ok) notifySaveError();
+          await reload();
+        })();
+        return true;
+      },
+      markPhaseDone: (projectId) => {
+        const seen = snapshotRef.current;
+        const project = seen.projects.find((item) => item.id === projectId);
+        if (!project || project.organizerId !== seen.userId) return false;
+        const note = readinessChangeNote(project.phaseBaseline ?? {}, project.readiness ?? {});
+        if (!note) return false;
+        void (async () => {
+          const ok = await markPhaseDoneAction(projectId);
+          if (!ok) notifySaveError();
+          await reload();
+        })();
+        return true;
       },
       startProject: async (requestId, name) => {
         const seen = snapshotRef.current;

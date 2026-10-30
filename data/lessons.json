@@ -583,6 +583,36 @@
       "checkedOn": "2026-10-29"
     },
     {
+      "id": "worker-cash-out",
+      "audience": "worker",
+      "moment": "on-project",
+      "title": "Have more than one way to cash out",
+      "body": "Do not keep all your pay in one place. If one way stops, you still need another way to get it.",
+      "rule": "Keep a second way ready.",
+      "action": "Write down a second way.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "id": "worker-leave-exchange",
+      "audience": "worker",
+      "moment": "on-project",
+      "title": "Move pay out of an exchange soon after you get it",
+      "body": "An exchange holds the coins for you. Move them to a wallet you control soon after they arrive.",
+      "rule": "Do not leave pay sitting on an exchange.",
+      "action": "Move it to your own wallet.",
+      "checkedOn": "2026-10-29"
+    },
+    {
+      "id": "worker-frozen",
+      "audience": "worker",
+      "moment": "on-project",
+      "title": "Stablecoins can be frozen by their issuer",
+      "body": "The issuer can freeze a stablecoin. Keep only what you need in one place.",
+      "rule": "Keep only what you need in one place.",
+      "action": "Move the extra out.",
+      "checkedOn": "2026-10-29"
+    },
+    {
       "id": "grow-work",
       "audience": "worker",
       "moment": "grow-work",

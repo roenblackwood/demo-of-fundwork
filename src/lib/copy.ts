@@ -18,6 +18,12 @@ export const TEST_NETWORK_LINE = "Test network. These coins have no value.";
 
 export const WALLET_CHECK_LATER = "Wallet checks run in the live version.";
 
+export const SIGNING_WARNING =
+  "Fundwork will never ask you to sign a transaction, approve a token, or share your recovery words. If a page asks, close it.";
+
+export const SINGLE_WALLET_REFUSED =
+  "This project is above US$5,000. It needs a wallet that takes more than one key.";
+
 export const SAMPLE_PAYMENT_LINE = "Sample. Not on a chain.";
 
 export function savedLabel(): string {

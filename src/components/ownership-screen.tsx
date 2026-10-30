@@ -7,6 +7,7 @@ import { LearnMore, MoneyText, StatusLabel, StepHeader, sectionTitle } from "@/c
 import { workPresetLabel } from "@/lib/catalog";
 import { useDemo } from "@/lib/demo-store";
 import {
+  confirmedTrancheTotal,
   investorUnits,
   workerUnits,
   WORKER_UNITS,
@@ -20,13 +21,18 @@ export function OwnershipScreen() {
   const moneyRows = demo.commitments.flatMap((commitment) => {
     const project = demo.projects.find((item) => item.id === commitment.projectId);
     if (!project) return [];
+    const full = investorUnits(commitment.amountJmd, project.goalJmd);
+    const counted =
+      commitment.status === "accepted" ? full : investorUnits(confirmedTrancheTotal(commitment.tranches), project.goalJmd);
     return [
       {
         id: commitment.id,
         projectId: project.id,
         name: project.name,
         status: commitment.status,
-        units: investorUnits(commitment.amountJmd, project.goalJmd),
+        units: full,
+        acceptedUnits: counted,
+        waitingUnits: Math.max(0, full - counted),
         amount: commitment.amountJmd,
         currency: currencyOf(project.countryId),
         kind: "capital" as const,
@@ -43,6 +49,8 @@ export function OwnershipScreen() {
         name: project.name,
         status: contribution.status,
         units: workerUnits(contribution.preset),
+        acceptedUnits: contribution.status === "accepted" ? workerUnits(contribution.preset) : 0,
+        waitingUnits: contribution.status === "accepted" ? 0 : workerUnits(contribution.preset),
         detail: workPresetLabel(contribution.preset),
         amount: null,
         currency: null,
@@ -52,11 +60,11 @@ export function OwnershipScreen() {
   });
 
   const accepted =
-    moneyRows.filter((row) => row.status === "accepted").reduce((sum, row) => sum + row.units, 0) +
-    workRows.filter((row) => row.status === "accepted").reduce((sum, row) => sum + row.units, 0);
+    moneyRows.reduce((sum, row) => sum + row.acceptedUnits, 0) +
+    workRows.reduce((sum, row) => sum + row.acceptedUnits, 0);
   const waiting =
-    moneyRows.filter((row) => row.status !== "accepted").reduce((sum, row) => sum + row.units, 0) +
-    workRows.filter((row) => row.status !== "accepted").reduce((sum, row) => sum + row.units, 0);
+    moneyRows.reduce((sum, row) => sum + row.waitingUnits, 0) +
+    workRows.reduce((sum, row) => sum + row.waitingUnits, 0);
 
   return (
     <div className="space-y-6">
@@ -112,6 +120,7 @@ function Row({
     status: "pledged" | "accepted" | "logged";
     kind: "capital" | "work";
     units: number;
+    acceptedUnits: number;
     detail?: string;
     amount: number | null;
     currency: string | null;
@@ -131,8 +140,8 @@ function Row({
         )}
       </p>
       <p className="mt-1 text-base font-semibold">
-        {row.status === "accepted"
-          ? `${row.units} ownership units`
+        {row.status === "accepted" || row.acceptedUnits > 0
+          ? `${row.status === "accepted" ? row.units : row.acceptedUnits} ownership units`
           : `${row.units} ownership units if accepted`}
       </p>
       <div className="mt-2">

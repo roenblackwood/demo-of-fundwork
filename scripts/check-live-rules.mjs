@@ -94,6 +94,20 @@ function holdHours(row) {
   return (new Date(row.counts_at).getTime() - new Date(row.created_at).getTime()) / 3600000;
 }
 
+function singleWallet(projectId, chain, address) {
+  return {
+    p_project_id: projectId,
+    p_chain: chain,
+    p_address: address,
+    p_wallet_type: "single",
+    p_threshold: 1,
+    p_owner_count: 1,
+    p_keyholder_names: [],
+    p_descriptor: null,
+    p_owner_addresses: [],
+  };
+}
+
 async function cleanup() {
   const projectIds = [projectA, projectB, projectC, startedProjectId].filter(Boolean);
   if (userIds.length > 0) {
@@ -561,11 +575,7 @@ try {
   const before = walletId
     ? await admin.from("wallets").select("verified_at").eq("id", walletId).maybeSingle()
     : { data: null };
-  const earlyWallet = await ben.client.rpc("set_project_wallet", {
-    p_project_id: projectC,
-    p_chain: "bitcoin-signet",
-    p_address: benAddress,
-  });
+  const earlyWallet = await ben.client.rpc("set_project_wallet", singleWallet(projectC, "bitcoin-signet", benAddress));
   const marked = walletId
     ? await admin.rpc("mark_wallet_checked", { p_wallet_id: walletId, p_owner_id: ben.id })
     : { error: { message: "no wallet" }, data: null };
@@ -585,16 +595,8 @@ try {
     "A signed-in person cannot set verified_at.",
   );
 
-  const setWallet = await ben.client.rpc("set_project_wallet", {
-    p_project_id: projectC,
-    p_chain: "bitcoin-signet",
-    p_address: benAddress,
-  });
-  const outsiderWallet = await outsider.client.rpc("set_project_wallet", {
-    p_project_id: projectC,
-    p_chain: "bitcoin-signet",
-    p_address: benAddress,
-  });
+  const setWallet = await ben.client.rpc("set_project_wallet", singleWallet(projectC, "bitcoin-signet", benAddress));
+  const outsiderWallet = await outsider.client.rpc("set_project_wallet", singleWallet(projectC, "bitcoin-signet", benAddress));
   const hand = caraId
     ? await admin.from("commitments").update({ status: "accepted" }).eq("id", caraId).select("status")
     : { error: null, data: [] };
@@ -709,6 +711,91 @@ try {
       payout.data?.status === "mismatch" &&
       payout.data?.reason === "This did not come from the project wallet.",
     "A pay-out from a non-project wallet is a mismatch.",
+  );
+
+  const priced = await admin.rpc("set_goal_usd", { p_project_id: projectC, p_goal_usd: 6000 });
+  const refused = await ben.client.rpc("set_project_wallet", singleWallet(projectC, "bitcoin-signet", benAddress));
+  const pricedDown = await admin.rpc("set_goal_usd", { p_project_id: projectC, p_goal_usd: 10 });
+  report(
+    !priced.error &&
+      Boolean(refused.error) &&
+      String(refused.error?.message ?? "").includes("US$5,000") &&
+      !pricedDown.error,
+    "A single-key wallet is refused for a project above the multisig threshold.",
+  );
+
+  const phases = await admin.rpc("set_project_phases", {
+    p_project_id: projectC,
+    p_phases: ["Start", "Next"],
+  });
+  const second = await cara.client
+    .from("commitments")
+    .insert({
+      user_id: cara.id,
+      project_id: projectC,
+      amount: 100,
+      status: "pledged",
+    })
+    .select("id")
+    .single();
+  const secondId = second.data?.id ?? "";
+  const over = secondId
+    ? await admin.rpc("record_observed_payment", {
+        p_project_id: projectC,
+        p_kind: "capital-in",
+        p_chain: "bitcoin-signet",
+        p_tx_id: tx("c7"),
+        p_from_address: caraAddress,
+        p_from_addresses: [caraAddress],
+        p_to_address: benAddress,
+        p_asset: "BTC",
+        p_amount: 100,
+        p_confirmations: 3,
+        p_commitment_id: secondId,
+        p_contribution_id: null,
+        p_failed: false,
+        p_ambiguous: false,
+      })
+    : { data: null, error: { message: "no commitment" } };
+  const secondRow = secondId
+    ? await admin.from("commitments").select("status").eq("id", secondId).maybeSingle()
+    : { data: null };
+  const laterTranche = secondId
+    ? await admin.from("capital_tranches").select("position, amount, status").eq("commitment_id", secondId).eq("position", 1).maybeSingle()
+    : { data: null };
+  report(
+    !phases.error &&
+      !second.error &&
+      over.data?.status === "confirmed" &&
+      Number(over.data?.amount) === 40 &&
+      secondRow.data?.status === "pledged" &&
+      laterTranche.data?.status === "waiting" &&
+      Number(laterTranche.data?.amount) === 60,
+    "A capital-in above the open tranche only confirms up to the tranche.",
+  );
+
+  const paymentId = typeof covered.data?.id === "string" ? covered.data.id : "";
+  const events = paymentId
+    ? await admin.from("payment_events").select("old_status, new_status, fn").eq("payment_id", paymentId)
+    : { data: [], error: { message: "no payment" } };
+  const logged = (events.data ?? []).some(
+    (row) => row.fn === "record_observed_payment" && row.new_status === "confirmed" && row.old_status == null,
+  );
+  const eventUpdate = paymentId
+    ? await admin.from("payment_events").update({ reason: "no" }).eq("payment_id", paymentId)
+    : { error: null };
+  const eventDelete = paymentId
+    ? await admin.from("payment_events").delete().eq("payment_id", paymentId)
+    : { error: null };
+  const stillThere = paymentId
+    ? await admin.from("payment_events").select("payment_id").eq("payment_id", paymentId)
+    : { data: [] };
+  report(
+    logged &&
+      Boolean(eventUpdate.error) &&
+      Boolean(eventDelete.error) &&
+      (stillThere.data ?? []).length > 0,
+    "payment_events cannot be updated or deleted.",
   );
 } catch (error) {
   report(false, error instanceof Error ? error.message : "The live check stopped.");

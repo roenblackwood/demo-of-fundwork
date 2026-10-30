@@ -6,7 +6,7 @@ import { assetFor } from "@/lib/money";
 import type { ChainId, PaymentKind } from "@/lib/types";
 
 // A background watcher can call recheckPending later. There is no job yet.
-// Mainnet, Lightning, multisig or escrow, and local cash-out partners are not built.
+// Mainnet, Lightning, escrow, and local cash-out partners are not built.
 
 type Recorded = { status?: string; reason?: string | null };
 
@@ -52,8 +52,12 @@ export async function recordLook(input: {
   if (error) return { ok: false, reason: "We could not record that check." };
   const row = recorded(data);
   if (!row) return { ok: false, reason: "We could not record that check." };
+  const pledgeOpen = Boolean(data && typeof data === "object" && "pledge_open" in data && data.pledge_open === true);
   if (row.status === "confirmed" && input.kind === "capital-in") {
-    return { ok: true, reason: "Confirmed. This pledge is accepted." };
+    return {
+      ok: true,
+      reason: pledgeOpen ? "Confirmed. This phase is in." : "Confirmed. This pledge is accepted.",
+    };
   }
   if (row.status === "confirmed") return { ok: true, reason: "Confirmed." };
   if (row.status === "pending") return { ok: true, reason: "We see it. It needs more blocks before it counts." };

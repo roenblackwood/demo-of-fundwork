@@ -125,6 +125,45 @@ export async function readBase(txId: string, candidates: string[]): Promise<Chai
   };
 }
 
+const safeAbi = [
+  {
+    name: "getOwners",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "address[]" }],
+  },
+  {
+    name: "getThreshold",
+    type: "function",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+] as const;
+
+/** Read-only call. Owners and the threshold of a Safe on Base Sepolia. */
+export async function readSafe(address: string): Promise<{ owners: string[]; threshold: number } | null> {
+  if (!/^0x[a-fA-F0-9]{40}$/.test(address)) return null;
+  try {
+    const owners = await client.readContract({
+      address: address as Hex,
+      abi: safeAbi,
+      functionName: "getOwners",
+    });
+    const threshold = await client.readContract({
+      address: address as Hex,
+      abi: safeAbi,
+      functionName: "getThreshold",
+    });
+    const count = Number(threshold);
+    if (!Number.isInteger(count) || count < 1) return null;
+    return { owners: owners.map((owner) => owner.toLowerCase()), threshold: count };
+  } catch {
+    return null;
+  }
+}
+
 export async function verifyBaseMessage(address: string, message: string, signature: string): Promise<boolean> {
   const signed = signature.startsWith("0x") ? signature : `0x${signature}`;
   if (!/^0x[a-fA-F0-9]+$/.test(signed)) return false;

@@ -5,7 +5,7 @@
  * - Asking a follow-up question.
  * - Phone and WhatsApp sign-in.
  * - Organizers accepting logged work. Capital is accepted by the chain check once a project has a wallet.
- * - Mainnet, Lightning, multisig or escrow, a background watcher, and local cash-out partners.
+ * - Mainnet, Lightning, escrow, a background watcher, and local cash-out partners.
  * - Email when someone applies.
  */
 import { getProjects, seedApplications, seedAvailability, seedRequests } from "@/lib/seed";

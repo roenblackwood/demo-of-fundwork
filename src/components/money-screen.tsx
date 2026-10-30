@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import {
   NEVER_HOLDS_LINE,
   SAMPLE_PAYMENT_LINE,
+  SIGNING_WARNING,
+  SINGLE_WALLET_REFUSED,
   TEST_NETWORK_LINE,
   WALLET_CHECK_LATER,
   moneyNote,
@@ -24,7 +26,9 @@ import {
   paymentBalances,
   samplePayments,
 } from "@/lib/money";
-import type { Payment, PaymentStatus } from "@/lib/types";
+import { needsMultisig } from "@/lib/rates";
+import { currencyOf } from "@/lib/seed";
+import type { ChainId, Payment, PaymentStatus, ProjectWallet } from "@/lib/types";
 
 function statusText(status: PaymentStatus, reason: string | null): string {
   if (status === "confirmed") return "Confirmed";
@@ -53,10 +57,17 @@ export function MoneyScreen({ id }: { id: string }) {
   const rows = live ? demo.payments.filter((item) => item.projectId === project.id) : samplePayments(project.id);
   const organizing = project.organizerId === demo.userId;
   const pending = rows.some((item) => item.status === "pending");
+  const large = needsMultisig(project.goalJmd, currencyOf(project.countryId));
+  const stored = demo.projectWallets.filter((item) => item.projectId === project.id);
 
   return (
     <div className="space-y-6">
       <StepHeader backHref={`/projects/${project.id}`} title="The money" hint={project.name} />
+      <p className="text-lg leading-relaxed">{SIGNING_WARNING}</p>
+      {organizing && large ? <SingleKeyBlock /> : null}
+      {stored.map((wallet) => (
+        <MultisigLine key={wallet.chain} wallet={wallet} />
+      ))}
       <p className="text-lg leading-relaxed">{NEVER_HOLDS_LINE}</p>
       <p className="text-lg leading-relaxed">{TEST_NETWORK_LINE}</p>
       {!live ? <p className="text-lg font-semibold">{SAMPLE_PAYMENT_LINE}</p> : null}
@@ -100,12 +111,47 @@ export function MoneyScreen({ id }: { id: string }) {
         })}
       </section>
 
-      {live && organizing ? <OrganizerTools projectId={project.id} pending={pending} /> : null}
+      {live && organizing ? <OrganizerTools projectId={project.id} pending={pending} large={large} /> : null}
       {!live ? <DemoTools /> : null}
       <Link href={`/projects/${project.id}`} className="inline-flex min-h-11 items-center font-semibold text-primary">
         Back to the project
       </Link>
     </div>
+  );
+}
+
+function MultisigLine({ wallet }: { wallet: ProjectWallet }) {
+  if (wallet.walletType !== "multisig") return null;
+  const threshold = wallet.threshold ?? 0;
+  const owners = wallet.ownerCount ?? 0;
+  if (threshold < 1 || owners < 1) return null;
+  const names = (wallet.keyholderNames ?? []).filter(Boolean);
+  return (
+    <div className="space-y-1">
+      <p className="text-lg">
+        Needs {threshold} of {owners} keys to move money.
+      </p>
+      {names.length > 0 ? <p className="text-lg">Keyholders: {names.join(", ")}.</p> : null}
+    </div>
+  );
+}
+
+function SingleKeyBlock() {
+  const [note, setNote] = useState("");
+
+  function refuse() {
+    setNote(SINGLE_WALLET_REFUSED);
+  }
+
+  return (
+    <section className="space-y-3">
+      <h2 className={sectionTitle}>Project wallet</h2>
+      <p className="text-lg">{SINGLE_WALLET_REFUSED}</p>
+      <Button type="button" variant="outline" onClick={refuse}>
+        Use one key
+      </Button>
+      {note ? <p className="text-lg">{note}</p> : null}
+    </section>
   );
 }
 
@@ -121,18 +167,42 @@ function DemoTools() {
   );
 }
 
-function OrganizerTools({ projectId, pending }: { projectId: string; pending: boolean }) {
+function OrganizerTools({
+  projectId,
+  pending,
+  large,
+}: {
+  projectId: string;
+  pending: boolean;
+  large: boolean;
+}) {
   const demo = useDemo();
   const [txId, setTxId] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  const [multiChain, setMultiChain] = useState<ChainId>("base-sepolia");
+  const [multiAddress, setMultiAddress] = useState("");
+  const [descriptor, setDescriptor] = useState("");
+  const [holderNames, setHolderNames] = useState("");
   const wallets = demo.wallets.filter((item) => item.verifiedAt);
   const projectWallets = demo.projectWallets.filter((item) => item.projectId === projectId);
 
-  async function setWallet(chain: "bitcoin-signet" | "base-sepolia", address: string) {
+  async function setWallet(
+    chain: ChainId,
+    address: string,
+    walletType: "single" | "multisig",
+    extra?: { descriptor?: string; keyholderNames?: string[] },
+  ) {
     if (busy) return;
     setBusy(true);
-    const result = await saveProjectWallet(projectId, chain, address);
+    const result = await saveProjectWallet({
+      projectId,
+      chain,
+      address,
+      walletType,
+      descriptor: extra?.descriptor,
+      keyholderNames: extra?.keyholderNames,
+    });
     setNote(result.reason);
     if (result.ok) await refreshLiveStore();
     setBusy(false);
@@ -168,21 +238,81 @@ function OrganizerTools({ projectId, pending }: { projectId: string; pending: bo
     <section className="space-y-4">
       <h2 className={sectionTitle}>Project address</h2>
       <p className="text-lg">You do not accept capital by hand. The chain check does.</p>
-      {wallets.length === 0 ? <p className="text-lg">Check one of your wallets first.</p> : null}
-      {wallets.map((wallet) => {
-        const used = projectWallets.some((item) => item.chain === wallet.chain && item.address === wallet.address);
-        return (
-          <div key={wallet.id} className="space-y-2">
-            <p className="font-semibold">{chainTitle(wallet.chain)}</p>
-            <p className="break-all">{wallet.address}</p>
-            {used ? <p>This is the project address.</p> : (
-              <Button type="button" disabled={busy} onClick={() => void setWallet(wallet.chain, wallet.address)}>
-                Use this for the project
-              </Button>
-            )}
+      {large ? (
+        <div className="space-y-3">
+          <p className="text-lg">Paste a wallet that takes more than one key.</p>
+          <div className="flex flex-col gap-2">
+            {(["base-sepolia", "bitcoin-signet"] as const).map((item) => (
+              <button
+                key={item}
+                type="button"
+                aria-pressed={multiChain === item}
+                onClick={() => setMultiChain(item)}
+                className="min-h-12 rounded-2xl border-2 px-4 text-left text-lg font-semibold"
+              >
+                {chainTitle(item)}
+              </button>
+            ))}
           </div>
-        );
-      })}
+          <Input
+            value={multiAddress}
+            onChange={(event) => setMultiAddress(event.target.value)}
+            placeholder="Address"
+            aria-label="Project address"
+            autoComplete="off"
+            spellCheck={false}
+          />
+          {multiChain === "bitcoin-signet" ? (
+            <>
+              <textarea
+                value={descriptor}
+                onChange={(event) => setDescriptor(event.target.value)}
+                placeholder="Descriptor"
+                aria-label="Descriptor"
+                className="min-h-28 w-full rounded-xl border bg-card p-3 text-base"
+              />
+              <Input
+                value={holderNames}
+                onChange={(event) => setHolderNames(event.target.value)}
+                placeholder="First names, separated by commas"
+                aria-label="Keyholder first names"
+              />
+            </>
+          ) : (
+            <p className="text-base text-muted-foreground">On Base, paste the Safe address. Fundwork reads the owners.</p>
+          )}
+          <Button
+            type="button"
+            disabled={busy || multiAddress.trim().length < 14}
+            onClick={() =>
+              void setWallet(multiChain, multiAddress, "multisig", {
+                descriptor,
+                keyholderNames: holderNames.split(","),
+              })
+            }
+          >
+            Save this wallet
+          </Button>
+        </div>
+      ) : (
+        <>
+          {wallets.length === 0 ? <p className="text-lg">Check one of your wallets first.</p> : null}
+          {wallets.map((wallet) => {
+            const used = projectWallets.some((item) => item.chain === wallet.chain && item.address === wallet.address);
+            return (
+              <div key={wallet.id} className="space-y-2">
+                <p className="font-semibold">{chainTitle(wallet.chain)}</p>
+                <p className="break-all">{wallet.address}</p>
+                {used ? <p>This is the project address.</p> : (
+                  <Button type="button" disabled={busy} onClick={() => void setWallet(wallet.chain, wallet.address, "single")}>
+                    Use this for the project
+                  </Button>
+                )}
+              </div>
+            );
+          })}
+        </>
+      )}
       <h2 className={sectionTitle}>Record a payment</h2>
       <p className="text-lg leading-relaxed">Paste the transaction id of a payment you already sent to someone on the team.</p>
       <Input

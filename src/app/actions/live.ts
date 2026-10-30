@@ -1,8 +1,10 @@
 "use server";
 
 import { cleanReadiness, isSite, kindById } from "@/lib/blueprints";
+import { defaultPhases } from "@/lib/capital";
 import { isSector, isSkill } from "@/lib/catalog";
 import { askedPlace } from "@/lib/seed";
+import { adminSupabase } from "@/lib/supabase/admin";
 import { serverSupabase } from "@/lib/supabase/server";
 import type { PathChoice, Readiness, Sector, SiteStatus, Skill, WorkPreset } from "@/lib/types";
 
@@ -161,10 +163,31 @@ export async function postApplication(input: {
   return !error;
 }
 
+async function ensureProjectPhases(projectId: string): Promise<void> {
+  const admin = adminSupabase();
+  if (!admin) return;
+  const supabase = await serverSupabase();
+  const row = await supabase.from("projects").select("sector, kind, phases, work_started").eq("id", projectId).maybeSingle();
+  const data = row.data;
+  if (!data || data.work_started === true) return;
+  const stored = Array.isArray(data.phases)
+    ? data.phases.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    : [];
+  if (stored.length > 0) return;
+  const sector = typeof data.sector === "string" && isSector(data.sector) ? data.sector : null;
+  if (!sector) return;
+  const kind = typeof data.kind === "string" ? data.kind : null;
+  await admin.rpc("set_project_phases", {
+    p_project_id: projectId,
+    p_phases: defaultPhases(sector, kind),
+  });
+}
+
 export async function postCommitment(input: { projectId: string; amount: number }): Promise<boolean> {
   const id = await callerId();
   if (!id || !(input.amount > 0) || !input.projectId) return false;
   const supabase = await serverSupabase();
+  await ensureProjectPhases(input.projectId);
   // The database sets counts_at. A first commitment is held for 24 hours.
   const { error } = await supabase.from("commitments").insert({
     user_id: id,
@@ -258,5 +281,52 @@ export async function startProject(requestId: string, name: string): Promise<str
     name: trimmed,
   });
   if (error || typeof data !== "string" || !data) return null;
+  await ensureProjectPhases(data);
   return data;
+}
+
+export async function savePhaseSplit(input: { projectId: string; shares: number[] }): Promise<boolean> {
+  const id = await callerId();
+  if (!id || !input.projectId || input.shares.length === 0) return false;
+  if (input.shares.some((share) => !(share > 0))) return false;
+  const supabase = await serverSupabase();
+  const row = await supabase
+    .from("projects")
+    .select("organizer_id, sector, kind, phases, work_started")
+    .eq("id", input.projectId)
+    .maybeSingle();
+  if (!row.data || row.data.organizer_id !== id || row.data.work_started === true) return false;
+  const stored = Array.isArray(row.data.phases)
+    ? row.data.phases.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    : [];
+  const sector = typeof row.data.sector === "string" && isSector(row.data.sector) ? row.data.sector : null;
+  const kind = typeof row.data.kind === "string" ? row.data.kind : null;
+  const phases = stored.length > 0 ? stored : sector ? defaultPhases(sector, kind) : [];
+  if (phases.length === 0 || input.shares.length !== phases.length) return false;
+  if (stored.length === 0) {
+    const admin = adminSupabase();
+    if (!admin) return false;
+    const set = await admin.rpc("set_project_phases", { p_project_id: input.projectId, p_phases: phases });
+    if (set.error) return false;
+  }
+  const { data, error } = await supabase.rpc("set_project_split", {
+    p_project_id: input.projectId,
+    p_shares: input.shares,
+  });
+  return !error && data === true;
+}
+
+export async function markPhaseDone(projectId: string): Promise<boolean> {
+  const id = await callerId();
+  if (!id || !projectId) return false;
+  const supabase = await serverSupabase();
+  const project = await supabase.from("projects").select("readiness, organizer_id").eq("id", projectId).maybeSingle();
+  if (project.data?.organizer_id !== id) return false;
+  const readiness = cleanReadiness(project.data.readiness);
+  if (!readiness) return false;
+  const { data, error } = await supabase.rpc("mark_phase_done", {
+    p_project_id: projectId,
+    p_readiness: readiness,
+  });
+  return !error && data === true;
 }

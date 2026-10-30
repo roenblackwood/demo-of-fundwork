@@ -64,9 +64,14 @@ export async function startWalletCheck(walletId: string): Promise<{ ok: boolean;
   if (!wallet.data?.id) return { ok: false, reason: "That wallet is not yours.", message: null };
   if (wallet.data.verified_at) return { ok: true, reason: "Wallet checked", message: null };
 
-  const time = new Date().toISOString();
-  const message = `Fundwork wallet check ${randomBytes(16).toString("hex")} for ${userId} at ${time}`;
+  const domain = process.env.FUNDWORK_DOMAIN?.trim() ?? "";
+  if (!domain || domain.length > 80 || /\s/.test(domain)) {
+    return { ok: false, reason: "Wallet checks are not set up.", message: null };
+  }
+  const nonce = randomBytes(16).toString("hex");
   const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+  const message = `${domain} wants to check this wallet is yours. This is not a transaction. Code ${nonce}. Expires ${expires}.`;
+  if (message.length > 240) return { ok: false, reason: "Wallet checks are not set up.", message: null };
   await admin
     .from("wallet_checks")
     .update({ used_at: new Date().toISOString() })

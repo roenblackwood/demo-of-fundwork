@@ -25,22 +25,36 @@ export function moneyStillOpen(goalJmd: number, committedJmd: number): number {
   return Math.max(0, goalJmd - committedJmd);
 }
 
-export function projectCommitted(
-  baseJmd: number,
-  extras: { projectId: string; amountJmd: number; status?: "pledged" | "accepted"; countsAt?: string | null }[],
-  projectId: string,
+type CountedMoney = {
+  projectId: string;
+  amountJmd: number;
+  status?: "pledged" | "accepted";
+  countsAt?: string | null;
+  tranches?: { amount: number; status: string }[] | null;
+};
+
+function countsNow(countsAt: string | null | undefined, now: number): boolean {
+  if (!countsAt) return true;
+  const time = Date.parse(countsAt);
+  return Number.isNaN(time) || time <= now;
+}
+
+/** Confirmed phase amounts only. Waiting and open phases stay out. */
+export function confirmedTrancheTotal(
+  tranches: { amount: number; status: string }[] | null | undefined,
 ): number {
-  // Pledged money is still waiting on a capital check, so it stays out of this total.
-  // A first live commitment also waits until countsAt before it counts.
+  return (tranches ?? []).reduce((sum, row) => (row.status === "confirmed" ? sum + row.amount : sum), 0);
+}
+
+export function projectCommitted(baseJmd: number, extras: CountedMoney[], projectId: string): number {
+  // A pledged commitment counts only its confirmed phases, and only after countsAt.
+  // Once it is accepted, the full amount counts and the phases are not added again.
   const now = Date.now();
-  const extra = extras
-    .filter((item) => {
-      if (item.projectId !== projectId || item.status === "pledged") return false;
-      if (!item.countsAt) return true;
-      const time = Date.parse(item.countsAt);
-      return Number.isNaN(time) || time <= now;
-    })
-    .reduce((sum, item) => sum + item.amountJmd, 0);
+  const extra = extras.reduce((sum, item) => {
+    if (item.projectId !== projectId || !countsNow(item.countsAt, now)) return sum;
+    if (item.status === "pledged") return sum + confirmedTrancheTotal(item.tranches);
+    return sum + item.amountJmd;
+  }, 0);
   return baseJmd + extra;
 }
 

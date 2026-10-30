@@ -10,6 +10,7 @@ import {
   useState,
 } from "react";
 import { cleanReadiness, isSite, kindById } from "@/lib/blueprints";
+import { amountsFor, defaultPhases, phasesFor, readinessChangeNote, splitPledge } from "@/lib/capital";
 import { openChecks, sectorWeekly } from "@/lib/catalog";
 import { investorBasicsIds, stageLessons } from "@/lib/lessons";
 import {
@@ -523,6 +524,9 @@ export type DemoValue = {
   withdrawApplication: (id: string) => Promise<boolean>;
   startProject: (requestId: string, name: string) => Promise<string | null>;
   setReadiness: (input: { requestId?: string | null; projectId?: string | null; readiness: Readiness }) => Promise<boolean>;
+  rememberPhaseBaseline: (projectId: string) => void;
+  savePhaseSplit: (input: { projectId: string; shares: number[] }) => boolean;
+  markPhaseDone: (projectId: string) => boolean;
   askToJoin: (projectId: string) => Promise<boolean>;
   markOpened: () => void;
   useSample: (id: string) => void;
@@ -710,6 +714,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         ? getTown(shown.parishId, shown.townId)
         : getCity(shown.countryId, shown.townId);
       const placeName = town?.name ?? "this place";
+      const phases = defaultPhases(shown.sector, shown.kind);
       const project: Project = {
         id,
         name: trimmed,
@@ -735,6 +740,9 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         kind: shown.kind ?? null,
         site: shown.site ?? null,
         readiness: shown.readiness ?? {},
+        phases,
+        openPhase: 0,
+        phaseBaseline: shown.readiness ?? {},
       };
       const commitment: Commitment = {
         id: crypto.randomUUID(),
@@ -743,6 +751,12 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         amountJmd: shown.budget,
         status: "pledged",
         createdAt: new Date().toISOString(),
+        tranches: splitPledge(shown.budget, phases).map((row) => ({
+          phase: row.phase,
+          position: row.position,
+          amount: row.amount,
+          status: row.position === 0 ? "open" : "waiting",
+        })),
       };
       return {
         ...current,
@@ -801,6 +815,106 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     },
     [],
   );
+
+  const rememberPhaseBaseline = useCallback((projectId: string) => {
+    setSession((current) => {
+      const userId = currentUserId(current);
+      const project = listProjects(current).find((item) => item.id === projectId);
+      if (!project || project.organizerId !== userId || project.phaseBaseline !== undefined) return current;
+      const next = { ...project, phaseBaseline: { ...(project.readiness ?? {}) } };
+      const exists = current.projects.some((item) => item.id === projectId);
+      return {
+        ...current,
+        projects: exists
+          ? current.projects.map((item) => (item.id === projectId ? next : item))
+          : [...current.projects, next],
+      };
+    });
+  }, []);
+
+  const savePhaseSplit = useCallback((input: { projectId: string; shares: number[] }) => {
+    let saved = false;
+    setSession((current) => {
+      const userId = currentUserId(current);
+      const project = listProjects(current).find((item) => item.id === input.projectId);
+      if (!project || project.organizerId !== userId || project.workStarted) return current;
+      const phases = phasesFor(project);
+      if (input.shares.length !== phases.length || input.shares.some((share) => !(share > 0))) return current;
+      const confirmed = current.commitments.some(
+        (item) => item.projectId === project.id && item.tranches?.some((row) => row.status === "confirmed"),
+      );
+      if (confirmed) return current;
+      saved = true;
+      const open = project.openPhase ?? 0;
+      const next = { ...project, phases, phaseShares: input.shares };
+      const commitments = current.commitments.map((item) => {
+        if (item.projectId !== project.id || item.status !== "pledged" || !item.tranches) return item;
+        const amounts = amountsFor(item.amountJmd, input.shares);
+        return {
+          ...item,
+          tranches: phases.map((phase, position) => {
+            const existing = item.tranches?.find((row) => row.position === position);
+            if (existing?.status === "confirmed") return existing;
+            const status = existing?.status ?? (position === open ? "open" : position < open ? "closed" : "waiting");
+            return { phase, position, amount: amounts[position] ?? 0, status };
+          }),
+        };
+      });
+      const exists = current.projects.some((item) => item.id === project.id);
+      return {
+        ...current,
+        commitments,
+        projects: exists
+          ? current.projects.map((item) => (item.id === project.id ? next : item))
+          : [...current.projects, next],
+      };
+    });
+    return saved;
+  }, []);
+
+  const markPhaseDone = useCallback((projectId: string) => {
+    let saved = false;
+    setSession((current) => {
+      const userId = currentUserId(current);
+      const project = listProjects(current).find((item) => item.id === projectId);
+      if (!project || project.organizerId !== userId || project.phaseBaseline === undefined) return current;
+      const note = readinessChangeNote(project.phaseBaseline, project.readiness ?? {});
+      if (!note) return current;
+      const phases = phasesFor(project);
+      const open = project.openPhase ?? 0;
+      const nextOpen = open + 1 < phases.length ? open + 1 : open;
+      saved = true;
+      const next = {
+        ...project,
+        phases,
+        openPhase: nextOpen,
+        phaseNote: note,
+        phaseBaseline: { ...(project.readiness ?? {}) },
+      };
+      const commitments = current.commitments.map((item) => {
+        if (item.projectId !== projectId || !item.tranches) return item;
+        return {
+          ...item,
+          tranches: item.tranches.map((row) => {
+            if (row.position === open && row.status === "open") return { ...row, status: "closed" as const };
+            if (nextOpen !== open && row.position === nextOpen && row.status === "waiting") {
+              return { ...row, status: "open" as const };
+            }
+            return row;
+          }),
+        };
+      });
+      const exists = current.projects.some((item) => item.id === projectId);
+      return {
+        ...current,
+        commitments,
+        projects: exists
+          ? current.projects.map((item) => (item.id === projectId ? next : item))
+          : [...current.projects, next],
+      };
+    });
+    return saved;
+  }, []);
 
   const askToJoin = useCallback(async (projectId: string) => {
     const stamp = { id: crypto.randomUUID(), createdAt: new Date().toISOString() };
@@ -978,6 +1092,9 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       withdrawApplication,
       startProject,
       setReadiness,
+      rememberPhaseBaseline,
+      savePhaseSplit,
+      markPhaseDone,
       askToJoin,
       markOpened,
       useSample,
@@ -1005,6 +1122,9 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     startPath,
     startProject,
     setReadiness,
+    rememberPhaseBaseline,
+    savePhaseSplit,
+    markPhaseDone,
     updateFlow,
     useNewPerson,
     useSample,

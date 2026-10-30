@@ -437,18 +437,32 @@ export function ReadinessReport({
   );
 }
 
-export function ProjectPhases({ sector, kindId }: { sector: Sector; kindId?: string | null }) {
-  const phases = phaseNames(sector, kindId);
-  if (phases.length === 0) return null;
+export function ProjectPhases({
+  sector,
+  kindId,
+  phases,
+  openPhase,
+  phaseNote,
+}: {
+  sector: Sector;
+  kindId?: string | null;
+  phases?: string[] | null;
+  openPhase?: number;
+  phaseNote?: string | null;
+}) {
+  const stored = (phases ?? []).map((phase) => phase.trim()).filter(Boolean);
+  const named = stored.length > 0 ? stored : phaseNames(sector, kindId);
+  if (named.length === 0) return null;
+  const open = Math.min(Math.max(openPhase ?? 0, 0), named.length - 1);
   return (
     <section className="space-y-2">
-      {/* Phase progress is not stored yet, so the first phase stays current. */}
       <h2 className={sectionTitle}>Phases</h2>
+      {phaseNote ? <p className="text-lg">What changed: {phaseNote}</p> : null}
       <ol className="list-decimal space-y-1 pl-5 text-lg">
-        {phases.map((phase, index) => (
-          <li key={phase}>
+        {named.map((phase, index) => (
+          <li key={`${index}-${phase}`}>
             {phase}
-            {index === 0 ? <span className="ml-2 text-sm font-semibold text-primary">Current</span> : null}
+            {index === open ? <span className="ml-2 text-sm font-semibold text-primary">Current</span> : null}
           </li>
         ))}
       </ol>

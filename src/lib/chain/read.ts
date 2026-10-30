@@ -5,7 +5,8 @@ import { readBase, verifyBaseMessage } from "@/lib/chain/base";
 import { readBitcoin, type ChainLook } from "@/lib/chain/bitcoin";
 import type { ChainId } from "@/lib/types";
 
-// Mainnet, Lightning, multisig or escrow, a background watcher, and local cash-out partners are not built.
+// Mainnet, Lightning, a background watcher, and local cash-out partners are not built.
+// Identity checks, when they come, use a licensed provider and store only a checked flag and a date, never documents.
 
 export type { ChainLook };
 

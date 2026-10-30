@@ -9,6 +9,7 @@ import type {
   CheckState,
   Commitment,
   Contribution,
+  Tranche,
   PathChoice,
   Payment,
   PaymentAsset,
@@ -94,6 +95,10 @@ export function mapProject(row: Row, team: string[], acceptedJmd: number): Proje
     kind: text(row.kind),
     site: isSite(row.site) ? row.site : null,
     readiness: cleanReadiness(row.readiness) ?? {},
+    phases: Array.isArray(row.phases) ? row.phases.filter((item): item is string => typeof item === "string") : [],
+    openPhase: number(row.open_phase) ?? 0,
+    phaseNote: text(row.phase_note),
+    phaseBaseline: cleanReadiness(row.phase_baseline) ?? {},
   };
 }
 
@@ -211,7 +216,32 @@ export function mapProjectWallet(row: Row): ProjectWallet | null {
   const chain = chainId(row.chain);
   const address = text(row.address);
   if (!projectId || !chain || !address) return null;
-  return { projectId, chain, address };
+  const walletType = row.wallet_type === "multisig" || row.wallet_type === "single" ? row.wallet_type : undefined;
+  const threshold = number(row.threshold);
+  const ownerCount = number(row.owner_count);
+  const keyholderNames = Array.isArray(row.keyholder_names)
+    ? row.keyholder_names.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    : [];
+  return {
+    projectId,
+    chain,
+    address,
+    ...(walletType ? { walletType } : {}),
+    ...(threshold !== null ? { threshold } : {}),
+    ...(ownerCount !== null ? { ownerCount } : {}),
+    ...(keyholderNames.length > 0 ? { keyholderNames } : {}),
+  };
+}
+
+export function mapTranche(row: Row): (Tranche & { commitmentId: string }) | null {
+  const commitmentId = text(row.commitment_id);
+  const phase = text(row.phase);
+  const position = number(row.position);
+  const amount = number(row.amount);
+  const status = text(row.status);
+  if (!commitmentId || !phase || position === null || amount === null) return null;
+  if (status !== "waiting" && status !== "open" && status !== "confirmed" && status !== "closed") return null;
+  return { commitmentId, phase, position, amount, status };
 }
 
 export function mapPayment(row: Row): Payment | null {

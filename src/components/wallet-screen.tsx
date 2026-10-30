@@ -6,7 +6,7 @@ import { PageBusy } from "@/components/busy";
 import { StepHeader, sectionTitle } from "@/components/parts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { NEVER_HOLDS_LINE, TEST_NETWORK_LINE, WALLET_CHECK_LATER } from "@/lib/copy";
+import { NEVER_HOLDS_LINE, SIGNING_WARNING, TEST_NETWORK_LINE, WALLET_CHECK_LATER } from "@/lib/copy";
 import { useDemo } from "@/lib/demo-store";
 import { refreshLiveStore } from "@/lib/live-store";
 import { isLive } from "@/lib/mode";
@@ -19,6 +19,7 @@ export function WalletScreen() {
   return (
     <div className="space-y-6">
       <StepHeader backHref="/you" title="Your wallet" />
+      <p className="text-lg leading-relaxed">{SIGNING_WARNING}</p>
       <p className="text-lg leading-relaxed">{NEVER_HOLDS_LINE}</p>
       <p className="text-lg leading-relaxed">{TEST_NETWORK_LINE}</p>
       <p className="text-lg leading-relaxed">Sign the check message in your own wallet. Fundwork does not sign it.</p>

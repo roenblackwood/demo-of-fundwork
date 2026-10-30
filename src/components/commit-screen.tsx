@@ -190,7 +190,7 @@ export function CommittedScreen({ id }: { id: string }) {
       </p>
       <p className="text-lg leading-relaxed">
         {hasProjectWallet
-          ? `About ${units} ownership units, once a confirmed payment covers this pledge.`
+          ? `About ${units} ownership units, once a confirmed payment covers this phase.`
           : `About ${units} ownership units, waiting on the organizer.`}
       </p>
       <NextSteps
@@ -199,7 +199,7 @@ export function CommittedScreen({ id }: { id: string }) {
             ? [
                 savedLine,
                 "Send the coins yourself to the project address.",
-                "It counts when the confirmed amount covers this pledge.",
+                "It counts when the confirmed amount covers this phase.",
               ]
             : [
                 savedLine,

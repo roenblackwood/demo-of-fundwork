@@ -166,7 +166,14 @@ export function DashboardScreen() {
                             ? `${units} ownership units`
                             : `${units} ownership units if accepted`}
                         </p>
-                        {paid ? <p className="mt-2 font-semibold">Paid</p> : null}
+                        {paid ? (
+                          <>
+                            <p className="mt-2 font-semibold">Paid</p>
+                            <p className="mt-1 text-base text-muted-foreground">
+                              This is in your own wallet. Fundwork cannot move or freeze it.
+                            </p>
+                          </>
+                        ) : null}
                       </CardContent>
                     </Card>
                   </Link>

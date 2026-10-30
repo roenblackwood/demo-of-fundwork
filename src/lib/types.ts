@@ -101,6 +101,14 @@ export type Project = {
   kind?: string | null;
   site?: SiteStatus | null;
   readiness?: Readiness;
+  /** Blueprint phase names. Empty means the screen uses the kind, or the sector's first kind. */
+  phases?: string[];
+  openPhase?: number;
+  phaseNote?: string | null;
+  /** Readiness when this phase opened. The next phase waits for a change. */
+  phaseBaseline?: Readiness;
+  /** Organizer's split, as weights. Absent means the 40 percent default. */
+  phaseShares?: number[] | null;
 };
 
 export type ChainId = "bitcoin-signet" | "base-sepolia";
@@ -121,10 +129,16 @@ export type Wallet = {
   createdAt: string;
 };
 
+export type WalletType = "single" | "multisig";
+
 export type ProjectWallet = {
   projectId: string;
   chain: ChainId;
   address: string;
+  walletType?: WalletType;
+  threshold?: number;
+  ownerCount?: number;
+  keyholderNames?: string[];
 };
 
 export type Payment = {
@@ -148,6 +162,15 @@ export type Payment = {
 
 export type CommitmentStatus = "pledged" | "accepted";
 
+export type TrancheStatus = "waiting" | "open" | "confirmed" | "closed";
+
+export type Tranche = {
+  phase: string;
+  position: number;
+  amount: number;
+  status: TrancheStatus;
+};
+
 export type Commitment = {
   id: string;
   userId: string;
@@ -157,6 +180,7 @@ export type Commitment = {
   createdAt: string;
   /** When this commitment starts to count. Absent means it can count now. */
   countsAt?: string | null;
+  tranches?: Tranche[];
 };
 
 export type ContributionStatus = "logged" | "accepted";

@@ -21,6 +21,7 @@ import { Check } from "lucide-react";
 import { Progress, ProgressLabel } from "@/components/ui/progress";
 import { BeforeYouApply, YourPlan } from "@/components/guide-card";
 import { ProjectPhases, ReadinessReport } from "@/components/needs-panel";
+import { PhasePlan } from "@/components/phase-plan";
 import { LessonList } from "@/components/lesson-card";
 import { ThisWeekCard } from "@/components/this-week";
 import { checkNote, projectNote } from "@/lib/ai";
@@ -178,7 +179,14 @@ export function ProjectScreen({ id }: { id: string }) {
       </div>
       <TrustBadges checks={project.checks} />
       <p className="border-l-4 border-primary pl-4 text-lg leading-relaxed">{note.body}</p>
-      <ProjectPhases sector={project.sector} kindId={project.kind} />
+      <ProjectPhases
+        sector={project.sector}
+        kindId={project.kind}
+        phases={project.phases}
+        openPhase={project.openPhase}
+        phaseNote={project.phaseNote}
+      />
+      {organizing ? <PhasePlan projectId={project.id} /> : null}
       <ReadinessReport
         sector={project.sector}
         kindId={project.kind}
