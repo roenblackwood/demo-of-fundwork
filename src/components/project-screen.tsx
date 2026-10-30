@@ -29,6 +29,7 @@ import { checkNote, projectNote } from "@/lib/ai";
 import { canStillCommit } from "@/lib/catalog";
 import { SendCapital } from "@/components/send-capital";
 import { NEVER_HOLDS_LINE, TEST_NETWORK_LINE, UNITS_PAYOUT_LINE } from "@/lib/copy";
+import { ThisPlace } from "@/components/place-fit";
 import { RulesChip, RulesHere } from "@/components/rules-panel";
 import { isLive } from "@/lib/mode";
 import { stageLessons, workerProjectLessons } from "@/lib/lessons";
@@ -179,6 +180,7 @@ export function ProjectScreen({ id }: { id: string }) {
         </div>
       </div>
       <RulesHere countryId={project.countryId} />
+      <ThisPlace countryId={project.countryId} parishId={project.parishId} />
       <section className="space-y-3">
         <div>
           <p className="text-2xl font-semibold leading-tight">

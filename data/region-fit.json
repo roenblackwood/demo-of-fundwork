@@ -1,0 +1,1423 @@
+{
+  "places": [
+    {
+      "id": "jamaica",
+      "sectors": [
+        {
+          "sector": "lodging",
+          "why": "A 2025 JIS report names hotels in Ocho Rios, Montego Bay, and Kingston.",
+          "sources": [
+            {
+              "title": "JIS, local hotels recognised in 2025",
+              "url": "https://jis.gov.jm/tourism-minister-welcomes-international-recognition-for-local-hotels/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "sector": "agriculture",
+          "why": "RADA says agriculture is the main engine of economic growth in Jamaica's rural communities.",
+          "sources": [
+            {
+              "title": "Rural Agricultural Development Authority",
+              "url": "https://rada.gov.jm/home-rural-agricultural-development-authority"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "seasons": [
+        {
+          "line": "Jamaica's hurricane season is June 1 to November 30, and that period is usually rainy.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "risks": [
+        {
+          "line": "Heavy rain from tropical weather is a main cause of floods in Jamaica, even when no hurricane forms.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            },
+            {
+              "title": "ODPEM, Floods",
+              "url": "https://www.odpem.org.jm/floods/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "line": "ODPEM's earthquake plan records major earthquakes in Jamaica in 1692, 1907, and 1993.",
+          "sources": [
+            {
+              "title": "ODPEM national earthquake plan",
+              "url": "https://www.odpem.org.jm/wp-content/uploads/2019/08/National_Earthquake_Response_Plan_for_Jamaica.pdf"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "advice": [
+        {
+          "title": "Plan for rain from June to November.",
+          "body": "ODPEM says the official hurricane season is June 1 to November 30. The period is usually rainy even if no hurricane forms.",
+          "rule": "Do not treat those months as a dry work window.",
+          "action": "Ask what the project does if heavy rain stops the work.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "title": "Hotels and rural farming are the two lines on file.",
+          "body": "JIS names hotels in Ocho Rios, Montego Bay, and Kingston. RADA describes agriculture as the main engine of growth in rural communities.",
+          "rule": "Use those two pages when you choose lodging or farming.",
+          "action": "Open the sources before you commit.",
+          "sources": [
+            {
+              "title": "JIS, local hotels recognised in 2025",
+              "url": "https://jis.gov.jm/tourism-minister-welcomes-international-recognition-for-local-hotels/"
+            },
+            {
+              "title": "Rural Agricultural Development Authority",
+              "url": "https://rada.gov.jm/home-rural-agricultural-development-authority"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ]
+    },
+    {
+      "id": "kingston",
+      "sectors": [
+        {
+          "sector": "lodging",
+          "why": "A 2025 JIS report names S Hotel Kingston among hotels visitors ranked that year.",
+          "sources": [
+            {
+              "title": "JIS, local hotels recognised in 2025",
+              "url": "https://jis.gov.jm/tourism-minister-welcomes-international-recognition-for-local-hotels/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "seasons": [
+        {
+          "line": "Jamaica's hurricane season is June 1 to November 30, and that period is usually rainy.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "risks": [
+        {
+          "line": "Heavy rain from tropical weather is a main cause of floods in Jamaica, even when no hurricane forms.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            },
+            {
+              "title": "ODPEM, Floods",
+              "url": "https://www.odpem.org.jm/floods/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "line": "ODPEM's earthquake plan records major earthquakes in Jamaica in 1692, 1907, and 1993.",
+          "sources": [
+            {
+              "title": "ODPEM national earthquake plan",
+              "url": "https://www.odpem.org.jm/wp-content/uploads/2019/08/National_Earthquake_Response_Plan_for_Jamaica.pdf"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "advice": [
+        {
+          "title": "Plan for rain from June to November.",
+          "body": "ODPEM says the official hurricane season is June 1 to November 30. The period is usually rainy even if no hurricane forms.",
+          "rule": "Do not treat those months as a dry work window.",
+          "action": "Ask what the project does if heavy rain stops the work.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "title": "A Kingston hotel is on the public record.",
+          "body": "A 2025 JIS report names S Hotel Kingston among hotels visitors ranked that year.",
+          "rule": "A place to stay still needs the checks on the project page.",
+          "action": "Read the checks before you commit.",
+          "sources": [
+            {
+              "title": "JIS, local hotels recognised in 2025",
+              "url": "https://jis.gov.jm/tourism-minister-welcomes-international-recognition-for-local-hotels/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ]
+    },
+    {
+      "id": "st-andrew",
+      "sectors": [
+        {
+          "sector": "agriculture",
+          "why": "In 2026 JACRA told JIS that coffee support goes to St. Andrew. Wallenford, owned by the Government of Jamaica, farms Blue Mountain coffee in St. Andrew.",
+          "sources": [
+            {
+              "title": "JIS, coffee sector support",
+              "url": "https://jis.gov.jm/132-million-spent-to-rehabilitate-coffee-sector/"
+            },
+            {
+              "title": "JIS, Wallenford Coffee Company",
+              "url": "https://jis.gov.jm/government/agencies/wallenford-coffee-company/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "seasons": [
+        {
+          "line": "Jamaica's hurricane season is June 1 to November 30, and that period is usually rainy.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "risks": [
+        {
+          "line": "Heavy rain from tropical weather is a main cause of floods in Jamaica, even when no hurricane forms.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            },
+            {
+              "title": "ODPEM, Floods",
+              "url": "https://www.odpem.org.jm/floods/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "line": "ODPEM's earthquake plan records major earthquakes in Jamaica in 1692, 1907, and 1993.",
+          "sources": [
+            {
+              "title": "ODPEM national earthquake plan",
+              "url": "https://www.odpem.org.jm/wp-content/uploads/2019/08/National_Earthquake_Response_Plan_for_Jamaica.pdf"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "advice": [
+        {
+          "title": "Plan for rain from June to November.",
+          "body": "ODPEM says the official hurricane season is June 1 to November 30. The period is usually rainy even if no hurricane forms.",
+          "rule": "Do not treat those months as a dry work window.",
+          "action": "Ask what the project does if heavy rain stops the work.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "title": "Coffee is the crop named for this parish.",
+          "body": "JACRA told JIS in 2026 that coffee support goes to St. Andrew. Wallenford farms Blue Mountain coffee there.",
+          "rule": "Match a farm project to a crop the public pages already name.",
+          "action": "Read the coffee notes before you commit to a farm project.",
+          "sources": [
+            {
+              "title": "JIS, coffee sector support",
+              "url": "https://jis.gov.jm/132-million-spent-to-rehabilitate-coffee-sector/"
+            },
+            {
+              "title": "JIS, Wallenford Coffee Company",
+              "url": "https://jis.gov.jm/government/agencies/wallenford-coffee-company/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ]
+    },
+    {
+      "id": "st-thomas",
+      "sectors": [
+        {
+          "sector": "agriculture",
+          "why": "In 2026 JACRA told JIS that coffee support goes to St. Thomas. RADA's 2018 to 2019 report records 83.8 hectares of land preparation there, for 68 beneficiaries. PIOJ names St. Thomas in its Adaptation Fund farm work.",
+          "sources": [
+            {
+              "title": "JIS, coffee sector support",
+              "url": "https://jis.gov.jm/132-million-spent-to-rehabilitate-coffee-sector/"
+            },
+            {
+              "title": "RADA annual report 2018 to 2019",
+              "url": "https://rada.gov.jm/sites/default/files/annual_reports/RADAAnnualReport2018-2019.pdf"
+            },
+            {
+              "title": "PIOJ, GOJ Adaptation Fund Programme",
+              "url": "https://www.pioj.gov.jm/programmes/goj-adaptation-fund/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "seasons": [
+        {
+          "line": "Jamaica's hurricane season is June 1 to November 30, and that period is usually rainy.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "risks": [
+        {
+          "line": "Heavy rain from tropical weather is a main cause of floods in Jamaica, even when no hurricane forms.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            },
+            {
+              "title": "ODPEM, Floods",
+              "url": "https://www.odpem.org.jm/floods/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "line": "ODPEM's earthquake plan records major earthquakes in Jamaica in 1692, 1907, and 1993.",
+          "sources": [
+            {
+              "title": "ODPEM national earthquake plan",
+              "url": "https://www.odpem.org.jm/wp-content/uploads/2019/08/National_Earthquake_Response_Plan_for_Jamaica.pdf"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "advice": [
+        {
+          "title": "Plan for rain from June to November.",
+          "body": "ODPEM says the official hurricane season is June 1 to November 30. The period is usually rainy even if no hurricane forms.",
+          "rule": "Do not treat those months as a dry work window.",
+          "action": "Ask what the project does if heavy rain stops the work.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "title": "Farm support in St. Thomas is on record.",
+          "body": "JACRA named St. Thomas for coffee support in 2026. RADA recorded land preparation there in 2018 to 2019. PIOJ names the parish in its Adaptation Fund farm work.",
+          "rule": "Treat the RADA hectares as that report year, not as this year's crop.",
+          "action": "Read those pages before you commit to a farm project.",
+          "sources": [
+            {
+              "title": "JIS, coffee sector support",
+              "url": "https://jis.gov.jm/132-million-spent-to-rehabilitate-coffee-sector/"
+            },
+            {
+              "title": "RADA annual report 2018 to 2019",
+              "url": "https://rada.gov.jm/sites/default/files/annual_reports/RADAAnnualReport2018-2019.pdf"
+            },
+            {
+              "title": "PIOJ, GOJ Adaptation Fund Programme",
+              "url": "https://www.pioj.gov.jm/programmes/goj-adaptation-fund/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ]
+    },
+    {
+      "id": "portland",
+      "sectors": [
+        {
+          "sector": "lodging",
+          "why": "The JIS parish profile says Port Antonio was the first town in Jamaica to accommodate tourist visits, and that it has tourist accommodations.",
+          "sources": [
+            {
+              "title": "JIS parish profile, portland",
+              "url": "https://jis.gov.jm/information/parish-profiles/parish-profiles-portland/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "sector": "agriculture",
+          "why": "The same profile says Portland grows banana, coconut, and breadfruit for local and foreign markets. RADA's 2018 to 2019 report records 49.22 hectares of land preparation there, for 40 beneficiaries. PIOJ names Portland in its Adaptation Fund farm work.",
+          "sources": [
+            {
+              "title": "JIS parish profile, portland",
+              "url": "https://jis.gov.jm/information/parish-profiles/parish-profiles-portland/"
+            },
+            {
+              "title": "RADA annual report 2018 to 2019",
+              "url": "https://rada.gov.jm/sites/default/files/annual_reports/RADAAnnualReport2018-2019.pdf"
+            },
+            {
+              "title": "PIOJ, GOJ Adaptation Fund Programme",
+              "url": "https://www.pioj.gov.jm/programmes/goj-adaptation-fund/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "seasons": [
+        {
+          "line": "Jamaica's hurricane season is June 1 to November 30, and that period is usually rainy.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "risks": [
+        {
+          "line": "Heavy rain from tropical weather is a main cause of floods in Jamaica, even when no hurricane forms.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            },
+            {
+              "title": "ODPEM, Floods",
+              "url": "https://www.odpem.org.jm/floods/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "line": "ODPEM's earthquake plan records major earthquakes in Jamaica in 1692, 1907, and 1993.",
+          "sources": [
+            {
+              "title": "ODPEM national earthquake plan",
+              "url": "https://www.odpem.org.jm/wp-content/uploads/2019/08/National_Earthquake_Response_Plan_for_Jamaica.pdf"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "advice": [
+        {
+          "title": "Plan for rain from June to November.",
+          "body": "ODPEM says the official hurricane season is June 1 to November 30. The period is usually rainy even if no hurricane forms.",
+          "rule": "Do not treat those months as a dry work window.",
+          "action": "Ask what the project does if heavy rain stops the work.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "title": "Port Antonio and the farms are both on the parish page.",
+          "body": "JIS says Port Antonio was the first town in Jamaica to accommodate tourist visits. It also says Portland grows banana, coconut, and breadfruit.",
+          "rule": "Pick lodging or farming from what that page names.",
+          "action": "Read the Port Antonio and crop lines before you commit.",
+          "sources": [
+            {
+              "title": "JIS parish profile, portland",
+              "url": "https://jis.gov.jm/information/parish-profiles/parish-profiles-portland/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ]
+    },
+    {
+      "id": "st-mary",
+      "sectors": [
+        {
+          "sector": "agriculture",
+          "why": "The JIS parish profile calls Oracabessa a farming town and Highgate an agricultural centre, and says banana replaced sugar as the main crop at Annotto Bay. RADA's 2018 to 2019 report records 61.92 hectares of land preparation in St. Mary, for 81 beneficiaries. PIOJ names St. Mary in its Adaptation Fund farm work.",
+          "sources": [
+            {
+              "title": "JIS parish profile, st-mary",
+              "url": "https://jis.gov.jm/information/parish-profiles/parish-profile-st-mary/"
+            },
+            {
+              "title": "RADA annual report 2018 to 2019",
+              "url": "https://rada.gov.jm/sites/default/files/annual_reports/RADAAnnualReport2018-2019.pdf"
+            },
+            {
+              "title": "PIOJ, GOJ Adaptation Fund Programme",
+              "url": "https://www.pioj.gov.jm/programmes/goj-adaptation-fund/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "seasons": [
+        {
+          "line": "Jamaica's hurricane season is June 1 to November 30, and that period is usually rainy.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "risks": [
+        {
+          "line": "Heavy rain from tropical weather is a main cause of floods in Jamaica, even when no hurricane forms.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            },
+            {
+              "title": "ODPEM, Floods",
+              "url": "https://www.odpem.org.jm/floods/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "line": "ODPEM's earthquake plan records major earthquakes in Jamaica in 1692, 1907, and 1993.",
+          "sources": [
+            {
+              "title": "ODPEM national earthquake plan",
+              "url": "https://www.odpem.org.jm/wp-content/uploads/2019/08/National_Earthquake_Response_Plan_for_Jamaica.pdf"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "advice": [
+        {
+          "title": "Plan for rain from June to November.",
+          "body": "ODPEM says the official hurricane season is June 1 to November 30. The period is usually rainy even if no hurricane forms.",
+          "rule": "Do not treat those months as a dry work window.",
+          "action": "Ask what the project does if heavy rain stops the work.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "title": "The parish page already names the farm towns.",
+          "body": "JIS calls Oracabessa a farming town and Highgate an agricultural centre, and says banana replaced sugar at Annotto Bay.",
+          "rule": "Match a farm project to crops and towns the page already names.",
+          "action": "Read the Oracabessa, Highgate, and Annotto Bay lines before you commit.",
+          "sources": [
+            {
+              "title": "JIS parish profile, st-mary",
+              "url": "https://jis.gov.jm/information/parish-profiles/parish-profile-st-mary/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ]
+    },
+    {
+      "id": "st-ann",
+      "sectors": [
+        {
+          "sector": "lodging",
+          "why": "The JIS parish profile calls Ocho Rios the tourist capital of St. Ann. A 2025 JIS report names Jamaica Inn in Ocho Rios, St. Ann.",
+          "sources": [
+            {
+              "title": "JIS parish profile, st-ann",
+              "url": "https://jis.gov.jm/information/parish-profiles/parish-profile-st-ann/"
+            },
+            {
+              "title": "JIS, local hotels recognised in 2025",
+              "url": "https://jis.gov.jm/tourism-minister-welcomes-international-recognition-for-local-hotels/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "sector": "agriculture",
+          "why": "The parish profile says St. Ann is known for agriculture and livestock production. PIOJ names St. Ann in its Adaptation Fund farm work.",
+          "sources": [
+            {
+              "title": "JIS parish profile, st-ann",
+              "url": "https://jis.gov.jm/information/parish-profiles/parish-profile-st-ann/"
+            },
+            {
+              "title": "PIOJ, GOJ Adaptation Fund Programme",
+              "url": "https://www.pioj.gov.jm/programmes/goj-adaptation-fund/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "seasons": [
+        {
+          "line": "Jamaica's hurricane season is June 1 to November 30, and that period is usually rainy.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "risks": [
+        {
+          "line": "Heavy rain from tropical weather is a main cause of floods in Jamaica, even when no hurricane forms.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            },
+            {
+              "title": "ODPEM, Floods",
+              "url": "https://www.odpem.org.jm/floods/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "line": "ODPEM's earthquake plan records major earthquakes in Jamaica in 1692, 1907, and 1993.",
+          "sources": [
+            {
+              "title": "ODPEM national earthquake plan",
+              "url": "https://www.odpem.org.jm/wp-content/uploads/2019/08/National_Earthquake_Response_Plan_for_Jamaica.pdf"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "advice": [
+        {
+          "title": "Plan for rain from June to November.",
+          "body": "ODPEM says the official hurricane season is June 1 to November 30. The period is usually rainy even if no hurricane forms.",
+          "rule": "Do not treat those months as a dry work window.",
+          "action": "Ask what the project does if heavy rain stops the work.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "title": "Ocho Rios is the tourist town named for this parish.",
+          "body": "The JIS parish profile calls Ocho Rios the tourist capital of St. Ann, and says the parish is known for agriculture and livestock.",
+          "rule": "A place to stay or a farm still needs the checks on the project page.",
+          "action": "Read the checks before you commit.",
+          "sources": [
+            {
+              "title": "JIS parish profile, st-ann",
+              "url": "https://jis.gov.jm/information/parish-profiles/parish-profile-st-ann/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ]
+    },
+    {
+      "id": "trelawny",
+      "sectors": [
+        {
+          "sector": "lodging",
+          "why": "The JIS parish profile names the Falmouth Cruise Ship Pier among Trelawny's attractions.",
+          "sources": [
+            {
+              "title": "JIS parish profile, trelawny",
+              "url": "https://jis.gov.jm/information/parish-profiles/parish-profile-trelawny/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "sector": "agriculture",
+          "why": "The same profile says Wait-a-Bit has fertile farm land and grows yam and strawberry. RADA's 2018 to 2019 report lists an agro-processing facility in Trelawny. PIOJ names Trelawny in its Adaptation Fund farm work.",
+          "sources": [
+            {
+              "title": "JIS parish profile, trelawny",
+              "url": "https://jis.gov.jm/information/parish-profiles/parish-profile-trelawny/"
+            },
+            {
+              "title": "RADA annual report 2018 to 2019",
+              "url": "https://rada.gov.jm/sites/default/files/annual_reports/RADAAnnualReport2018-2019.pdf"
+            },
+            {
+              "title": "PIOJ, GOJ Adaptation Fund Programme",
+              "url": "https://www.pioj.gov.jm/programmes/goj-adaptation-fund/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "seasons": [
+        {
+          "line": "Jamaica's hurricane season is June 1 to November 30, and that period is usually rainy.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "risks": [
+        {
+          "line": "Heavy rain from tropical weather is a main cause of floods in Jamaica, even when no hurricane forms.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            },
+            {
+              "title": "ODPEM, Floods",
+              "url": "https://www.odpem.org.jm/floods/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "line": "ODPEM's earthquake plan records major earthquakes in Jamaica in 1692, 1907, and 1993.",
+          "sources": [
+            {
+              "title": "ODPEM national earthquake plan",
+              "url": "https://www.odpem.org.jm/wp-content/uploads/2019/08/National_Earthquake_Response_Plan_for_Jamaica.pdf"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "advice": [
+        {
+          "title": "Plan for rain from June to November.",
+          "body": "ODPEM says the official hurricane season is June 1 to November 30. The period is usually rainy even if no hurricane forms.",
+          "rule": "Do not treat those months as a dry work window.",
+          "action": "Ask what the project does if heavy rain stops the work.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "title": "Falmouth and Wait-a-Bit are the places the page names.",
+          "body": "JIS names the Falmouth Cruise Ship Pier, and says Wait-a-Bit grows yam and strawberry.",
+          "rule": "Use those lines when you pick lodging or farming.",
+          "action": "Read the Falmouth and Wait-a-Bit lines before you commit.",
+          "sources": [
+            {
+              "title": "JIS parish profile, trelawny",
+              "url": "https://jis.gov.jm/information/parish-profiles/parish-profile-trelawny/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ]
+    },
+    {
+      "id": "st-james",
+      "sectors": [
+        {
+          "sector": "lodging",
+          "why": "A 2025 JIS report describes a hotel based in Montego Bay, St. James.",
+          "sources": [
+            {
+              "title": "JIS, hotel in Montego Bay, St. James",
+              "url": "https://jis.gov.jm/minister-barlett-hails-s-hotel-on-top-ranking-in-tripadvisors-best-of-the-best-awards/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "sector": "agriculture",
+          "why": "RADA's 2018 to 2019 report lists an agro-processing facility in St. James among seven that were ready to start.",
+          "sources": [
+            {
+              "title": "RADA annual report 2018 to 2019",
+              "url": "https://rada.gov.jm/sites/default/files/annual_reports/RADAAnnualReport2018-2019.pdf"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "seasons": [
+        {
+          "line": "Jamaica's hurricane season is June 1 to November 30, and that period is usually rainy.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "risks": [
+        {
+          "line": "Heavy rain from tropical weather is a main cause of floods in Jamaica, even when no hurricane forms.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            },
+            {
+              "title": "ODPEM, Floods",
+              "url": "https://www.odpem.org.jm/floods/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "line": "ODPEM's earthquake plan records major earthquakes in Jamaica in 1692, 1907, and 1993.",
+          "sources": [
+            {
+              "title": "ODPEM national earthquake plan",
+              "url": "https://www.odpem.org.jm/wp-content/uploads/2019/08/National_Earthquake_Response_Plan_for_Jamaica.pdf"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "advice": [
+        {
+          "title": "Plan for rain from June to November.",
+          "body": "ODPEM says the official hurricane season is June 1 to November 30. The period is usually rainy even if no hurricane forms.",
+          "rule": "Do not treat those months as a dry work window.",
+          "action": "Ask what the project does if heavy rain stops the work.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "title": "A hotel in Montego Bay is on the public record.",
+          "body": "A 2025 JIS report describes a hotel based in Montego Bay, St. James. RADA's 2018 to 2019 report lists an agro-processing facility in the parish.",
+          "rule": "Treat the RADA note as that report year.",
+          "action": "Read both pages before you commit.",
+          "sources": [
+            {
+              "title": "JIS, hotel in Montego Bay, St. James",
+              "url": "https://jis.gov.jm/minister-barlett-hails-s-hotel-on-top-ranking-in-tripadvisors-best-of-the-best-awards/"
+            },
+            {
+              "title": "RADA annual report 2018 to 2019",
+              "url": "https://rada.gov.jm/sites/default/files/annual_reports/RADAAnnualReport2018-2019.pdf"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ]
+    },
+    {
+      "id": "hanover",
+      "sectors": [
+        {
+          "sector": "lodging",
+          "why": "The JIS parish profile says Round Hill, a resort on the beach in Hopewell, is the main tourist attraction there.",
+          "sources": [
+            {
+              "title": "JIS parish profile, hanover",
+              "url": "https://jis.gov.jm/information/parish-profiles/parish-profile-hanover/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "sector": "agriculture",
+          "why": "RADA's 2018 to 2019 report records 8.4 hectares of land preparation in Hanover, for 1 beneficiary, and lists an agro-processing facility in the parish.",
+          "sources": [
+            {
+              "title": "RADA annual report 2018 to 2019",
+              "url": "https://rada.gov.jm/sites/default/files/annual_reports/RADAAnnualReport2018-2019.pdf"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "seasons": [
+        {
+          "line": "Jamaica's hurricane season is June 1 to November 30, and that period is usually rainy.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "risks": [
+        {
+          "line": "Heavy rain from tropical weather is a main cause of floods in Jamaica, even when no hurricane forms.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            },
+            {
+              "title": "ODPEM, Floods",
+              "url": "https://www.odpem.org.jm/floods/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "line": "ODPEM's earthquake plan records major earthquakes in Jamaica in 1692, 1907, and 1993.",
+          "sources": [
+            {
+              "title": "ODPEM national earthquake plan",
+              "url": "https://www.odpem.org.jm/wp-content/uploads/2019/08/National_Earthquake_Response_Plan_for_Jamaica.pdf"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "advice": [
+        {
+          "title": "Plan for rain from June to November.",
+          "body": "ODPEM says the official hurricane season is June 1 to November 30. The period is usually rainy even if no hurricane forms.",
+          "rule": "Do not treat those months as a dry work window.",
+          "action": "Ask what the project does if heavy rain stops the work.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "title": "Hopewell has a named resort. The farm figure is from 2018 to 2019.",
+          "body": "JIS says Round Hill, on the beach in Hopewell, is the main tourist attraction there. RADA recorded 8.4 hectares of land preparation in Hanover in 2018 to 2019, for 1 beneficiary.",
+          "rule": "The hectare figure belongs to that report year.",
+          "action": "Read the Hopewell line and the RADA report before you commit.",
+          "sources": [
+            {
+              "title": "JIS parish profile, hanover",
+              "url": "https://jis.gov.jm/information/parish-profiles/parish-profile-hanover/"
+            },
+            {
+              "title": "RADA annual report 2018 to 2019",
+              "url": "https://rada.gov.jm/sites/default/files/annual_reports/RADAAnnualReport2018-2019.pdf"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ]
+    },
+    {
+      "id": "westmoreland",
+      "sectors": [
+        {
+          "sector": "lodging",
+          "why": "The JIS parish profile says Negril, in western Westmoreland, is a tourist resort area with hotels and a 7 mile beach.",
+          "sources": [
+            {
+              "title": "JIS parish profile, westmoreland",
+              "url": "https://jis.gov.jm/information/parish-profiles/parish-profile-westmoreland/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "sector": "agriculture",
+          "why": "The same profile calls Grange Hill a large farming town, and says citrus and cattle farming are what Bethel Town does now. RADA's 2018 to 2019 report records 20.6 hectares of land preparation in Westmoreland, for 42 beneficiaries.",
+          "sources": [
+            {
+              "title": "JIS parish profile, westmoreland",
+              "url": "https://jis.gov.jm/information/parish-profiles/parish-profile-westmoreland/"
+            },
+            {
+              "title": "RADA annual report 2018 to 2019",
+              "url": "https://rada.gov.jm/sites/default/files/annual_reports/RADAAnnualReport2018-2019.pdf"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "seasons": [
+        {
+          "line": "Jamaica's hurricane season is June 1 to November 30, and that period is usually rainy.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "risks": [
+        {
+          "line": "Heavy rain from tropical weather is a main cause of floods in Jamaica, even when no hurricane forms.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            },
+            {
+              "title": "ODPEM, Floods",
+              "url": "https://www.odpem.org.jm/floods/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "line": "ODPEM's earthquake plan records major earthquakes in Jamaica in 1692, 1907, and 1993.",
+          "sources": [
+            {
+              "title": "ODPEM national earthquake plan",
+              "url": "https://www.odpem.org.jm/wp-content/uploads/2019/08/National_Earthquake_Response_Plan_for_Jamaica.pdf"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "advice": [
+        {
+          "title": "Plan for rain from June to November.",
+          "body": "ODPEM says the official hurricane season is June 1 to November 30. The period is usually rainy even if no hurricane forms.",
+          "rule": "Do not treat those months as a dry work window.",
+          "action": "Ask what the project does if heavy rain stops the work.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "title": "Negril and Grange Hill are the towns the page names.",
+          "body": "JIS says Negril is a tourist resort area with hotels and a 7 mile beach. It calls Grange Hill a large farming town.",
+          "rule": "Pick lodging or farming from those town lines.",
+          "action": "Read the Negril and Grange Hill lines before you commit.",
+          "sources": [
+            {
+              "title": "JIS parish profile, westmoreland",
+              "url": "https://jis.gov.jm/information/parish-profiles/parish-profile-westmoreland/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ]
+    },
+    {
+      "id": "st-elizabeth",
+      "sectors": [
+        {
+          "sector": "agriculture",
+          "why": "The JIS parish profile says St. Elizabeth provides the bulk of Jamaica's vegetables and fruit. RADA's 2018 to 2019 report records 65.3 hectares of land preparation there, for 48 beneficiaries, and lists an agro-processing facility.",
+          "sources": [
+            {
+              "title": "JIS parish profile, st-elizabeth",
+              "url": "https://jis.gov.jm/information/parish-profiles/parish-profile-st-elizabeth/"
+            },
+            {
+              "title": "RADA annual report 2018 to 2019",
+              "url": "https://rada.gov.jm/sites/default/files/annual_reports/RADAAnnualReport2018-2019.pdf"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "seasons": [
+        {
+          "line": "Jamaica's hurricane season is June 1 to November 30, and that period is usually rainy.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "risks": [
+        {
+          "line": "Heavy rain from tropical weather is a main cause of floods in Jamaica, even when no hurricane forms.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            },
+            {
+              "title": "ODPEM, Floods",
+              "url": "https://www.odpem.org.jm/floods/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "line": "ODPEM's earthquake plan records major earthquakes in Jamaica in 1692, 1907, and 1993.",
+          "sources": [
+            {
+              "title": "ODPEM national earthquake plan",
+              "url": "https://www.odpem.org.jm/wp-content/uploads/2019/08/National_Earthquake_Response_Plan_for_Jamaica.pdf"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "advice": [
+        {
+          "title": "Plan for rain from June to November.",
+          "body": "ODPEM says the official hurricane season is June 1 to November 30. The period is usually rainy even if no hurricane forms.",
+          "rule": "Do not treat those months as a dry work window.",
+          "action": "Ask what the project does if heavy rain stops the work.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "title": "Vegetables and fruit are what the parish page names.",
+          "body": "JIS says St. Elizabeth provides the bulk of Jamaica's vegetables and fruit. RADA recorded land preparation there in 2018 to 2019.",
+          "rule": "Treat the hectare figure as that report year.",
+          "action": "Read both pages before you commit to a farm project.",
+          "sources": [
+            {
+              "title": "JIS parish profile, st-elizabeth",
+              "url": "https://jis.gov.jm/information/parish-profiles/parish-profile-st-elizabeth/"
+            },
+            {
+              "title": "RADA annual report 2018 to 2019",
+              "url": "https://rada.gov.jm/sites/default/files/annual_reports/RADAAnnualReport2018-2019.pdf"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ]
+    },
+    {
+      "id": "manchester",
+      "sectors": [
+        {
+          "sector": "agriculture",
+          "why": "The JIS parish profile says the economy of Manchester is still rooted in bauxite and agriculture. PIOJ names Manchester in its Adaptation Fund farm work.",
+          "sources": [
+            {
+              "title": "JIS parish profile, manchester",
+              "url": "https://jis.gov.jm/information/parish-profiles/parish-profile-manchester/"
+            },
+            {
+              "title": "PIOJ, GOJ Adaptation Fund Programme",
+              "url": "https://www.pioj.gov.jm/programmes/goj-adaptation-fund/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "seasons": [
+        {
+          "line": "Jamaica's hurricane season is June 1 to November 30, and that period is usually rainy.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "risks": [
+        {
+          "line": "Heavy rain from tropical weather is a main cause of floods in Jamaica, even when no hurricane forms.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            },
+            {
+              "title": "ODPEM, Floods",
+              "url": "https://www.odpem.org.jm/floods/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "line": "ODPEM's earthquake plan records major earthquakes in Jamaica in 1692, 1907, and 1993.",
+          "sources": [
+            {
+              "title": "ODPEM national earthquake plan",
+              "url": "https://www.odpem.org.jm/wp-content/uploads/2019/08/National_Earthquake_Response_Plan_for_Jamaica.pdf"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "advice": [
+        {
+          "title": "Plan for rain from June to November.",
+          "body": "ODPEM says the official hurricane season is June 1 to November 30. The period is usually rainy even if no hurricane forms.",
+          "rule": "Do not treat those months as a dry work window.",
+          "action": "Ask what the project does if heavy rain stops the work.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "title": "Agriculture is one of the two industries the parish page names.",
+          "body": "JIS says Manchester's economy is still rooted in bauxite and agriculture. PIOJ names the parish in its Adaptation Fund farm work.",
+          "rule": "The page names bauxite and agriculture together.",
+          "action": "Read the parish profile before you commit to a farm project.",
+          "sources": [
+            {
+              "title": "JIS parish profile, manchester",
+              "url": "https://jis.gov.jm/information/parish-profiles/parish-profile-manchester/"
+            },
+            {
+              "title": "PIOJ, GOJ Adaptation Fund Programme",
+              "url": "https://www.pioj.gov.jm/programmes/goj-adaptation-fund/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ]
+    },
+    {
+      "id": "clarendon",
+      "sectors": [
+        {
+          "sector": "agriculture",
+          "why": "The JIS parish profile says Clarendon hosts the Denbigh Agricultural Show each August. RADA's 2018 to 2019 report records 252.75 hectares of land preparation there, for 212 beneficiaries. PIOJ names Clarendon in its Adaptation Fund farm work.",
+          "sources": [
+            {
+              "title": "JIS parish profile, clarendon",
+              "url": "https://jis.gov.jm/information/parish-profiles/parish-profile-clarendon/"
+            },
+            {
+              "title": "RADA annual report 2018 to 2019",
+              "url": "https://rada.gov.jm/sites/default/files/annual_reports/RADAAnnualReport2018-2019.pdf"
+            },
+            {
+              "title": "PIOJ, GOJ Adaptation Fund Programme",
+              "url": "https://www.pioj.gov.jm/programmes/goj-adaptation-fund/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "seasons": [
+        {
+          "line": "Jamaica's hurricane season is June 1 to November 30, and that period is usually rainy.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "risks": [
+        {
+          "line": "Heavy rain from tropical weather is a main cause of floods in Jamaica, even when no hurricane forms.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            },
+            {
+              "title": "ODPEM, Floods",
+              "url": "https://www.odpem.org.jm/floods/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "line": "ODPEM's earthquake plan records major earthquakes in Jamaica in 1692, 1907, and 1993.",
+          "sources": [
+            {
+              "title": "ODPEM national earthquake plan",
+              "url": "https://www.odpem.org.jm/wp-content/uploads/2019/08/National_Earthquake_Response_Plan_for_Jamaica.pdf"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "advice": [
+        {
+          "title": "Plan for rain from June to November.",
+          "body": "ODPEM says the official hurricane season is June 1 to November 30. The period is usually rainy even if no hurricane forms.",
+          "rule": "Do not treat those months as a dry work window.",
+          "action": "Ask what the project does if heavy rain stops the work.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "title": "Denbigh is the farm event the parish page names.",
+          "body": "JIS says Clarendon hosts the Denbigh Agricultural Show each August. RADA recorded land preparation there in 2018 to 2019.",
+          "rule": "Treat the hectare figure as that report year.",
+          "action": "Read the Denbigh line before you commit to a farm project.",
+          "sources": [
+            {
+              "title": "JIS parish profile, clarendon",
+              "url": "https://jis.gov.jm/information/parish-profiles/parish-profile-clarendon/"
+            },
+            {
+              "title": "RADA annual report 2018 to 2019",
+              "url": "https://rada.gov.jm/sites/default/files/annual_reports/RADAAnnualReport2018-2019.pdf"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ]
+    },
+    {
+      "id": "st-catherine",
+      "sectors": [
+        {
+          "sector": "agriculture",
+          "why": "The JIS parish profile says St. Catherine has large manufacturing and agriculture industries. RADA's 2018 to 2019 report records 25.8 hectares of land preparation there, for 29 beneficiaries, and lists an agro-processing facility. PIOJ names St. Catherine in its Adaptation Fund farm work.",
+          "sources": [
+            {
+              "title": "JIS parish profile, st-catherine",
+              "url": "https://jis.gov.jm/information/parish-profiles/parish-profile-st-catherine/"
+            },
+            {
+              "title": "RADA annual report 2018 to 2019",
+              "url": "https://rada.gov.jm/sites/default/files/annual_reports/RADAAnnualReport2018-2019.pdf"
+            },
+            {
+              "title": "PIOJ, GOJ Adaptation Fund Programme",
+              "url": "https://www.pioj.gov.jm/programmes/goj-adaptation-fund/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "seasons": [
+        {
+          "line": "Jamaica's hurricane season is June 1 to November 30, and that period is usually rainy.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "risks": [
+        {
+          "line": "Heavy rain from tropical weather is a main cause of floods in Jamaica, even when no hurricane forms.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            },
+            {
+              "title": "ODPEM, Floods",
+              "url": "https://www.odpem.org.jm/floods/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "line": "ODPEM's earthquake plan records major earthquakes in Jamaica in 1692, 1907, and 1993.",
+          "sources": [
+            {
+              "title": "ODPEM national earthquake plan",
+              "url": "https://www.odpem.org.jm/wp-content/uploads/2019/08/National_Earthquake_Response_Plan_for_Jamaica.pdf"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ],
+      "advice": [
+        {
+          "title": "Plan for rain from June to November.",
+          "body": "ODPEM says the official hurricane season is June 1 to November 30. The period is usually rainy even if no hurricane forms.",
+          "rule": "Do not treat those months as a dry work window.",
+          "action": "Ask what the project does if heavy rain stops the work.",
+          "sources": [
+            {
+              "title": "ODPEM, Hurricanes",
+              "url": "https://www.odpem.org.jm/hurricanes/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        },
+        {
+          "title": "Agriculture is named next to manufacturing.",
+          "body": "JIS says St. Catherine has large manufacturing and agriculture industries. PIOJ names the parish in its Adaptation Fund farm work.",
+          "rule": "The page names manufacturing and agriculture together.",
+          "action": "Read the parish profile before you commit to a farm project.",
+          "sources": [
+            {
+              "title": "JIS parish profile, st-catherine",
+              "url": "https://jis.gov.jm/information/parish-profiles/parish-profile-st-catherine/"
+            },
+            {
+              "title": "PIOJ, GOJ Adaptation Fund Programme",
+              "url": "https://www.pioj.gov.jm/programmes/goj-adaptation-fund/"
+            }
+          ],
+          "checkedOn": "2026-10-29"
+        }
+      ]
+    }
+  ]
+}

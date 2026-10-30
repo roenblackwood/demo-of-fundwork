@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Check } from "lucide-react";
 import { PageBusy } from "@/components/busy";
 import { BeforeYouStart, WhatThisNeeds } from "@/components/needs-panel";
+import { FitFooter } from "@/components/place-fit";
 import { ActionBar, CapitalChip, MoneyText, NextSteps, SavedMark, StepHeader } from "@/components/parts";
 import { useSnackbar } from "@/components/snackbar";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -32,6 +33,7 @@ import { useDemo } from "@/lib/demo-store";
 import { money, placeLine } from "@/lib/format";
 import { priceRange } from "@/lib/guides";
 import { aboutUsd } from "@/lib/rates";
+import { sectorSources, suitedSector } from "@/lib/region-fit";
 import { currencyOf, getCity, getCountry, getParish, getTown, requestPlace } from "@/lib/seed";
 import type { Readiness, Sector, SiteStatus, Skill } from "@/lib/types";
 
@@ -526,7 +528,9 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
   } else {
     body = (
       <div className="space-y-3">
-        {SECTORS.map((item) => (
+        {SECTORS.map((item) => {
+          const suited = suitedSector(parishId, countryId, item.id);
+          return (
           <button
             key={item.id}
             type="button"
@@ -541,9 +545,19 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
             <span>
               <span className="block">{item.title}</span>
               <span className="mt-1 block text-base font-normal text-muted-foreground">{item.detail}</span>
+              {suited ? (
+                <>
+                  <span className="mt-2 inline-flex min-h-8 items-center rounded-full bg-secondary px-3 text-sm font-semibold text-secondary-foreground">
+                    Suited here
+                  </span>
+                  <span className="mt-1 block text-base font-normal text-muted-foreground">{suited.why}</span>
+                </>
+              ) : null}
             </span>
           </button>
-        ))}
+          );
+        })}
+        <FitFooter sources={sectorSources(parishId, countryId)} />
       </div>
     );
   }

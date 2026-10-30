@@ -42,6 +42,11 @@ export function DashboardScreen() {
       <div>
         <h1 className="font-display text-4xl leading-tight">{greeting}</h1>
         <div className="mt-3 flex flex-wrap gap-x-4">
+          {demo.role === "investor" ? (
+            <Link href="/you/portfolio" className="inline-flex min-h-11 items-center font-semibold text-primary">
+              Your portfolio
+            </Link>
+          ) : null}
           <Link href="/you/profile" className="inline-flex min-h-11 items-center font-semibold text-primary">
             Your profile
           </Link>

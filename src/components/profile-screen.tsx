@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { PageBusy } from "@/components/busy";
+import { FitFooter, SectorHint } from "@/components/place-fit";
 import { MoneyText, StepHeader, sectionTitle } from "@/components/parts";
 import { UseMyLocation } from "@/components/use-location";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -28,6 +29,7 @@ import {
   type SkillLevelName,
   type StartWhen,
 } from "@/lib/profile";
+import { sourcesForPlaces } from "@/lib/region-fit";
 import { currencyOf, getCountries, getParishes } from "@/lib/seed";
 
 const choiceClass =
@@ -454,25 +456,33 @@ function InvestorStep({
           <button
             type="button"
             aria-pressed={!anywhere && profile.places.includes("jamaica")}
-            className={cn(choiceClass, onClass(!anywhere && profile.places.includes("jamaica")))}
+            className={cn(choiceClass, "flex flex-col items-start", onClass(!anywhere && profile.places.includes("jamaica")))}
             onClick={() => onChange({ places: togglePlace(profile.places, "jamaica") })}
           >
-            Jamaica
+            <span>Jamaica</span>
+            {!anywhere && profile.places.includes("jamaica") ? <SectorHint placeId="jamaica" /> : null}
           </button>
-          {getCountries().map((country) => (
-            <button
-              key={country.id}
-              type="button"
-              aria-pressed={!anywhere && profile.places.includes(country.id)}
-              className={cn(choiceClass, onClass(!anywhere && profile.places.includes(country.id)))}
-              onClick={() => onChange({ places: togglePlace(profile.places, country.id) })}
-            >
-              {country.name}
-            </button>
-          ))}
+          {getCountries()
+            .filter((country) => country.id !== "jamaica")
+            .map((country) => {
+            const picked = !anywhere && profile.places.includes(country.id);
+            return (
+              <button
+                key={country.id}
+                type="button"
+                aria-pressed={picked}
+                className={cn(choiceClass, "flex flex-col items-start", onClass(picked))}
+                onClick={() => onChange({ places: togglePlace(profile.places, country.id) })}
+              >
+                <span>{country.name}</span>
+                {picked ? <SectorHint placeId={country.id} /> : null}
+              </button>
+            );
+          })}
         </div>
         <TownPick place={home} onPlace={onPlace} />
         <UseMyLocation onTown={onPlace} className={cn(choiceClass, "border-border bg-card")} />
+        <FitFooter sources={sourcesForPlaces(profile.places)} />
       </div>
     );
   }

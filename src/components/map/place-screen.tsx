@@ -11,6 +11,7 @@ import { readSheetStop, ResultsSheet, writeSheetStop, type SheetStop } from "@/c
 import { REGION_CAMERA, countryZoom, type FlyRequest, type FlyTarget } from "@/lib/map-camera";
 import { isRegionId, townsIn, type SearchHit } from "@/lib/openings";
 import { REGIONS, countriesIn, getRegion, showcaseById } from "@/lib/regions";
+import { WhatWorksButton } from "@/components/place-fit";
 import { CountryRuleRow, RulesHere } from "@/components/rules-panel";
 
 const rowClass =
@@ -153,20 +154,35 @@ export function PlaceScreen({
       {level === "countries"
         ? countries.map((item) => (
             <CountryRuleRow key={item.id} countryId={item.id}>
-              <button type="button" className={rowClass} onClick={() => chooseCountry(item.id)}>
-                <span className="text-lg font-semibold">{item.name}</span>
-              </button>
+              <div className="space-y-1">
+                <button type="button" className={rowClass} onClick={() => chooseCountry(item.id)}>
+                  <span className="text-lg font-semibold">{item.name}</span>
+                </button>
+                <WhatWorksButton placeId={item.id} />
+              </div>
             </CountryRuleRow>
           ))
         : null}
       {level === "towns" && countryId ? <RulesHere countryId={countryId} /> : null}
       {level === "towns"
-        ? towns.map((item) => (
-            <button key={item.id} type="button" className={rowClass} onClick={() => chooseTown(item)}>
-              <span className="text-lg font-semibold">{item.label}</span>
-              <span className="text-base font-normal text-muted-foreground">{item.detail}</span>
-            </button>
-          ))
+        ? towns.map((item, index) => {
+            const previous = towns[index - 1];
+            const showParish = Boolean(item.parishId && item.parishId !== previous?.parishId);
+            return (
+              <div key={item.id} className="space-y-2">
+                {showParish && item.parishId ? (
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-lg font-semibold">{item.detail}</p>
+                    <WhatWorksButton placeId={item.parishId} />
+                  </div>
+                ) : null}
+                <button type="button" className={rowClass} onClick={() => chooseTown(item)}>
+                  <span className="text-lg font-semibold">{item.label}</span>
+                  <span className="text-base font-normal text-muted-foreground">{item.detail}</span>
+                </button>
+              </div>
+            );
+          })
         : null}
     </div>
   );

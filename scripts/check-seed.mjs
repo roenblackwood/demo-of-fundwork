@@ -624,6 +624,83 @@ for (const post of seed.availability ?? []) {
   if (blockedIds.has(post.countryId)) errors.push(`${post.id} sits in a blocked country.`);
 }
 
+const fitRaw = JSON.parse(readFileSync(new URL("../data/region-fit.json", import.meta.url), "utf8"));
+const parishIds = new Set((seed.parishes ?? []).map((parish) => parish.id));
+const ruleIds = new Set(Array.isArray(rules) ? rules.map((rule) => rule?.id).filter(Boolean) : []);
+const sectorIds = new Set(sectorsNeeded);
+
+function plainLine(text, label) {
+  if (typeof text !== "string" || !text.trim()) {
+    errors.push(`${label} needs text.`);
+    return;
+  }
+  if (text.includes("\n") || text.includes("\u2014") || text.includes("\u2013")) {
+    errors.push(`${label} must stay on one line.`);
+  }
+  if (/\b(safe|secure|guaranteed)\b/i.test(text)) errors.push(`${label} uses a banned word.`);
+}
+
+function checkSources(item, label) {
+  const sources = Array.isArray(item?.sources) ? item.sources : [];
+  if (sources.length === 0) errors.push(`${label} needs a source.`);
+  for (const source of sources) {
+    if (typeof source?.title !== "string" || !source.title.trim()) errors.push(`${label} source needs a title.`);
+    if (typeof source?.url !== "string" || !/^https?:\/\//.test(source.url)) {
+      errors.push(`${label} source needs a url.`);
+    }
+  }
+  if (typeof item?.checkedOn !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(item.checkedOn)) {
+    errors.push(`${label} needs a checkedOn date.`);
+  }
+}
+
+if (!fitRaw || !Array.isArray(fitRaw.places)) {
+  errors.push("region-fit.json needs a places list.");
+} else {
+  const seenPlaces = new Set();
+  for (const place of fitRaw.places) {
+    const id = typeof place?.id === "string" ? place.id : "?";
+    if (seenPlaces.has(id)) errors.push(`Duplicate place note ${id}.`);
+    seenPlaces.add(id);
+    if (!parishIds.has(id) && !countryIds.has(id) && !ruleIds.has(id)) {
+      errors.push(`${id} is not a country or a Jamaica parish.`);
+    }
+    const sectors = Array.isArray(place?.sectors) ? place.sectors : null;
+    const seasons = Array.isArray(place?.seasons) ? place.seasons : null;
+    const risks = Array.isArray(place?.risks) ? place.risks : null;
+    const advice = Array.isArray(place?.advice) ? place.advice : null;
+    if (!sectors || !seasons || !risks || !advice) {
+      errors.push(`${id} needs sectors, seasons, risks, and advice lists.`);
+      continue;
+    }
+    if (advice.length > 3) errors.push(`${id} has more than 3 advice cards.`);
+    const seenSectors = new Set();
+    for (const item of sectors) {
+      const sector = typeof item?.sector === "string" ? item.sector : "?";
+      if (!sectorIds.has(sector)) errors.push(`${id} has an unknown sector.`);
+      if (seenSectors.has(sector)) errors.push(`${id} repeats ${sector}.`);
+      seenSectors.add(sector);
+      plainLine(item?.why, `${id} ${sector} why`);
+      checkSources(item, `${id} ${sector}`);
+    }
+    for (const item of seasons) {
+      plainLine(item?.line, `${id} season`);
+      checkSources(item, `${id} season`);
+    }
+    for (const item of risks) {
+      plainLine(item?.line, `${id} risk`);
+      checkSources(item, `${id} risk`);
+    }
+    for (const item of advice) {
+      plainLine(item?.title, `${id} advice title`);
+      plainLine(item?.body, `${id} advice`);
+      plainLine(item?.rule, `${id} advice rule`);
+      plainLine(item?.action, `${id} advice action`);
+      checkSources(item, `${id} advice`);
+    }
+  }
+}
+
 if (errors.length) {
   console.error(errors.join("\n"));
   process.exit(1);

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PlaceScreen, type PickedPlace } from "@/components/map/place-screen";
+import { WhatWorksButton } from "@/components/place-fit";
 import { ChoiceLink, StepHeader } from "@/components/parts";
 import { CountryRuleRow, RulesChip, RulesHere } from "@/components/rules-panel";
 import { buttonVariants } from "@/components/ui/button";
@@ -108,21 +109,24 @@ export function CountryStep({
         ) : null}
         {countriesIn(regionId).map((country) => (
           <CountryRuleRow key={country.id} countryId={country.id}>
-            <ChoiceLink
-              href={country.id === "jamaica" ? `${root}/jamaica` : `${root}/${country.id}`}
-              title={country.name}
-              detail={country.id === "jamaica" ? "Parishes and towns" : undefined}
-              onClick={() =>
-                updateFlow({
-                  regionId,
-                  countryId: country.id,
-                  parishId: undefined,
-                  townId: undefined,
-                  sector: undefined,
-                  skill: undefined,
-                })
-              }
-            />
+            <div className="space-y-1">
+              <ChoiceLink
+                href={country.id === "jamaica" ? `${root}/jamaica` : `${root}/${country.id}`}
+                title={country.name}
+                detail={country.id === "jamaica" ? "Parishes and towns" : undefined}
+                onClick={() =>
+                  updateFlow({
+                    regionId,
+                    countryId: country.id,
+                    parishId: undefined,
+                    townId: undefined,
+                    sector: undefined,
+                    skill: undefined,
+                  })
+                }
+              />
+              <WhatWorksButton placeId={country.id} />
+            </div>
           </CountryRuleRow>
         ))}
       </div>
@@ -160,21 +164,23 @@ export function ParishStep({
       />
       <div className="space-y-3">
         {shown.map((parish) => (
-          <ChoiceLink
-            key={parish.id}
-            href={`${root}/${parish.id}`}
-            title={parish.name}
-            onClick={() =>
-              updateFlow({
-                regionId: "caribbean",
-                countryId: "jamaica",
-                parishId: parish.id,
-                townId: undefined,
-                sector: undefined,
-                skill: undefined,
-              })
-            }
-          />
+          <div key={parish.id} className="space-y-1">
+            <ChoiceLink
+              href={`${root}/${parish.id}`}
+              title={parish.name}
+              onClick={() =>
+                updateFlow({
+                  regionId: "caribbean",
+                  countryId: "jamaica",
+                  parishId: parish.id,
+                  townId: undefined,
+                  sector: undefined,
+                  skill: undefined,
+                })
+              }
+            />
+            <WhatWorksButton placeId={parish.id} />
+          </div>
         ))}
         {shown.length === 0 ? (
           <p className="text-lg">No parish with that name.</p>
