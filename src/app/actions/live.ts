@@ -328,6 +328,16 @@ export async function postContribution(input: {
   return !error;
 }
 
+export async function acceptContribution(contributionId: string): Promise<boolean> {
+  const id = await callerId();
+  if (!id || !contributionId) return false;
+  const supabase = await serverSupabase();
+  const { data, error } = await supabase.rpc("accept_contribution", {
+    contribution_id: contributionId,
+  });
+  return !error && data === true;
+}
+
 export async function inviteWorker(requestId: string, workerId: string, skill: Skill): Promise<boolean> {
   const id = await callerId();
   if (!id || !isSkill(skill)) return false;

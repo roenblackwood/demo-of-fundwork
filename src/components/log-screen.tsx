@@ -7,11 +7,14 @@ import { Check } from "lucide-react";
 import { PageBusy } from "@/components/busy";
 import { ActionBar, NextSteps, SavedMark, StepHeader } from "@/components/parts";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { useVideos, VideoProof } from "@/components/video-proof";
+import { VideoRecorder } from "@/components/video-recorder";
 import { WORK_PRESETS, workPresetLabel } from "@/lib/catalog";
 import { cn } from "cn";
 import { savedLabel } from "@/lib/copy";
 import { useDemo } from "@/lib/demo-store";
 import { workerUnits } from "@/lib/ownership";
+import { attachVideo, currentPhaseName } from "@/lib/videos";
 import type { Skill, WorkPreset } from "@/lib/types";
 
 export function LogScreen({ id }: { id: string }) {
@@ -19,6 +22,8 @@ export function LogScreen({ id }: { id: string }) {
   const demo = useDemo();
   const project = demo.projects.find((item) => item.id === id);
   const [preset, setPreset] = useState<WorkPreset | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [videoId, setVideoId] = useState<string | null>(null);
   const skill: Skill =
     demo.flow?.skill ||
     demo.homeSkill ||
@@ -43,8 +48,9 @@ export function LogScreen({ id }: { id: string }) {
 
   async function save() {
     if (!project || !preset || demo.saving) return;
+    const id = crypto.randomUUID();
     const ok = await demo.addContribution({
-      id: crypto.randomUUID(),
+      id,
       userId: demo.userId,
       projectId: project.id,
       skill,
@@ -53,6 +59,7 @@ export function LogScreen({ id }: { id: string }) {
       createdAt: new Date().toISOString(),
     });
     if (!ok) return;
+    if (videoId) await attachVideo(videoId, id);
     router.push(`/projects/${project.id}/logged`);
   }
 
@@ -91,6 +98,15 @@ export function LogScreen({ id }: { id: string }) {
           {workPresetLabel(preset)} becomes about {workerUnits(preset)} ownership units, once the organizer accepts it.
         </p>
       ) : null}
+      {videoId ? (
+        <VideoProof id={videoId} />
+      ) : adding ? (
+        <VideoRecorder project={project} phase={currentPhaseName(project)} onSaved={setVideoId} />
+      ) : (
+        <Button type="button" size="lg" variant="outline" className="w-full" onClick={() => setAdding(true)}>
+          Add a video
+        </Button>
+      )}
       <ActionBar>
         <Button
           size="lg"
@@ -110,7 +126,9 @@ export function LogScreen({ id }: { id: string }) {
 export function LoggedScreen({ id }: { id: string }) {
   const demo = useDemo();
   const project = demo.projects.find((item) => item.id === id);
-  const contribution = demo.contributions.find((item) => item.projectId === id);
+  const videos = useVideos();
+  const contribution = demo.contributions.find((item) => item.projectId === id && item.userId === demo.userId);
+  const video = contribution ? videos.find((item) => item.contributionId === contribution.id) : undefined;
 
   if (!demo.ready) return <PageBusy />;
   if (!project || !contribution) {
@@ -124,6 +142,7 @@ export function LoggedScreen({ id }: { id: string }) {
   return (
     <div className="space-y-6">
       <StepHeader backHref="/you" title="You logged work" hint={project.name} />
+      {video ? <VideoProof id={video.id} /> : null}
       <SavedMark label={savedLabel()} />
       <p className="text-3xl font-semibold">{workPresetLabel(contribution.preset)}</p>
       <p className="text-lg leading-relaxed">

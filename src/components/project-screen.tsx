@@ -26,6 +26,7 @@ import { PageHero, PhotoAdder, usePhotos } from "@/components/photo-box";
 import { TeamBar } from "@/components/pledge-bars";
 import { ProjectPhases, ReadinessReport } from "@/components/needs-panel";
 import { PhasePlan } from "@/components/phase-plan";
+import { ProgressStrip } from "@/components/video-proof";
 import { LessonList } from "@/components/lesson-card";
 import { ThisWeekCard } from "@/components/this-week";
 import { checkNote, projectNote } from "@/lib/ai";
@@ -263,6 +264,15 @@ export function ProjectScreen({ id }: { id: string }) {
         openPhase={project.openPhase}
         phaseNote={project.phaseNote}
       />
+      <ProgressStrip project={project} />
+      {organizing ? (
+        <Link
+          href={`/projects/${project.id}/accept`}
+          className="inline-flex min-h-11 items-center font-semibold text-primary"
+        >
+          Review logged work
+        </Link>
+      ) : null}
       {organizing ? <PhasePlan projectId={project.id} /> : null}
       <ReadinessReport
         sector={project.sector}

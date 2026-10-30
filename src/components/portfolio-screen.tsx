@@ -9,6 +9,7 @@ import { money, placeLine } from "@/lib/format";
 import { lessonById } from "@/lib/lessons";
 import { buildPortfolio, formatUsd, type BarRow, type LocalAmount, type PortfolioView } from "@/lib/portfolio";
 import { CapitalBar, TeamBar } from "@/components/pledge-bars";
+import { LatestProjectVideo } from "@/components/video-proof";
 import { acceptedCount } from "@/lib/requests";
 import { activePledges, pledgedAmount } from "@/lib/pledges";
 import { sectorTitle } from "@/lib/catalog";
@@ -171,6 +172,7 @@ export function PortfolioScreen() {
               </Link>
             </h3>
             <p className="text-base text-muted-foreground">{row.place}</p>
+            <LatestProjectVideo projectId={row.projectId} />
             <p className="text-base">
               {row.phase}. This tranche is {row.tranche}.
             </p>

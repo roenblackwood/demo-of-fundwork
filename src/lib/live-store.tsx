@@ -8,6 +8,7 @@ import {
   postApplication,
   postAvailability,
   postCommitment,
+  acceptContribution as acceptContributionAction,
   postContribution,
   postRequest,
   withdrawRequestPledge as withdrawRequestPledgeAction,
@@ -84,6 +85,7 @@ type Snapshot = {
   homeExtraSkills: Skill[];
   commitments: Commitment[];
   contributions: Contribution[];
+  reviewContributions: Contribution[];
   addedCommitments: Commitment[];
   requests: CapitalRequest[];
   pledges: RequestPledge[];
@@ -120,6 +122,7 @@ const emptySnapshot: Snapshot = {
   homeExtraSkills: [],
   commitments: [],
   contributions: [],
+  reviewContributions: [],
   addedCommitments: [],
   requests: [],
   pledges: [],
@@ -286,10 +289,17 @@ async function loadSnapshot(): Promise<Snapshot> {
     : [];
 
   const ownCommitments = user ? commitments.filter((item) => item.userId === user.id) : [];
-  const contributions = newest(rowsOf(contributionRows).flatMap((row) => {
+  const allContributions = newest(rowsOf(contributionRows).flatMap((row) => {
     const item = mapContribution(row);
     return item ? [item] : [];
-  })).filter((item) => !user || item.userId === user.id);
+  }));
+  const contributions = allContributions.filter((item) => !user || item.userId === user.id);
+  const reviewContributions = user
+    ? allContributions.filter((item) => {
+        const project = projects.find((row) => row.id === item.projectId);
+        return project?.organizerId === user.id;
+      })
+    : [];
 
   return {
     userId: user?.id ?? "",
@@ -302,6 +312,7 @@ async function loadSnapshot(): Promise<Snapshot> {
     homeExtraSkills: extra,
     commitments: ownCommitments,
     contributions,
+    reviewContributions,
     addedCommitments: commitments,
     requests: newest(rowsOf(requestRows).flatMap((row) => {
       const item = mapRequest(row);
@@ -496,6 +507,14 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
       proofLabel: null,
       commitments: current.commitments,
       contributions: current.contributions,
+      acceptContribution: (id) => {
+        const seen = snapshotRef.current;
+        const row = seen.reviewContributions.find((item) => item.id === id && item.status === "logged");
+        const project = row ? seen.projects.find((item) => item.id === row.projectId) : undefined;
+        const local = Boolean(row && project && project.organizerId === seen.userId);
+        return commitFlag(local, () => acceptContributionAction(id));
+      },
+      reviewContributions: current.reviewContributions,
       addedCommitments: current.addedCommitments,
       requests: current.requests,
       pledges: current.pledges,

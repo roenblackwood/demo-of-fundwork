@@ -10,6 +10,7 @@ import { ProjectCard } from "@/components/project-card";
 import { RequestCard } from "@/components/request-card";
 import { ApplicationStatusLabel, Avatar, MoneyText, StatusLabel, sectionTitle } from "@/components/parts";
 import { ThisWeekNeed } from "@/components/this-week";
+import { WifiUploadSetting } from "@/components/video-proof";
 import { useSnackbar } from "@/components/snackbar";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -243,6 +244,8 @@ export function DashboardScreen() {
       <YourLearning />
 
       <GettingStarted />
+
+      <WifiUploadSetting />
 
       {isLive() ? (
         <button

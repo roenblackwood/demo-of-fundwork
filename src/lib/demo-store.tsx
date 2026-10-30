@@ -21,6 +21,7 @@ import {
 } from "@/lib/pledges";
 import { openChecks, sectorWeekly } from "@/lib/catalog";
 import { clearPhotoStore } from "@/lib/photos";
+import { clearVideoStore } from "@/lib/videos";
 import { investorBasicsIds, stageLessons } from "@/lib/lessons";
 import {
   resolvedProfile,
@@ -618,6 +619,23 @@ function applyStart(current: Session, draft: StartDraft): Session {
   };
 }
 
+function reviewRows(session: Session): Contribution[] {
+  const userId = currentUserId(session);
+  const organized = new Set(
+    listProjects(session)
+      .filter((item) => item.organizerId === userId)
+      .map((item) => item.id),
+  );
+  const byId = new Map<string, Contribution>();
+  for (const item of seedContributions()) {
+    if (organized.has(item.projectId)) byId.set(item.id, item);
+  }
+  for (const item of session.contributions) {
+    if (organized.has(item.projectId)) byId.set(item.id, item);
+  }
+  return [...byId.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
 function applyPath(session: Session, path: PathChoice): Session {
   const sample = session.sampleId ? getUser(session.sampleId) : undefined;
   const mismatch = session.mode === "sample" && sample && sample.role !== path;
@@ -675,6 +693,8 @@ export type DemoValue = {
   displayNameFor: (userId: string) => string;
   addCommitment: (commitment: Commitment) => Promise<boolean>;
   addContribution: (contribution: Contribution) => Promise<boolean>;
+  acceptContribution: (id: string) => Promise<boolean>;
+  reviewContributions: Contribution[];
   addRequest: (draft: RequestDraft) => Promise<string | null>;
   pledgeToRequest: (input: { requestId: string; amount: number; showName: boolean }) => Promise<PledgeResult>;
   withdrawRequestPledge: (pledgeId: string) => Promise<WithdrawResult>;
@@ -780,6 +800,26 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       return { ...current, contributions: [...current.contributions, contribution] };
     });
     return true;
+  }, []);
+
+  const acceptContribution = useCallback(async (id: string) => {
+    let saved = false;
+    setSession((current) => {
+      const existing = [...seedContributions(), ...current.contributions].find((item) => item.id === id);
+      if (!existing || existing.status !== "logged") return current;
+      const project = listProjects(current).find((item) => item.id === existing.projectId);
+      if (!project || project.organizerId !== currentUserId(current)) return current;
+      saved = true;
+      const next = { ...existing, status: "accepted" as const };
+      if (current.contributions.some((item) => item.id === id)) {
+        return {
+          ...current,
+          contributions: current.contributions.map((item) => (item.id === id ? next : item)),
+        };
+      }
+      return { ...current, contributions: [...current.contributions, next] };
+    });
+    return saved;
   }, []);
 
   const addRequest = useCallback(async (draft: RequestDraft) => {
@@ -1388,6 +1428,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     window.localStorage.removeItem(V2_KEY);
     window.localStorage.removeItem(V1_KEY);
     void clearPhotoStore().catch(() => undefined);
+    void clearVideoStore().catch(() => undefined);
   }, []);
 
   const value = useMemo<DemoValue>(() => {
@@ -1468,6 +1509,8 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       },
       addCommitment,
       addContribution,
+      acceptContribution,
+      reviewContributions: reviewRows(session),
       addRequest,
       pledgeToRequest,
       withdrawRequestPledge,
@@ -1508,6 +1551,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     addAvailability,
     addCommitment,
     addContribution,
+    acceptContribution,
     addRequest,
     pledgeToRequest,
     withdrawRequestPledge,

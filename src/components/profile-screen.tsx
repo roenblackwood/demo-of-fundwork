@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { PageBusy } from "@/components/busy";
 import { PhotoAdder } from "@/components/photo-box";
+import { WorkVideos } from "@/components/video-proof";
 import { FitFooter, SectorHint } from "@/components/place-fit";
 import { MoneyText, StepHeader, sectionTitle } from "@/components/parts";
 import { UseMyLocation } from "@/components/use-location";
@@ -835,6 +836,7 @@ function Summary({
         <SummaryRow title="Languages" body={profile.languages.join(", ") || "None yet"} onEdit={() => onEdit(4)} />
         <SummaryRow title="Photos" body={profile.photos.length === 1 ? "1 photo" : `${profile.photos.length} photos`} onEdit={() => onEdit(5)} />
         <ProfilePhotos />
+        <WorkVideos />
         <TrackList track={track} />
       </div>
     );

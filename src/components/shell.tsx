@@ -438,7 +438,7 @@ function HeaderSearch() {
 function contentWidth(pathname: string): string {
   if (pathname.startsWith("/get-started") || pathname.startsWith("/you/profile")) return "max-w-2xl";
   if (pathname === "/you") return "max-w-lg min-[600px]:max-w-3xl";
-  if (/\/(commit|apply|log)(\/|$)/.test(pathname)) return "max-w-2xl";
+  if (/\/(commit|apply|log|accept)(\/|$)/.test(pathname)) return "max-w-2xl";
   if (pathname.includes("/start")) return "max-w-2xl min-[840px]:max-w-6xl";
   return "max-w-lg min-[600px]:max-w-3xl min-[840px]:max-w-6xl";
 }

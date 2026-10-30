@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
 
@@ -56,6 +56,7 @@ let startedProjectId = null;
 let availabilityId = null;
 let cofundRequestId = null;
 let cofundProjectId = null;
+let videoProjectId = null;
 
 function userClient() {
   return createClient(url, anonKey, {
@@ -111,7 +112,20 @@ function singleWallet(projectId, chain, address) {
 }
 
 async function cleanup() {
-  const projectIds = [projectA, projectB, projectC, startedProjectId, cofundProjectId].filter(Boolean);
+  const projectIds = [projectA, projectB, projectC, startedProjectId, cofundProjectId, videoProjectId].filter(Boolean);
+  if (projectIds.length > 0) {
+    const listed = await admin.from("videos").select("id, owner_id").in("project_id", projectIds);
+    const videoIds = (listed.data ?? []).map((row) => row.id);
+    if (videoIds.length > 0) {
+      await admin.from("video_reports").delete().in("video_id", videoIds);
+    }
+    await admin.from("videos").delete().in("project_id", projectIds);
+    const paths = [];
+    for (const row of listed.data ?? []) {
+      paths.push(`${row.owner_id}/${row.id}.webm`, `${row.owner_id}/${row.id}.mp4`, `${row.owner_id}/too-big.webm`);
+    }
+    if (paths.length > 0) await admin.storage.from("videos").remove(paths);
+  }
   if (userIds.length > 0) {
     await admin.from("wallet_checks").delete().in("user_id", userIds);
     await admin.from("wallets").delete().in("user_id", userIds);
@@ -949,6 +963,88 @@ try {
       byUser.get(joiner.id) === 500 &&
       openForEach,
     "start_project converts every pledge.",
+  );
+
+  videoProjectId = `live-check-v-${stamp}`;
+  const videoProject = await admin.from("projects").insert({
+    id: videoProjectId,
+    organizer_id: investor.id,
+    organizer_name: "Check",
+    name: "Check videos",
+    country_id: "ghana",
+    parish_id: null,
+    town_id: "tamale",
+    sector: "water",
+    summary: "Check.",
+    what_you_get: "A part of this project.",
+    goal: 1000,
+    workers_needed: 1,
+    weekly_payout: 16000,
+    work_started: false,
+    needs: ["water"],
+    checks: [],
+  });
+  const videoMember = videoProject.error
+    ? { error: videoProject.error }
+    : await admin.from("project_members").insert({
+        project_id: videoProjectId,
+        worker_id: member.id,
+      });
+  const videoId = randomUUID();
+  const videoSha = "a".repeat(64);
+  const videoRow = {
+    id: videoId,
+    owner_id: member.id,
+    project_id: videoProjectId,
+    contribution_id: null,
+    phase: "Start",
+    description: "A wall going up on site.",
+    sha256: videoSha,
+    at_site: false,
+    hidden: false,
+    pinned: false,
+    on_profile: false,
+    bytes: 1200,
+  };
+  const deniedVideo = videoMember.error
+    ? { error: videoMember.error }
+    : await outsider.client.from("videos").insert({ ...videoRow, id: randomUUID(), owner_id: outsider.id, sha256: "b".repeat(64) });
+  const addedVideo = videoMember.error
+    ? { error: videoMember.error }
+    : await member.client.from("videos").insert(videoRow);
+  report(
+    !videoProject.error && !videoMember.error && Boolean(deniedVideo.error) && !addedVideo.error,
+    "A non-member cannot insert a video.",
+  );
+  const duplicateVideo = addedVideo.error
+    ? { error: addedVideo.error }
+    : await member.client.from("videos").insert({ ...videoRow, id: randomUUID() });
+  report(!addedVideo.error && Boolean(duplicateVideo.error), "A duplicate sha256 is refused.");
+  const tooBig = new Blob([new Uint8Array(Math.round(8.5 * 1024 * 1024))], { type: "video/webm" });
+  const uploaded = await member.client.storage.from("videos").upload(`${member.id}/too-big.webm`, tooBig, {
+    contentType: "video/webm",
+    upsert: false,
+  });
+  report(Boolean(uploaded.error), "An 8.5 MB file is refused.");
+  const ownerHide = addedVideo.error
+    ? { error: addedVideo.error }
+    : await member.client.from("videos").update({ hidden: true }).eq("id", videoId);
+  const ownerRead = await admin.from("videos").select("hidden").eq("id", videoId).maybeSingle();
+  if (!addedVideo.error) {
+    await member.client.from("videos").update({ hidden: false }).eq("id", videoId);
+    await admin.from("project_members").insert({ project_id: videoProjectId, worker_id: outsider.id });
+  }
+  await outsider.client.from("videos").update({ hidden: true }).eq("id", videoId);
+  const afterOutsider = await admin.from("videos").select("hidden").eq("id", videoId).maybeSingle();
+  const organizerHide = await investor.client.from("videos").update({ hidden: true }).eq("id", videoId);
+  const afterOrganizer = await admin.from("videos").select("hidden").eq("id", videoId).maybeSingle();
+  report(
+    !ownerHide.error &&
+      ownerRead.data?.hidden === true &&
+      afterOutsider.data?.hidden === false &&
+      !organizerHide.error &&
+      afterOrganizer.data?.hidden === true,
+    "Only the owner or the organizer can hide a video.",
   );
 } catch (error) {
   report(false, error instanceof Error ? error.message : "The live check stopped.");
