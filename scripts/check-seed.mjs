@@ -583,10 +583,40 @@ if (!Array.isArray(rules)) {
     if ((rule?.status === "open" || rule?.status === "limited") && (!sources || sources.length === 0)) {
       errors.push(`${id} needs a source.`);
     }
+    const seenSourceUrls = new Set();
+    const seenSourceTitles = new Set();
     for (const source of sources ?? []) {
       if (typeof source?.title !== "string" || !source.title.trim()) errors.push(`${id} source needs a title.`);
       if (typeof source?.url !== "string" || !/^https?:\/\//.test(source.url)) {
         errors.push(`${id} source needs a url.`);
+      }
+      const title = typeof source?.title === "string" ? source.title.trim() : "";
+      const url = typeof source?.url === "string" ? source.url.trim() : "";
+      if ((title && seenSourceTitles.has(title)) || (url && seenSourceUrls.has(url))) {
+        errors.push(`${id} lists a source more than once.`);
+      }
+      if (title) seenSourceTitles.add(title);
+      if (url) seenSourceUrls.add(url);
+    }
+    const months = "January|February|March|April|May|June|July|August|September|October|November|December";
+    const dateRe = new RegExp(
+      `\\b(?:(?:${months})\\s+\\d{1,2},?\\s+\\d{4}|\\d{1,2}\\s+(?:${months})\\s+\\d{4}|(?:${months})\\s+\\d{4})\\b`,
+      "g",
+    );
+    for (const note of [cryptoNote, investNote]) {
+      if (!note) continue;
+      const years = new Set();
+      for (const match of note.match(dateRe) ?? []) {
+        const year = match.match(/\d{4}/);
+        if (year) years.add(year[0]);
+      }
+      for (const year of years) {
+        const listed = (sources ?? []).some(
+          (source) =>
+            (typeof source?.title === "string" && source.title.includes(year)) ||
+            (typeof source?.url === "string" && source.url.includes(year)),
+        );
+        if (!listed) errors.push(`${id} names ${year} but no source title or url contains it.`);
       }
     }
     if (typeof rule?.checkedOn !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(rule.checkedOn)) {

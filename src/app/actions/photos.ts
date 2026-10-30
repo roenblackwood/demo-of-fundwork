@@ -3,6 +3,8 @@
 import { serverSupabase } from "@/lib/supabase/server";
 
 const SUBJECTS = new Set(["request", "project", "profile"]);
+const PHOTO_BYTES = 400 * 1024;
+const PHOTO_TYPES = new Set(["image/webp", "image/jpeg"]);
 
 async function callerId(): Promise<string | null> {
   const supabase = await serverSupabase();
@@ -43,6 +45,7 @@ export async function addPhoto(form: FormData): Promise<boolean> {
   const alt = String(form.get("alt") ?? "").trim().slice(0, 200);
   const file = form.get("file");
   if (!SUBJECTS.has(subject) || !subjectId || !alt || !(file instanceof File) || file.size < 1) return false;
+  if (file.size > PHOTO_BYTES || !PHOTO_TYPES.has(file.type)) return false;
   const supabase = await serverSupabase();
   const existing = await supabase
     .from("photos")
@@ -51,10 +54,11 @@ export async function addPhoto(form: FormData): Promise<boolean> {
     .eq("subject_id", subjectId);
   if (existing.error || (existing.data?.length ?? 0) >= 4) return false;
   const photoId = crypto.randomUUID();
-  const path = `${id}/${photoId}.webp`;
+  const ext = file.type === "image/jpeg" ? "jpg" : "webp";
+  const path = `${id}/${photoId}.${ext}`;
   const bytes = new Uint8Array(await file.arrayBuffer());
   const uploaded = await supabase.storage.from("photos").upload(path, bytes, {
-    contentType: "image/webp",
+    contentType: file.type,
     upsert: false,
   });
   if (uploaded.error) return false;
