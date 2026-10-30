@@ -1,3 +1,5 @@
+import { isListableCountry } from "@/lib/country-rules";
+
 /** Jamaica worker path: region, parish, town, skill, photo. */
 export const FLOW_STEPS = 5;
 
@@ -198,40 +200,41 @@ export const REGION_VIEWS: Record<
   RegionId,
   { center: [number, number]; zoom: number; label: [number, number] }
 > = {
-  caribbean: { center: [-73, 17], zoom: 4, label: [-88, 32] },
-  "latin-america": { center: [-82, 4], zoom: 1.35, label: [-64, -18] },
-  africa: { center: [16, 2], zoom: 1.7, label: [8, 2] },
-  "middle-east": { center: [36, 30], zoom: 2.5, label: [46, 38] },
-  "eastern-europe": { center: [24, 50], zoom: 2.8, label: [25, 53] },
-  "south-asia": { center: [80, 22], zoom: 2.6, label: [86, 14] },
+  caribbean: { center: [-70, 17.5], zoom: 4, label: [-88, 32] },
+  "latin-america": { center: [-80, 6], zoom: 1.35, label: [-64, -18] },
+  africa: { center: [20, 1], zoom: 1.6, label: [8, 2] },
+  "middle-east": { center: [36.3, 31.2], zoom: 3.2, label: [42, 34] },
+  "eastern-europe": { center: [28, 49], zoom: 2.8, label: [25, 53] },
+  "south-asia": { center: [74, 26], zoom: 2.4, label: [78, 14] },
   "southeast-asia": { center: [112, 4], zoom: 2.5, label: [85, -12] },
 };
 
-export const SHOWCASE = [
+const PLACES = [
   { id: "jamaica", name: "Jamaica", mapName: "Jamaica", regionId: "caribbean", coordinates: [-77.3, 18.15] },
+  { id: "dominican-republic", name: "Dominican Republic", mapName: "Dominican Rep.", regionId: "caribbean", coordinates: [-70.4, 18.7] },
   { id: "barbados", name: "Barbados", mapName: "Barbados", regionId: "caribbean", coordinates: [-59.55, 13.15] },
-  { id: "trinidad", name: "Trinidad and Tobago", mapName: "Trinidad and Tobago", regionId: "caribbean", coordinates: [-61.25, 10.45] },
   { id: "colombia", name: "Colombia", mapName: "Colombia", regionId: "latin-america", coordinates: [-74.1, 4.6] },
   { id: "mexico", name: "Mexico", mapName: "Mexico", regionId: "latin-america", coordinates: [-102.5, 23.6] },
+  { id: "el-salvador", name: "El Salvador", mapName: "El Salvador", regionId: "latin-america", coordinates: [-88.9, 13.8] },
   { id: "brazil", name: "Brazil", mapName: "Brazil", regionId: "latin-america", coordinates: [-52, -10] },
   { id: "kenya", name: "Kenya", mapName: "Kenya", regionId: "africa", coordinates: [37.9, 0.2] },
   { id: "ghana", name: "Ghana", mapName: "Ghana", regionId: "africa", coordinates: [-1.2, 7.9] },
+  { id: "rwanda", name: "Rwanda", mapName: "Rwanda", regionId: "africa", coordinates: [29.9, -2] },
   { id: "nigeria", name: "Nigeria", mapName: "Nigeria", regionId: "africa", coordinates: [8.2, 9.6] },
   { id: "jordan", name: "Jordan", mapName: "Jordan", regionId: "middle-east", coordinates: [36.3, 31.2] },
-  { id: "lebanon", name: "Lebanon", mapName: "Lebanon", regionId: "middle-east", coordinates: [35.8, 33.9] },
-  { id: "egypt", name: "Egypt", mapName: "Egypt", regionId: "middle-east", coordinates: [30.2, 26.8] },
   { id: "moldova", name: "Moldova", mapName: "Moldova", regionId: "eastern-europe", coordinates: [28.6, 47] },
   { id: "romania", name: "Romania", mapName: "Romania", regionId: "eastern-europe", coordinates: [25, 46] },
   { id: "ukraine", name: "Ukraine", mapName: "Ukraine", regionId: "eastern-europe", coordinates: [31.2, 49] },
   { id: "india", name: "India", mapName: "India", regionId: "south-asia", coordinates: [79, 22] },
-  { id: "bangladesh", name: "Bangladesh", mapName: "Bangladesh", regionId: "south-asia", coordinates: [90.3, 23.7] },
-  { id: "nepal", name: "Nepal", mapName: "Nepal", regionId: "south-asia", coordinates: [84.1, 28.4] },
+  { id: "pakistan", name: "Pakistan", mapName: "Pakistan", regionId: "south-asia", coordinates: [69.3, 30.4] },
   { id: "indonesia", name: "Indonesia", mapName: "Indonesia", regionId: "southeast-asia", coordinates: [118, -2] },
   { id: "philippines", name: "Philippines", mapName: "Philippines", regionId: "southeast-asia", coordinates: [122, 12] },
   { id: "vietnam", name: "Vietnam", mapName: "Vietnam", regionId: "southeast-asia", coordinates: [108, 14] },
 ] as const;
 
-export type ShowcaseCountry = (typeof SHOWCASE)[number];
+export type ShowcaseCountry = (typeof PLACES)[number];
+
+export const SHOWCASE = PLACES.filter((country) => isListableCountry(country.id));
 
 export function showcaseByMapName(name: string) {
   return SHOWCASE.find((country) => country.mapName === name);
@@ -251,7 +254,7 @@ const LEADS: Record<RegionId, string> = {
   africa: "kenya",
   "middle-east": "jordan",
   "eastern-europe": "moldova",
-  "south-asia": "bangladesh",
+  "south-asia": "india",
   "southeast-asia": "indonesia",
 };
 

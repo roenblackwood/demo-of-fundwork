@@ -23,22 +23,21 @@ for (const country of seed.countries ?? []) {
 const COUNTRY_BOX = {
   jamaica: [-78.45, -76.15, 17.68, 18.55],
   barbados: [-59.66, -59.42, 13.04, 13.34],
-  trinidad: [-61.95, -60.5, 10.03, 11.35],
+  "dominican-republic": [-72.0, -68.3, 17.5, 19.9],
   colombia: [-79.05, -66.85, -4.23, 12.5],
   mexico: [-118.4, -86.7, 14.53, 32.72],
+  "el-salvador": [-90.13, -87.69, 13.15, 14.45],
   brazil: [-73.99, -34.7, -33.75, 5.27],
   kenya: [33.9, 41.91, -4.68, 5.03],
   ghana: [-3.26, 1.2, 4.54, 11.17],
+  rwanda: [28.86, 30.9, -2.84, -1.05],
   nigeria: [2.67, 14.68, 4.27, 13.89],
   jordan: [34.96, 39.3, 29.18, 33.37],
-  lebanon: [35.1, 36.64, 33.05, 34.69],
-  egypt: [24.7, 36.9, 21.97, 31.67],
   moldova: [26.62, 30.16, 45.47, 48.49],
   romania: [20.26, 29.72, 43.62, 48.27],
   ukraine: [22.14, 40.23, 44.38, 52.38],
   india: [68.11, 97.42, 6.75, 35.51],
-  bangladesh: [88.01, 92.67, 20.59, 26.63],
-  nepal: [80.06, 88.2, 26.35, 30.45],
+  pakistan: [60.87, 77.84, 23.69, 37.1],
   indonesia: [95.01, 141.01, -11.01, 6.08],
   philippines: [116.95, 126.6, 4.59, 21.12],
   vietnam: [102.14, 109.46, 8.18, 23.39],
@@ -553,6 +552,75 @@ for (const project of seed.projects) {
   if (typeof project.mentorName !== "string" || !project.mentorName.trim() || project.mentorName.length > 80) {
     errors.push(`${project.id} has a bad mentor name.`);
   }
+}
+
+const rules = JSON.parse(readFileSync(new URL("../data/countries.json", import.meta.url), "utf8"));
+const ruleStatuses = new Set(["open", "limited", "not-checked", "blocked"]);
+const blockedIds = new Set();
+const listableIds = new Set();
+if (!Array.isArray(rules)) {
+  errors.push("countries.json needs a list.");
+} else {
+  const seen = new Set();
+  for (const rule of rules) {
+    const id = typeof rule?.id === "string" ? rule.id : "?";
+    if (seen.has(id)) errors.push(`Duplicate rule ${id}.`);
+    seen.add(id);
+    if (!ruleStatuses.has(rule?.status)) errors.push(`${id} has a bad status.`);
+    if (rule?.status === "blocked") blockedIds.add(id);
+    else if (ruleStatuses.has(rule?.status)) listableIds.add(id);
+    const sources = Array.isArray(rule?.sources) ? rule.sources : null;
+    if (!sources) errors.push(`${id} needs a sources list.`);
+    const cryptoNote = typeof rule?.cryptoNote === "string" ? rule.cryptoNote : null;
+    const investNote = typeof rule?.investNote === "string" ? rule.investNote : null;
+    if (cryptoNote === null || investNote === null) errors.push(`${id} needs note fields.`);
+    if ((cryptoNote && cryptoNote.includes("\n")) || (investNote && investNote.includes("\n"))) {
+      errors.push(`${id} note must be one line.`);
+    }
+    const hasNote = Boolean(cryptoNote?.trim() || investNote?.trim());
+    if (hasNote && (!sources || sources.length === 0)) errors.push(`${id} has a note without a source.`);
+    if ((rule?.status === "open" || rule?.status === "limited") && (!sources || sources.length === 0)) {
+      errors.push(`${id} needs a source.`);
+    }
+    for (const source of sources ?? []) {
+      if (typeof source?.title !== "string" || !source.title.trim()) errors.push(`${id} source needs a title.`);
+      if (typeof source?.url !== "string" || !/^https?:\/\//.test(source.url)) {
+        errors.push(`${id} source needs a url.`);
+      }
+    }
+    if (typeof rule?.checkedOn !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(rule.checkedOn)) {
+      errors.push(`${id} needs a checkedOn date.`);
+    }
+  }
+}
+
+const regionsSrc = readFileSync(new URL("../src/lib/regions.ts", import.meta.url), "utf8");
+const placesStart = regionsSrc.indexOf("const PLACES = [");
+const placesEnd = regionsSrc.indexOf("] as const;", placesStart);
+const placeIds = [...regionsSrc.slice(placesStart, placesEnd).matchAll(/id: "([a-z0-9-]+)"/g)].map(
+  (match) => match[1],
+);
+if (placeIds.length === 0) errors.push("Could not read the place list.");
+for (const id of placeIds) {
+  if (!listableIds.has(id)) errors.push(`${id} is listed but is not an open, limited, or not-checked country.`);
+}
+for (const id of listableIds) {
+  if (!placeIds.includes(id)) errors.push(`${id} is missing from the place list.`);
+}
+for (const country of seed.countries ?? []) {
+  if (blockedIds.has(country.id)) errors.push(`${country.id} sits in a blocked country.`);
+}
+for (const project of seed.projects ?? []) {
+  if (blockedIds.has(project.countryId)) errors.push(`${project.id} sits in a blocked country.`);
+}
+for (const request of seed.requests ?? []) {
+  if (blockedIds.has(request.countryId)) errors.push(`${request.id} sits in a blocked country.`);
+}
+for (const user of seed.users ?? []) {
+  if (blockedIds.has(user.countryId)) errors.push(`${user.id} sits in a blocked country.`);
+}
+for (const post of seed.availability ?? []) {
+  if (blockedIds.has(post.countryId)) errors.push(`${post.id} sits in a blocked country.`);
 }
 
 if (errors.length) {

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PlaceScreen, type PickedPlace } from "@/components/map/place-screen";
 import { ChoiceLink, StepHeader } from "@/components/parts";
+import { CountryRuleRow, RulesChip, RulesHere } from "@/components/rules-panel";
 import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -102,23 +103,27 @@ export function CountryStep({
         hint={region?.name}
       />
       <div className="space-y-3">
+        {countriesIn(regionId).length === 1 ? (
+          <p className="text-base text-muted-foreground">More countries after their rules are checked.</p>
+        ) : null}
         {countriesIn(regionId).map((country) => (
-          <ChoiceLink
-            key={country.id}
-            href={country.id === "jamaica" ? `${root}/jamaica` : `${root}/${country.id}`}
-            title={country.name}
-            detail={country.id === "jamaica" ? "Parishes and towns" : undefined}
-            onClick={() =>
-              updateFlow({
-                regionId,
-                countryId: country.id,
-                parishId: undefined,
-                townId: undefined,
-                sector: undefined,
-                skill: undefined,
-              })
-            }
-          />
+          <CountryRuleRow key={country.id} countryId={country.id}>
+            <ChoiceLink
+              href={country.id === "jamaica" ? `${root}/jamaica` : `${root}/${country.id}`}
+              title={country.name}
+              detail={country.id === "jamaica" ? "Parishes and towns" : undefined}
+              onClick={() =>
+                updateFlow({
+                  regionId,
+                  countryId: country.id,
+                  parishId: undefined,
+                  townId: undefined,
+                  sector: undefined,
+                  skill: undefined,
+                })
+              }
+            />
+          </CountryRuleRow>
         ))}
       </div>
     </div>
@@ -224,6 +229,9 @@ export function TownStep({
         title={purpose === "request" ? "Where will you build?" : "Which town?"}
         hint={parish.name}
       />
+      <div className="mb-3">
+        <RulesHere countryId="jamaica" />
+      </div>
       <div className="space-y-3">
         {parish.towns.map((town) => {
           const done = purpose === "browse" && mode === "investor";
@@ -278,6 +286,10 @@ export function CityStep({
         }
         hint={region ? `${region.name}, ${country.name}` : country.name}
       />
+      <div className="mb-3 flex flex-col gap-3">
+        <RulesChip countryId={country.id} />
+        <RulesHere countryId={country.id} />
+      </div>
       <div className="space-y-3">
         {country.cities.map((city) => {
           const project = allProjects.find(

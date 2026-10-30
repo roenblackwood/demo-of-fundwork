@@ -35,7 +35,7 @@ export function guideFor(countryId: string, sector: Sector): GuideEntry | null {
 }
 
 export function uncheckedNote(countryName: string): string {
-  return `We have not checked the rules in ${countryName} yet. Ask the local council before you spend money.`;
+  return `We have not checked the sector steps in ${countryName} yet. Ask the local council before you spend money.`;
 }
 
 /** Lowest and highest goal for this country and sector. Null until there are two. */

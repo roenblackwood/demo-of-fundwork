@@ -5,6 +5,7 @@ import type { FeatureCollection } from "geojson";
 import { LngLat, Map as MapLibreMap, Marker, NavigationControl, setWorkerUrl } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import regions from "@/lib/maps/regions-110m.json";
+import blocked from "@/lib/maps/blocked-110m.json";
 import {
   POINT_ZOOM,
   REGION_CAMERA,
@@ -34,6 +35,7 @@ type Handlers = {
   onReady: (view: MapViewState) => void;
   onMove: (view: MapViewState, gesture: boolean) => void;
   onRegion: (regionId: string) => void;
+  onBlocked: (name: string) => void;
   onPoint: (id: string) => void;
   onFail: () => void;
 };
@@ -194,6 +196,7 @@ export function FundworkMap({
   onReady,
   onMove,
   onRegion,
+  onBlocked,
   onPoint,
   onFail,
 }: {
@@ -205,13 +208,14 @@ export function FundworkMap({
   onReady: (view: MapViewState) => void;
   onMove: (view: MapViewState, gesture: boolean) => void;
   onRegion: (regionId: string) => void;
+  onBlocked: (name: string) => void;
   onPoint: (id: string) => void;
   onFail: () => void;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const markers = useRef<Marker[]>([]);
-  const handlers = useRef<Handlers>({ onReady, onMove, onRegion, onPoint, onFail });
+  const handlers = useRef<Handlers>({ onReady, onMove, onRegion, onBlocked, onPoint, onFail });
   const pointsRef = useRef(points);
   const showRef = useRef(showMarkers);
   const selectedRef = useRef(selectedId);
@@ -221,7 +225,7 @@ export function FundworkMap({
   const pendingFly = useRef<FlyRequest | null>(null);
 
   useEffect(() => {
-    handlers.current = { onReady, onMove, onRegion, onPoint, onFail };
+    handlers.current = { onReady, onMove, onRegion, onBlocked, onPoint, onFail };
   });
 
   useEffect(() => {
@@ -423,8 +427,40 @@ export function FundworkMap({
         },
         before,
       );
+      map.addSource("blocked", { type: "geojson", data: blocked as FeatureCollection });
+      map.addLayer(
+        {
+          id: "blocked-fill",
+          type: "fill",
+          source: "blocked",
+          paint: { "fill-color": "#cfc6b8", "fill-opacity": 1 },
+        },
+        before,
+      );
+      map.addLayer(
+        {
+          id: "blocked-line",
+          type: "line",
+          source: "blocked",
+          paint: { "line-color": "#b7ad9e", "line-width": 1 },
+        },
+        before,
+      );
+      map.on("click", "blocked-fill", (event) => {
+        const name = event.features?.[0]?.properties?.name;
+        if (typeof name !== "string") return;
+        handlers.current.onBlocked(name);
+      });
+      map.on("mouseenter", "blocked-fill", () => {
+        map.getCanvas().style.cursor = "pointer";
+      });
+      map.on("mouseleave", "blocked-fill", () => {
+        map.getCanvas().style.cursor = "";
+      });
       map.on("click", "regions-fill", (event) => {
         if (regionRef.current || map.getZoom() >= WORLD_ZOOM) return;
+        const quiet = map.queryRenderedFeatures(event.point, { layers: ["blocked-fill"] });
+        if (quiet.length > 0) return;
         const value = event.features?.[0]?.properties?.regionId;
         if (typeof value !== "string") return;
         handlers.current.onRegion(value);

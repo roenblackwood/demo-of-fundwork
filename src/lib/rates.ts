@@ -2,31 +2,30 @@
  * Rough demo rates, in local units per US dollar.
  * Update these before real use.
  * Keys are the currency strings in the seed, not a second code list.
- * J$ is JMD, KSh is KES, GH₵ is GHS, Tk is BDT, Rp is IDR, COL$ is COP,
- * E£ is EGP, Bds$ is BBD, TT$ is TTD, MX$ is MXN, lei is RON.
+ * J$ is JMD, KSh is KES, GH₵ is GHS, Rp is IDR, COL$ is COP,
+ * Bds$ is BBD, MX$ is MXN, RD$ is DOP, US$ is USD, FRw is RWF, lei is RON.
  */
-export const RATES_AS_OF = "2026-10-28";
+export const RATES_AS_OF = "2026-10-29";
 
 export const USD_RATES: Record<string, number> = {
   "J$": 157,
   KSh: 129,
   "GH₵": 12.5,
-  Tk: 120,
   Rp: 16000,
   "COL$": 4000,
   JOD: 0.709,
   MDL: 17.5,
-  "E£": 48,
   "Bds$": 2,
-  "TT$": 6.8,
   "MX$": 19,
+  "RD$": 63,
+  "US$": 1,
+  FRw: 1450,
   BRL: 5.5,
   NGN: 1500,
-  LBP: 89500,
   lei: 4.5,
   UAH: 41,
   INR: 87,
-  NPR: 139,
+  PKR: 280,
   PHP: 57,
   VND: 25500,
 };

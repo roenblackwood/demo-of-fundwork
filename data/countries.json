@@ -1,0 +1,379 @@
+[
+  {
+    "id": "jamaica",
+    "name": "Jamaica",
+    "regionId": "caribbean",
+    "status": "open",
+    "cryptoNote": "A law to license crypto businesses passed the House in September 2026. It was signed on October 20, 2026, and it is not in force yet.",
+    "investNote": "",
+    "sources": [
+      {
+        "title": "Jamaica Gleaner",
+        "url": "http://web4.jamaica-gleaner.com/article/news/20260930/robinson-wants-virtual-assets-law-go-beyond-containing-risk"
+      },
+      {
+        "title": "Financial Services Commission public notice",
+        "url": "https://www.fscjamaica.org/wp-content/uploads/2026/10/Public-Notice-Cassandra-Rose.pdf"
+      }
+    ],
+    "checkedOn": "2026-10-29"
+  },
+  {
+    "id": "dominican-republic",
+    "name": "Dominican Republic",
+    "regionId": "caribbean",
+    "status": "open",
+    "cryptoNote": "The central bank says crypto is not legal tender and has no central-bank backing.",
+    "investNote": "",
+    "sources": [
+      {
+        "title": "Central Bank of the Dominican Republic",
+        "url": "https://bancentral.gov.do/a/d/5196-comunicado-sobre-criptomonedas-y-monedas-y-activos-virtuales"
+      }
+    ],
+    "checkedOn": "2026-10-29"
+  },
+  {
+    "id": "barbados",
+    "name": "Barbados",
+    "regionId": "caribbean",
+    "status": "open",
+    "cryptoNote": "The Financial Services Commission published a 2026 bill to license virtual asset businesses, and its legislation list names that Act.",
+    "investNote": "",
+    "sources": [
+      {
+        "title": "Financial Services Commission legislation list",
+        "url": "https://www.fsc.gov.bb/legislation"
+      },
+      {
+        "title": "Virtual Asset Service Providers Bill, 2026",
+        "url": "https://www.fsc.gov.bb/viewPDF/documents/2026-09-29-14-41-40-Virtual-Asset-Service-Providers-Bill-2026-2026-09-29.pdf"
+      }
+    ],
+    "checkedOn": "2026-10-29"
+  },
+  {
+    "id": "el-salvador",
+    "name": "El Salvador",
+    "regionId": "latin-america",
+    "status": "open",
+    "cryptoNote": "A January 2025 reform made private acceptance of Bitcoin voluntary. Taxes are no longer payable in Bitcoin.",
+    "investNote": "",
+    "sources": [
+      {
+        "title": "Legislative Assembly decree, 29 January 2025",
+        "url": "https://www.asamblea.gob.sv/sites/default/files/documents/decretos/FC2C7E66-490B-4420-B8B5-221C2F2A4C28.pdf"
+      }
+    ],
+    "checkedOn": "2026-10-29"
+  },
+  {
+    "id": "colombia",
+    "name": "Colombia",
+    "regionId": "latin-america",
+    "status": "open",
+    "cryptoNote": "The financial supervisor says crypto is not money and is not supervised.",
+    "investNote": "",
+    "sources": [
+      {
+        "title": "Superintendencia Financiera de Colombia",
+        "url": "https://www.superfinanciera.gov.co/publicaciones/10115324/que-son-los-activos-digitales-o-criptoactivos/"
+      }
+    ],
+    "checkedOn": "2026-10-29"
+  },
+  {
+    "id": "mexico",
+    "name": "Mexico",
+    "regionId": "latin-america",
+    "status": "open",
+    "cryptoNote": "The fintech law names virtual assets. Banks may not offer them to customers.",
+    "investNote": "",
+    "sources": [
+      {
+        "title": "Law to Regulate Financial Technology Institutions",
+        "url": "https://www.diputados.gob.mx/LeyesBiblio/pdf/LRITF.pdf"
+      },
+      {
+        "title": "Bank of Mexico, virtual assets",
+        "url": "https://www.banxico.org.mx/sistemas-de-pago/sobre-activos-virtuales-rie.html"
+      }
+    ],
+    "checkedOn": "2026-10-29"
+  },
+  {
+    "id": "kenya",
+    "name": "Kenya",
+    "regionId": "africa",
+    "status": "open",
+    "cryptoNote": "A 2025 law licenses virtual asset businesses. It took effect on 4 November 2025. Licensing waits on regulations.",
+    "investNote": "",
+    "sources": [
+      {
+        "title": "Virtual Assets Service Providers Act, 2025",
+        "url": "https://new.kenyalaw.org/akn/ke/act/2025/20"
+      },
+      {
+        "title": "CMA and Central Bank commencement notice",
+        "url": "https://www.cma.or.ke/download/68/public_notice/5875/commencement-of-the-virtual-assets-service-providers-act-2025-approved-advert.pdf"
+      }
+    ],
+    "checkedOn": "2026-10-29"
+  },
+  {
+    "id": "ghana",
+    "name": "Ghana",
+    "regionId": "africa",
+    "status": "open",
+    "cryptoNote": "Parliament passed a law to license virtual asset businesses in December 2025. The Bank of Ghana has not announced the start date.",
+    "investNote": "",
+    "sources": [
+      {
+        "title": "Bank of Ghana, passage of the virtual asset bill",
+        "url": "https://www.bog.gov.gh/news/press-release-passage-of-the-virtual-asset-service-providers-bill/"
+      },
+      {
+        "title": "Bank of Ghana, virtual assets",
+        "url": "https://www.bog.gov.gh/virtual-assets/"
+      }
+    ],
+    "checkedOn": "2026-10-29"
+  },
+  {
+    "id": "rwanda",
+    "name": "Rwanda",
+    "regionId": "africa",
+    "status": "open",
+    "cryptoNote": "Law No. 023/2026 licenses virtual asset businesses. It took effect on 28 May 2026.",
+    "investNote": "",
+    "sources": [
+      {
+        "title": "Capital Market Authority, laws",
+        "url": "https://www.cma.rw/regulatory-framework/laws"
+      },
+      {
+        "title": "Law regulating virtual asset business",
+        "url": "https://www.cma.rw/fileadmin/user_upload/law_regulating_virtual_asset_business.pdf"
+      }
+    ],
+    "checkedOn": "2026-10-29"
+  },
+  {
+    "id": "india",
+    "name": "India",
+    "regionId": "south-asia",
+    "status": "open",
+    "cryptoNote": "Crypto businesses register with the financial intelligence unit under the money-laundering law.",
+    "investNote": "",
+    "sources": [
+      {
+        "title": "Financial Intelligence Unit, downloads",
+        "url": "https://fiuindia.gov.in/files/Downloads/Downloads.html"
+      }
+    ],
+    "checkedOn": "2026-10-29"
+  },
+  {
+    "id": "indonesia",
+    "name": "Indonesia",
+    "regionId": "southeast-asia",
+    "status": "open",
+    "cryptoNote": "The financial services authority licenses crypto trading. Oversight moved there on 10 January 2025.",
+    "investNote": "",
+    "sources": [
+      {
+        "title": "OJK regulation 27 of 2024",
+        "url": "https://www.ojk.go.id/id/regulasi/Pages/POJK-27-2024-AKD-AK.aspx"
+      },
+      {
+        "title": "OJK licensed crypto trading operators",
+        "url": "https://ojk.go.id/en/berita-dan-kegiatan/siaran-pers/Pages/OJK-Licensed-Registered-Digital-Financial-Assets-and-Crypto-Assets-Trading-Operators-Whitelist.aspx"
+      }
+    ],
+    "checkedOn": "2026-10-29"
+  },
+  {
+    "id": "philippines",
+    "name": "Philippines",
+    "regionId": "southeast-asia",
+    "status": "open",
+    "cryptoNote": "The central bank licenses virtual asset businesses. New licences stay on hold.",
+    "investNote": "",
+    "sources": [
+      {
+        "title": "BSP Circular 1108",
+        "url": "https://www.bsp.gov.ph/Regulations/Issuances/2021/1108.pdf"
+      },
+      {
+        "title": "BSP Memorandum M-2025-031",
+        "url": "https://www.bsp.gov.ph/Regulations/Issuances/2025/M-2025-031.pdf"
+      }
+    ],
+    "checkedOn": "2026-10-29"
+  },
+  {
+    "id": "brazil",
+    "name": "Brazil",
+    "regionId": "latin-america",
+    "status": "limited",
+    "cryptoNote": "A 2022 law covers virtual asset businesses. Central bank licence rules are still phasing in.",
+    "investNote": "",
+    "sources": [
+      {
+        "title": "Law 14.478 of 2022",
+        "url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2022/lei/l14478.htm"
+      },
+      {
+        "title": "Central Bank of Brazil, virtual asset rules",
+        "url": "https://www.bcb.gov.br/en/pressdetail/2639/nota"
+      }
+    ],
+    "checkedOn": "2026-10-29"
+  },
+  {
+    "id": "nigeria",
+    "name": "Nigeria",
+    "regionId": "africa",
+    "status": "limited",
+    "cryptoNote": "The 2025 securities law covers virtual asset businesses. A licence needs the commission's capital rules.",
+    "investNote": "",
+    "sources": [
+      {
+        "title": "Investments and Securities Act, 2025",
+        "url": "https://sec.gov.ng/our-mandate/regulation/acts/"
+      },
+      {
+        "title": "Securities and Exchange Commission capital rules",
+        "url": "https://sec.gov.ng/revised-minimum-capital-mc-for-regulated-capital-market-entities"
+      }
+    ],
+    "checkedOn": "2026-10-29"
+  },
+  {
+    "id": "vietnam",
+    "name": "Vietnam",
+    "regionId": "southeast-asia",
+    "status": "limited",
+    "cryptoNote": "A five-year pilot for a crypto market began on 9 September 2025. Only licensed local firms may run it.",
+    "investNote": "",
+    "sources": [
+      {
+        "title": "State Securities Commission, Resolution 05/2025",
+        "url": "https://ssc.gov.vn/webcenter/portal/ssc/pages_r/l/chitit?dDocName=APPSSCGOVVN1620158982"
+      },
+      {
+        "title": "Government of Vietnam, crypto market pilot",
+        "url": "https://baochinhphu.vn/print/trien-khai-thi-diem-thi-truong-tai-san-ma-hoa-tai-viet-nam-tu-9-9-2025-10225090917324155.htm"
+      }
+    ],
+    "checkedOn": "2026-10-29"
+  },
+  {
+    "id": "pakistan",
+    "name": "Pakistan",
+    "regionId": "south-asia",
+    "status": "limited",
+    "cryptoNote": "A 2025 ordinance set up a virtual asset authority. A 2026 law and licence rules followed.",
+    "investNote": "",
+    "sources": [
+      {
+        "title": "Gazette ordinance, July 2025",
+        "url": "https://www.pvara.gov.pk/documents/Ex%20Gaz-I%20LAW.pdf"
+      },
+      {
+        "title": "Virtual Assets Regulatory Authority, regulations",
+        "url": "https://pvara.gov.pk/regulations"
+      }
+    ],
+    "checkedOn": "2026-10-29"
+  },
+  {
+    "id": "jordan",
+    "name": "Jordan",
+    "regionId": "middle-east",
+    "status": "limited",
+    "cryptoNote": "Law No. 14 of 2025 licenses virtual asset businesses. It took effect in 2025. Crypto is not ordinary money.",
+    "investNote": "",
+    "sources": [
+      {
+        "title": "Jordan Securities Commission, virtual assets law",
+        "url": "https://www.jsc.gov.jo/page/ar/%D9%82%D8%A7%D9%86%D9%88%D9%86_%D8%AA%D9%86%D8%B8%D9%8A%D9%85_%D8%A7%D9%84%D8%AA%D8%B9%D8%A7%D9%85%D9%84_%D8%A8%D8%A7%D9%84%D8%A3%D8%B5%D9%88%D9%84_%D8%A7%D9%84%D8%A7%D9%81%D8%AA%D8%B1%D8%A7%D8%B6%D9%8A%D8%A9"
+      },
+      {
+        "title": "Jordan Securities Commission, Regulation 94 of 2025",
+        "url": "https://www.jsc.gov.jo/News/en/12582"
+      }
+    ],
+    "checkedOn": "2026-10-29"
+  },
+  {
+    "id": "moldova",
+    "name": "Moldova",
+    "regionId": "eastern-europe",
+    "status": "not-checked",
+    "cryptoNote": "",
+    "investNote": "",
+    "sources": [],
+    "checkedOn": "2026-10-29"
+  },
+  {
+    "id": "romania",
+    "name": "Romania",
+    "regionId": "eastern-europe",
+    "status": "not-checked",
+    "cryptoNote": "",
+    "investNote": "",
+    "sources": [],
+    "checkedOn": "2026-10-29"
+  },
+  {
+    "id": "ukraine",
+    "name": "Ukraine",
+    "regionId": "eastern-europe",
+    "status": "not-checked",
+    "cryptoNote": "",
+    "investNote": "",
+    "sources": [],
+    "checkedOn": "2026-10-29"
+  },
+  {
+    "id": "egypt",
+    "name": "Egypt",
+    "regionId": "middle-east",
+    "status": "blocked",
+    "cryptoNote": "",
+    "investNote": "",
+    "sources": [],
+    "checkedOn": "2026-10-29"
+  },
+  {
+    "id": "bangladesh",
+    "name": "Bangladesh",
+    "regionId": "south-asia",
+    "status": "blocked",
+    "cryptoNote": "",
+    "investNote": "",
+    "sources": [],
+    "checkedOn": "2026-10-29"
+  },
+  {
+    "id": "nepal",
+    "name": "Nepal",
+    "regionId": "south-asia",
+    "status": "blocked",
+    "cryptoNote": "",
+    "investNote": "",
+    "sources": [],
+    "checkedOn": "2026-10-29"
+  },
+  {
+    "id": "morocco",
+    "name": "Morocco",
+    "regionId": "africa",
+    "status": "blocked",
+    "cryptoNote": "",
+    "investNote": "",
+    "sources": [],
+    "checkedOn": "2026-10-29"
+  }
+]

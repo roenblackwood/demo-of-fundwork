@@ -24,6 +24,7 @@ import { aboutUsd } from "@/lib/rates";
 import { matchWorkers } from "@/lib/match";
 import { acceptedCount } from "@/lib/requests";
 import { currencyOf, getCountry, requestPlace } from "@/lib/seed";
+import { RulesChip, RulesHere } from "@/components/rules-panel";
 import type { Application } from "@/lib/types";
 
 export function RequestScreen({ id }: { id: string }) {
@@ -70,7 +71,11 @@ export function RequestScreen({ id }: { id: string }) {
             <p className="text-sm text-muted-foreground">{postedDate(request.createdAt)}</p>
           </div>
         </div>
+        <div className="mt-3">
+          <RulesChip countryId={request.countryId} />
+        </div>
       </div>
+      <RulesHere countryId={request.countryId} />
       <div>
         <p className="text-2xl font-semibold leading-tight">{money(request.budget, currency)}</p>
         {aboutUsd(request.budget, currency) ? (

@@ -37,11 +37,11 @@ The service role key stays in the seed script. Do not put it in a `NEXT_PUBLIC_`
 
 The home screen is a world map with a sheet of open projects and requests. Search a town or country, or tap a region. The map flies there. Markers stand for real projects and requests. On a slow phone the list stays up until you ask for the map.
 
-The regions are the Caribbean, Latin America, Africa, the Middle East, Eastern Europe, South Asia, and Southeast Asia. Each region has two or three countries. Jamaica opens into parishes and towns. Other countries open into one or two cities. The basemap is OpenFreeMap. Region shading uses a simplified Natural Earth 110m file, and only at world zoom.
+The regions are the Caribbean, Latin America, Africa, the Middle East, Eastern Europe, South Asia, and Southeast Asia. The map lists countries from `data/countries.json`. Open, limited, and not-checked countries can be picked. Blocked countries stay as quiet land. The Middle East lists Jordan, with a line that more countries come after their rules are checked. Jamaica opens into parishes and towns. Other countries open into one or two cities. The basemap is OpenFreeMap. Region shading uses a simplified Natural Earth 110m file, and only at world zoom. The rules file is not legal advice.
 
 **Jamaica, then I want to invest.** Pick a parish, a town, and either places to stay or farms and food. Open a project, then commit one of the amounts. The commit step says you deploy Bitcoin capital and workers receive a stable unit. Your commitments show under You.
 
-**Another region.** Kenya, Ghana, Indonesia, Colombia, Bangladesh, Jordan, and Moldova each have a sample project. A city with no project points you at the country in that region that has one.
+**Another region.** Kenya, Ghana, Indonesia, Colombia, Pakistan, Jordan, and Moldova each have a sample project. A city with no project points you at the lead country in that region.
 
 **Jamaica, then I want to work.** Pick a parish, a town, and the work you do. Add a photo if you want, then open a match and log a day, a few days, or a week. Outside Jamaica, the work list leads with the skill that project needs.
 
@@ -81,7 +81,7 @@ Ask for the same short shape. Do not add a global chat box.
 
 ## Starter guides
 
-`data/guides.json` is the checked list. It has one entry for each country and sector we have looked up. Jamaica is filled in for places to stay, farms, power, water, internet, schools, and clinics. Other countries have no entry.
+`data/countries.json` lists the crypto rules we have checked. `data/guides.json` is the sector list. It has one entry for each country and sector we have looked up. Jamaica is filled in for places to stay, farms, power, water, internet, schools, and clinics. Other countries have no sector entry yet.
 
 `src/lib/ai.ts` writes the card from that list with a template. The demo uses the template. It does not call a model, and it does not put fees or processing times in the list. Amounts on the card, when they show, come from projects already on Fundwork.
 
@@ -128,7 +128,7 @@ The math lives in `src/lib/ownership.ts`. The UI says "ownership units". Equity 
 `data/seed.json` holds:
 
 - Jamaica's 14 parishes, each with 3 to 5 towns
-- 20 more countries, each with 1 or 2 cities
+- 19 more countries, each with 1 or 2 cities
 - 15 projects across lodging, farms, power, water, internet, schools, and clinics
 - 6 sample people
 - their commitments and contributions

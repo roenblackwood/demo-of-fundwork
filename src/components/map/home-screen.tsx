@@ -76,6 +76,7 @@ export function HomeScreen() {
   const [lens, setLens] = useState<"invest" | "work" | null>(null);
   const [sector, setSector] = useState<Sector | null>(null);
   const [regionId, setRegionId] = useState<string | null>(null);
+  const [blockedName, setBlockedName] = useState<string | null>(null);
   const [listed, setListed] = useState<MapBounds | null>(null);
   const [pending, setPending] = useState<MapBounds | null>(null);
   const [areaMoved, setAreaMoved] = useState(false);
@@ -135,23 +136,33 @@ export function HomeScreen() {
     if (!camera) return;
     setRegionId(id);
     setSelectedId(null);
+    setBlockedName(null);
     ask({ kind: "center", center: camera.center, zoom: camera.zoom });
   }
 
   function goWorld() {
     setRegionId(null);
     setSelectedId(null);
+    setBlockedName(null);
     ask({ kind: "world" });
+  }
+
+  function showBlocked(name: string) {
+    setBlockedName(name);
+    setSelectedId(null);
+    chooseStop("half");
   }
 
   function pickSearch(hit: SearchHit) {
     setRegionId(hit.regionId);
     setSelectedId(null);
+    setBlockedName(null);
     ask({ kind: "center", center: [hit.lng, hit.lat], zoom: hit.kind === "town" ? 11 : hit.zoom || countryZoom(hit.countryId) });
   }
 
   function pickPoint(id: string) {
     setSelectedId(id);
+    setBlockedName(null);
     chooseStop("half");
     window.requestAnimationFrame(() => {
       document.getElementById(`opening-${id}`)?.scrollIntoView({ block: "start" });
@@ -202,7 +213,10 @@ export function HomeScreen() {
               }}
               onMove={(view, gesture) => {
                 setZoom(view.zoom);
-                if (gesture && view.zoom < WORLD_ZOOM - 0.4) setRegionId(null);
+                if (gesture && view.zoom < WORLD_ZOOM - 0.4) {
+                  setRegionId(null);
+                  setBlockedName(null);
+                }
                 if (gesture) {
                   setPending(view.bounds);
                   setAreaMoved(true);
@@ -212,6 +226,7 @@ export function HomeScreen() {
                 setAreaMoved(false);
               }}
               onRegion={goRegion}
+              onBlocked={showBlocked}
               onPoint={pickPoint}
               onFail={mapFailed}
             />
@@ -245,7 +260,16 @@ export function HomeScreen() {
                 World
               </button>
             ) : null}
-            <ResultsSheet label={label} stop={stop} onStop={chooseStop}>
+            <ResultsSheet
+              label={label}
+              notice={
+                blockedName
+                  ? `${blockedName} does not allow crypto yet, so Fundwork cannot open here.`
+                  : null
+              }
+              stop={stop}
+              onStop={chooseStop}
+            >
               {list}
             </ResultsSheet>
           </div>

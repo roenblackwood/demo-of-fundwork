@@ -11,6 +11,7 @@ import { readSheetStop, ResultsSheet, writeSheetStop, type SheetStop } from "@/c
 import { REGION_CAMERA, countryZoom, type FlyRequest, type FlyTarget } from "@/lib/map-camera";
 import { isRegionId, townsIn, type SearchHit } from "@/lib/openings";
 import { REGIONS, countriesIn, getRegion, showcaseById } from "@/lib/regions";
+import { CountryRuleRow, RulesHere } from "@/components/rules-panel";
 
 const rowClass =
   "flex min-h-14 w-full flex-col justify-center rounded-2xl border-2 border-border bg-card px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring";
@@ -43,6 +44,7 @@ export function PlaceScreen({
   const [level, setLevel] = useState<Level>("regions");
   const [regionId, setRegionId] = useState<string | null>(null);
   const [countryId, setCountryId] = useState<string | null>(null);
+  const [blockedName, setBlockedName] = useState<string | null>(null);
   const [stop, setStop] = useState<SheetStop>("half");
   const [fly, setFly] = useState<FlyRequest | null>(null);
   const token = useRef(0);
@@ -73,6 +75,7 @@ export function PlaceScreen({
     const camera = REGION_CAMERA[id];
     setRegionId(id);
     setCountryId(null);
+    setBlockedName(null);
     setLevel("countries");
     if (camera) ask({ kind: "center", center: camera.center, zoom: camera.zoom });
   }
@@ -82,6 +85,7 @@ export function PlaceScreen({
     if (!item) return;
     setRegionId(item.regionId);
     setCountryId(id);
+    setBlockedName(null);
     setLevel("towns");
     ask({ kind: "center", center: [item.coordinates[0], item.coordinates[1]], zoom: countryZoom(id) });
   }
@@ -100,7 +104,13 @@ export function PlaceScreen({
     setLevel("regions");
     setRegionId(null);
     setCountryId(null);
+    setBlockedName(null);
     ask({ kind: "world" });
+  }
+
+  function showBlocked(name: string) {
+    setBlockedName(name);
+    chooseStop("half");
   }
 
   function pickSearch(hit: SearchHit) {
@@ -122,6 +132,7 @@ export function PlaceScreen({
         <button type="button" className="min-h-11 font-semibold text-primary" onClick={level === "towns" ? () => {
           setLevel("countries");
           setCountryId(null);
+          setBlockedName(null);
           if (regionId && REGION_CAMERA[regionId]) {
             ask({ kind: "center", center: REGION_CAMERA[regionId].center, zoom: REGION_CAMERA[regionId].zoom });
           }
@@ -136,13 +147,19 @@ export function PlaceScreen({
             </button>
           ))
         : null}
+      {level === "countries" && countries.length === 1 ? (
+        <p className="text-base text-muted-foreground">More countries after their rules are checked.</p>
+      ) : null}
       {level === "countries"
         ? countries.map((item) => (
-            <button key={item.id} type="button" className={rowClass} onClick={() => chooseCountry(item.id)}>
-              <span className="text-lg font-semibold">{item.name}</span>
-            </button>
+            <CountryRuleRow key={item.id} countryId={item.id}>
+              <button type="button" className={rowClass} onClick={() => chooseCountry(item.id)}>
+                <span className="text-lg font-semibold">{item.name}</span>
+              </button>
+            </CountryRuleRow>
           ))
         : null}
+      {level === "towns" && countryId ? <RulesHere countryId={countryId} /> : null}
       {level === "towns"
         ? towns.map((item) => (
             <button key={item.id} type="button" className={rowClass} onClick={() => chooseTown(item)}>
@@ -206,6 +223,7 @@ export function PlaceScreen({
               onReady={() => mapReady()}
               onMove={() => undefined}
               onRegion={chooseRegion}
+              onBlocked={showBlocked}
               onPoint={() => undefined}
               onFail={mapFailed}
             />
@@ -218,7 +236,16 @@ export function PlaceScreen({
                 World
               </button>
             )}
-            <ResultsSheet label={label} stop={stop} onStop={chooseStop}>
+            <ResultsSheet
+              label={label}
+              notice={
+                blockedName
+                  ? `${blockedName} does not allow crypto yet, so Fundwork cannot open here.`
+                  : null
+              }
+              stop={stop}
+              onStop={chooseStop}
+            >
               {choices}
             </ResultsSheet>
           </div>

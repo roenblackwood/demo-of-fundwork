@@ -661,16 +661,16 @@
       "id": "farzana",
       "name": "Farzana Rahman",
       "role": "worker",
-      "countryId": "bangladesh",
+      "countryId": "pakistan",
       "parishId": null,
-      "townId": "sylhet",
+      "townId": "lahore",
       "verified": true,
       "skill": "care",
       "extraSkills": [
         "power"
       ],
       "proofLabel": "Photo of recent work, on file",
-      "example": "Works in sylhet."
+      "example": "Works in lahore."
     },
     {
       "id": "lina",
@@ -1156,19 +1156,19 @@
       ]
     },
     {
-      "id": "sylhet-vaccine-fridge",
-      "name": "Sylhet Vaccine Fridge",
-      "countryId": "bangladesh",
+      "id": "lahore-vaccine-fridge",
+      "name": "Lahore Vaccine Fridge",
+      "countryId": "pakistan",
       "parishId": null,
-      "townId": "sylhet",
+      "townId": "lahore",
       "sector": "healthcare",
-      "summary": "A cold box and a steady power line so a Sylhet clinic can keep vaccines cold.",
+      "summary": "A cold box and a steady power line so a Lahore clinic can keep vaccines cold.",
       "whatYouGet": "A part of this clinic project, recorded as ownership units if the organizer accepts your capital.",
-      "goalJmd": 4500000,
-      "committedJmd": 1200000,
+      "goalJmd": 10500000,
+      "committedJmd": 2800000,
       "workersMatched": 1,
       "workersNeeded": 3,
-      "weeklyPayout": 12000,
+      "weeklyPayout": 28000,
       "workStarted": false,
       "organizerName": "Farzana Rahman",
       "organizerId": null,
@@ -1372,26 +1372,6 @@
       ]
     },
     {
-      "id": "trinidad",
-      "name": "Trinidad and Tobago",
-      "regionId": "caribbean",
-      "currency": "TT$",
-      "cities": [
-        {
-          "id": "port-of-spain",
-          "name": "Port of Spain",
-          "lat": 10.6603,
-          "lng": -61.5086
-        },
-        {
-          "id": "san-fernando",
-          "name": "San Fernando",
-          "lat": 10.2796,
-          "lng": -61.4684
-        }
-      ]
-    },
-    {
       "id": "kenya",
       "name": "Kenya",
       "regionId": "africa",
@@ -1532,46 +1512,6 @@
       ]
     },
     {
-      "id": "lebanon",
-      "name": "Lebanon",
-      "regionId": "middle-east",
-      "currency": "LBP",
-      "cities": [
-        {
-          "id": "tripoli",
-          "name": "Tripoli",
-          "lat": 34.4367,
-          "lng": 35.8497
-        },
-        {
-          "id": "beirut",
-          "name": "Beirut",
-          "lat": 33.8938,
-          "lng": 35.5018
-        }
-      ]
-    },
-    {
-      "id": "egypt",
-      "name": "Egypt",
-      "regionId": "middle-east",
-      "currency": "E£",
-      "cities": [
-        {
-          "id": "cairo",
-          "name": "Cairo",
-          "lat": 30.0444,
-          "lng": 31.2357
-        },
-        {
-          "id": "alexandria",
-          "name": "Alexandria",
-          "lat": 31.2001,
-          "lng": 29.9187
-        }
-      ]
-    },
-    {
       "id": "moldova",
       "name": "Moldova",
       "regionId": "eastern-europe",
@@ -1652,46 +1592,6 @@
       ]
     },
     {
-      "id": "bangladesh",
-      "name": "Bangladesh",
-      "regionId": "south-asia",
-      "currency": "Tk",
-      "cities": [
-        {
-          "id": "sylhet",
-          "name": "Sylhet",
-          "lat": 24.8949,
-          "lng": 91.8687
-        },
-        {
-          "id": "dhaka",
-          "name": "Dhaka",
-          "lat": 23.8103,
-          "lng": 90.4125
-        }
-      ]
-    },
-    {
-      "id": "nepal",
-      "name": "Nepal",
-      "regionId": "south-asia",
-      "currency": "NPR",
-      "cities": [
-        {
-          "id": "pokhara",
-          "name": "Pokhara",
-          "lat": 28.2096,
-          "lng": 83.9856
-        },
-        {
-          "id": "kathmandu",
-          "name": "Kathmandu",
-          "lat": 27.7172,
-          "lng": 85.324
-        }
-      ]
-    },
-    {
       "id": "indonesia",
       "name": "Indonesia",
       "regionId": "southeast-asia",
@@ -1748,6 +1648,86 @@
           "name": "Hanoi",
           "lat": 21.0278,
           "lng": 105.8342
+        }
+      ]
+    },
+    {
+      "id": "dominican-republic",
+      "name": "Dominican Republic",
+      "regionId": "caribbean",
+      "currency": "RD$",
+      "cities": [
+        {
+          "id": "santo-domingo",
+          "name": "Santo Domingo",
+          "lat": 18.4861,
+          "lng": -69.9312
+        },
+        {
+          "id": "santiago",
+          "name": "Santiago",
+          "lat": 19.4517,
+          "lng": -70.697
+        }
+      ]
+    },
+    {
+      "id": "el-salvador",
+      "name": "El Salvador",
+      "regionId": "latin-america",
+      "currency": "US$",
+      "cities": [
+        {
+          "id": "san-salvador",
+          "name": "San Salvador",
+          "lat": 13.6929,
+          "lng": -89.2182
+        },
+        {
+          "id": "santa-ana",
+          "name": "Santa Ana",
+          "lat": 13.9942,
+          "lng": -89.5597
+        }
+      ]
+    },
+    {
+      "id": "rwanda",
+      "name": "Rwanda",
+      "regionId": "africa",
+      "currency": "FRw",
+      "cities": [
+        {
+          "id": "kigali",
+          "name": "Kigali",
+          "lat": -1.9441,
+          "lng": 30.0619
+        },
+        {
+          "id": "musanze",
+          "name": "Musanze",
+          "lat": -1.4998,
+          "lng": 29.6349
+        }
+      ]
+    },
+    {
+      "id": "pakistan",
+      "name": "Pakistan",
+      "regionId": "south-asia",
+      "currency": "PKR",
+      "cities": [
+        {
+          "id": "lahore",
+          "name": "Lahore",
+          "lat": 31.5204,
+          "lng": 74.3587
+        },
+        {
+          "id": "karachi",
+          "name": "Karachi",
+          "lat": 24.8607,
+          "lng": 67.0011
         }
       ]
     }
@@ -1826,18 +1806,18 @@
       "projectId": null
     },
     {
-      "id": "req-sylhet-store",
+      "id": "req-lahore-store",
       "userId": "andre",
-      "countryId": "bangladesh",
+      "countryId": "pakistan",
       "parishId": null,
-      "townId": "sylhet",
+      "townId": "lahore",
       "sector": "agriculture",
-      "budget": 400000,
+      "budget": 930000,
       "workersNeeded": 4,
       "skills": [
         "farming"
       ],
-      "note": "I want a cool store for the harvest in Sylhet.",
+      "note": "I want a cool store for the harvest in Lahore.",
       "status": "open",
       "createdAt": "2026-10-24T14:00:00.000Z",
       "projectId": null

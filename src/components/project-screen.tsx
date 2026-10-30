@@ -27,6 +27,7 @@ import { checkNote, projectNote } from "@/lib/ai";
 import { canStillCommit } from "@/lib/catalog";
 import { SendCapital } from "@/components/send-capital";
 import { NEVER_HOLDS_LINE, TEST_NETWORK_LINE, UNITS_PAYOUT_LINE } from "@/lib/copy";
+import { RulesChip, RulesHere } from "@/components/rules-panel";
 import { isLive } from "@/lib/mode";
 import { stageLessons, workerProjectLessons } from "@/lib/lessons";
 import { cn } from "cn";
@@ -121,8 +122,12 @@ export function ProjectScreen({ id }: { id: string }) {
       <SectorTile sector={project.sector} size="page" />
       <div>
         <h1 className="font-display text-3xl leading-tight">{project.name}</h1>
-        <p className="mt-1 text-lg text-muted-foreground">{place}</p>
+        <div className="mt-1 flex flex-wrap items-center gap-2">
+          <p className="text-lg text-muted-foreground">{place}</p>
+          <RulesChip countryId={project.countryId} />
+        </div>
       </div>
+      <RulesHere countryId={project.countryId} />
       <section className="space-y-3">
         <div>
           <p className="text-2xl font-semibold leading-tight">

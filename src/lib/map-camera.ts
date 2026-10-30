@@ -31,8 +31,6 @@ export const REGION_CAMERA: Record<string, { center: [number, number]; zoom: num
 export const COUNTRY_ZOOM: Record<string, number> = {
   jamaica: 7.6,
   barbados: 10,
-  trinidad: 7,
-  lebanon: 8,
   moldova: 6.6,
 };
 

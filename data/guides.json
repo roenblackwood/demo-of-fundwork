@@ -1,4 +1,5 @@
 {
+  "about": "Sector steps we have checked. Crypto rules are in data/countries.json. A country with no entry here still needs its sector steps checked.",
   "entries": [
     {
       "countryId": "jamaica",
