@@ -7,8 +7,8 @@ import { Check } from "lucide-react";
 import { PageBusy } from "@/components/busy";
 import { ActionBar, NextSteps, SavedMark, StepHeader } from "@/components/parts";
 import { Button, buttonVariants } from "@/components/ui/button";
+import dynamic from "next/dynamic";
 import { useVideos, VideoProof } from "@/components/video-proof";
-import { VideoRecorder } from "@/components/video-recorder";
 import { WORK_PRESETS, workPresetLabel } from "@/lib/catalog";
 import { cn } from "cn";
 import { savedLabel } from "@/lib/copy";
@@ -16,6 +16,10 @@ import { useDemo } from "@/lib/demo-store";
 import { workerUnits } from "@/lib/ownership";
 import { attachVideo, currentPhaseName } from "@/lib/videos";
 import type { Skill, WorkPreset } from "@/lib/types";
+
+const VideoRecorder = dynamic(() => import("@/components/video-recorder").then((mod) => mod.VideoRecorder), {
+  ssr: false,
+});
 
 export function LogScreen({ id }: { id: string }) {
   const router = useRouter();

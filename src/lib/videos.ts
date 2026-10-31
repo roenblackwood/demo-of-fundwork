@@ -2,13 +2,16 @@
 // Server-side transcoding and multiple quality levels can come later.
 // Automatic face blurring can come later.
 
-import { Upload } from "tus-js-client";
 import { phasesFor } from "@/lib/capital";
 import { isLive } from "@/lib/mode";
 import { compressPhoto } from "@/lib/photos";
 import { getCity, getTown } from "@/lib/seed";
-import { browserSupabase } from "@/lib/supabase/browser";
 import type { Sector } from "@/lib/types";
+
+async function liveClient() {
+  const { browserSupabase } = await import("@/lib/supabase/browser");
+  return browserSupabase();
+}
 
 export const VIDEO_MAX_SECONDS = 30;
 export const VIDEO_BITS = 1_200_000;
@@ -421,7 +424,7 @@ export async function refreshVideos(): Promise<void> {
 }
 
 async function mergeLive(local: StoredVideo[]): Promise<void> {
-  const supabase = browserSupabase();
+  const supabase = (await liveClient());
   const { data, error } = await supabase.from("videos").select("*");
   if (error || !data) return;
   const localIds = new Set(local.map((row) => row.id));
@@ -472,7 +475,7 @@ export async function saveVideo(input: SaveInput): Promise<SaveResult> {
   // A perceptual fingerprint could catch edited copies later.
   if (rows.some((row) => row.sha256 === input.sha256)) return { ok: false, reason: "duplicate" };
   if (isLive()) {
-    const supabase = browserSupabase();
+    const supabase = (await liveClient());
     const existing = await supabase.from("videos").select("id").eq("sha256", input.sha256).limit(1);
     if (existing.data && existing.data.length > 0) return { ok: false, reason: "duplicate" };
   }
@@ -510,7 +513,7 @@ export async function attachVideo(id: string, contributionId: string): Promise<v
   await writeRow(next);
   remember(next);
   if (isLive() && row.status === "sent") {
-    await browserSupabase().from("videos").update({ contribution_id: contributionId }).eq("id", id);
+    await (await liveClient()).from("videos").update({ contribution_id: contributionId }).eq("id", id);
   }
 }
 
@@ -566,7 +569,8 @@ async function sendOne(id: string): Promise<void> {
 }
 
 async function uploadLive(row: StoredVideo, onProgress: (progress: number) => void): Promise<void> {
-  const supabase = browserSupabase();
+  const { Upload } = await import("tus-js-client");
+  const supabase = await liveClient();
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
@@ -647,7 +651,7 @@ export async function removeVideo(id: string): Promise<void> {
   emit();
   if (isLive() && row) {
     const ext = row.mime === "video/mp4" ? "mp4" : "webm";
-    const supabase = browserSupabase();
+    const supabase = (await liveClient());
     await supabase.from("videos").delete().eq("id", id);
     await supabase.storage.from("videos").remove([`${row.ownerId}/${id}.${ext}`]);
   }
@@ -656,7 +660,7 @@ export async function removeVideo(id: string): Promise<void> {
 export async function setVideoHidden(id: string, hidden: boolean): Promise<void> {
   await patch(id, hidden ? { hidden: true, onProfile: false } : { hidden: false });
   if (isLive()) {
-    await browserSupabase()
+    await (await liveClient())
       .from("videos")
       .update(hidden ? { hidden: true, on_profile: false } : { hidden: false })
       .eq("id", id);
@@ -670,11 +674,11 @@ export async function setVideoPinned(id: string): Promise<void> {
   for (const other of rows) {
     if (other.id !== id && other.projectId === row.projectId && other.phase === row.phase && other.pinned) {
       await patch(other.id, { pinned: false });
-      if (isLive()) await browserSupabase().from("videos").update({ pinned: false }).eq("id", other.id);
+      if (isLive()) await (await liveClient()).from("videos").update({ pinned: false }).eq("id", other.id);
     }
   }
   await patch(id, { pinned: true });
-  if (isLive()) await browserSupabase().from("videos").update({ pinned: true }).eq("id", id);
+  if (isLive()) await (await liveClient()).from("videos").update({ pinned: true }).eq("id", id);
 }
 
 export async function setVideoOnProfile(id: string, on: boolean): Promise<boolean> {
@@ -685,7 +689,7 @@ export async function setVideoOnProfile(id: string, on: boolean): Promise<boolea
   if (on && chosen.length >= 4) return false;
   await patch(id, { onProfile: on });
   if (isLive()) {
-    const updated = await browserSupabase().from("videos").update({ on_profile: on }).eq("id", id);
+    const updated = await (await liveClient()).from("videos").update({ on_profile: on }).eq("id", id);
     if (updated.error) {
       await patch(id, { onProfile: !on });
       return false;
@@ -705,7 +709,7 @@ export async function reportVideo(videoId: string, reporterId: string): Promise<
   } satisfies ReportRow);
   await txDone(tx);
   if (isLive()) {
-    await browserSupabase().from("video_reports").insert({ video_id: videoId, reporter_id: reporterId });
+    await (await liveClient()).from("video_reports").insert({ video_id: videoId, reporter_id: reporterId });
   }
   emit();
 }

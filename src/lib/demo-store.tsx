@@ -21,9 +21,9 @@ import {
 } from "@/lib/pledges";
 import { openChecks, sectorWeekly } from "@/lib/catalog";
 import { cleanInterests, type CapitalInterest, type InterestDraft } from "@/lib/interests";
+import { placeIsBlocked } from "@/lib/area-rules";
 import { clearPhotoStore } from "@/lib/photos";
-import { canCommitMoney, investStanding } from "@/lib/residence";
-import { clearVideoStore } from "@/lib/videos";
+import { canCommitMoney, investStanding, loadResidenceRules } from "@/lib/residence";
 import { investorBasicsIds, stageLessons } from "@/lib/lessons";
 import {
   resolvedProfile,
@@ -815,6 +815,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addCommitment = useCallback(async (commitment: Commitment) => {
+    await loadResidenceRules();
     let saved = false;
     setSession((current) => {
       if (!canCommitMoney(callerResidence(current))) return current;
@@ -830,6 +831,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const registerInterest = useCallback(async (draft: InterestDraft) => {
+    await loadResidenceRules();
     const seen = sessionRef.current;
     const userId = currentUserId(seen);
     if (investStanding(callerResidence(seen)) !== "interest" || roleOf(seen) !== "investor") return false;
@@ -897,6 +899,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     if (
       roleOf(sessionRef.current) === "worker" ||
       !askedPlace(draft.countryId, draft.parishId, draft.townId) ||
+      placeIsBlocked(draft.countryId, draft.parishId, draft.townId) ||
       !(draft.budget > 0) ||
       !Number.isInteger(draft.workersNeeded) ||
       draft.workersNeeded < 1 ||
@@ -951,6 +954,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const pledgeToRequest = useCallback(async (input: { requestId: string; amount: number; showName: boolean }) => {
+    await loadResidenceRules();
     const stamp = { id: crypto.randomUUID(), createdAt: new Date().toISOString() };
     const seen = sessionRef.current;
     const userId = currentUserId(seen);
@@ -1058,6 +1062,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     if (
       roleOf(sessionRef.current) === "investor" ||
       !askedPlace(draft.countryId, draft.parishId, draft.townId) ||
+      placeIsBlocked(draft.countryId, draft.parishId, draft.townId) ||
       draft.skills.length === 0
     ) {
       return null;
@@ -1087,8 +1092,10 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   const startProject = useCallback(async (requestId: string, name: string) => {
     const trimmed = name.trim().slice(0, 80);
     if (!trimmed) return null;
+    await loadResidenceRules();
     if (!canCommitMoney(callerResidence(sessionRef.current))) return null;
     const seen = listRequests(sessionRef.current).find((item) => item.id === requestId);
+    if (seen && placeIsBlocked(seen.countryId, seen.parishId, seen.townId)) return null;
     if (
       !seen ||
       seen.userId !== currentUserId(sessionRef.current) ||
@@ -1104,6 +1111,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       if (!shown || shown.userId !== currentUserId(current) || shown.status !== "team-ready" || shown.projectId) {
         return current;
       }
+      if (placeIsBlocked(shown.countryId, shown.parishId, shown.townId)) return current;
       const accepted = listApplications(current).filter(
         (item) => item.requestId === requestId && item.status === "accepted",
       );
@@ -1532,7 +1540,9 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     window.localStorage.removeItem(V2_KEY);
     window.localStorage.removeItem(V1_KEY);
     void clearPhotoStore().catch(() => undefined);
-    void clearVideoStore().catch(() => undefined);
+    void import("@/lib/videos")
+      .then((mod) => mod.clearVideoStore())
+      .catch(() => undefined);
   }, []);
 
   const value = useMemo<DemoValue>(() => {

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
-import { MoneyScreen } from "@/components/money-screen";
+import dynamic from "next/dynamic";
+
+const MoneyScreen = dynamic(() => import("@/components/money-screen").then((mod) => mod.MoneyScreen));
 import { Pending, Resolved } from "@/components/resolved";
 import { projectParams } from "@/lib/params";
 import { getProject } from "@/lib/seed";

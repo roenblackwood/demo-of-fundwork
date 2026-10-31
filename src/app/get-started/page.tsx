@@ -1,8 +1,12 @@
 import { Suspense } from "react";
+import dynamic from "next/dynamic";
 import { headers } from "next/headers";
 import { connection } from "next/server";
 import { PageBusy } from "@/components/busy";
-import { GetStartedScreen } from "@/components/get-started-screen";
+
+const GetStartedScreen = dynamic(() =>
+  import("@/components/get-started-screen").then((mod) => mod.GetStartedScreen),
+);
 
 function countryCode(value: string | null | undefined): string | null {
   if (!value) return null;

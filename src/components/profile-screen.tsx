@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { PageBusy } from "@/components/busy";
-import { PhotoAdder } from "@/components/photo-box";
+import { PhotoAdder } from "@/components/photo-adder";
 import { WorkVideos } from "@/components/video-proof";
 import { FitFooter, SectorHint } from "@/components/place-fit";
 import { MoneyText, StepHeader, sectionTitle } from "@/components/parts";
@@ -31,7 +31,7 @@ import {
   type SkillLevelName,
   type StartWhen,
 } from "@/lib/profile";
-import { sourcesForPlaces } from "@/lib/region-fit";
+import { sourcesForPlaces, usePlaceNotes } from "@/lib/region-fit";
 import { currencyOf, getCountries, getParishes } from "@/lib/seed";
 
 const choiceClass =
@@ -42,6 +42,7 @@ function onClass(on: boolean): string {
 }
 
 export function ProfileScreen() {
+  usePlaceNotes();
   const demo = useDemo();
   const [step, setStep] = useState<number | null>(null);
   const [draft, setDraft] = useState<PersonProfile | null>(null);

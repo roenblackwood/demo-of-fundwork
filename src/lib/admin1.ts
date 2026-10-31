@@ -4,6 +4,7 @@ export type AdminAreaProps = {
   id: string;
   name: string;
   countryId: string;
+  areaStatus?: "blocked" | "caution";
   detail?: string;
 };
 

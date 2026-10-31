@@ -12,6 +12,7 @@ import {
   riskSources,
   sourcesOf,
   topSectorTitles,
+  usePlaceNotes,
   type FitSource,
 } from "@/lib/region-fit";
 
@@ -44,14 +45,15 @@ export function FitFooter({ sources }: { sources: FitSource[] }) {
 }
 
 export function FitPanel({ placeId }: { placeId: string }) {
-  const fit = placeFit(placeId);
+  const ready = usePlaceNotes();
+  const fit = ready ? placeFit(placeId) : null;
   const name = placeLabel(placeId);
   if (!fit) {
     return (
       <div className="space-y-4">
         <h2 className={sectionTitle}>What works here</h2>
         <p className="text-lg font-semibold">{name}</p>
-        <p className="text-lg">{NOT_WRITTEN}</p>
+        {ready ? <p className="text-lg">{NOT_WRITTEN}</p> : null}
         <FitFooter sources={[]} />
       </div>
     );
@@ -141,6 +143,7 @@ export function WhatWorksButton({ placeId }: { placeId: string }) {
 }
 
 export function SectorHint({ placeId }: { placeId: string }) {
+  usePlaceNotes();
   const titles = topSectorTitles(placeId, 2);
   if (titles.length === 0) return null;
   return <span className="mt-1 block text-sm font-normal text-muted-foreground">{titles.join(", ")}</span>;
@@ -155,11 +158,12 @@ export function ThisPlace({
   parishId: string | null;
   collapsed?: boolean;
 }) {
-  const fit = fitForPlace(parishId, countryId);
+  const ready = usePlaceNotes();
+  const fit = ready ? fitForPlace(parishId, countryId) : null;
   const risks = fit?.risks ?? [];
   const body = (
     <>
-      {risks.length === 0 ? <p className="text-lg">{NOT_WRITTEN}</p> : null}
+      {ready && risks.length === 0 ? <p className="text-lg">{NOT_WRITTEN}</p> : null}
       {risks.map((item) => (
         <p key={item.line} className="text-lg">
           {item.line}

@@ -38,7 +38,8 @@ import {
   trackFor,
   type PersonProfile,
 } from "@/lib/profile";
-import { canCommitMoney, cleanResidence, investStanding } from "@/lib/residence";
+import { placeIsBlocked } from "@/lib/area-rules";
+import { canCommitMoney, cleanResidence, investStanding, loadResidenceRules } from "@/lib/residence";
 import { investorBasicsIds, stageLessons } from "@/lib/lessons";
 import type { WeekPlan } from "@/lib/progress";
 import { DemoContext, type AvailabilityDraft, type DemoValue, type Flow, type Proof, type RequestDraft } from "@/lib/demo-store";
@@ -593,6 +594,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
         return "";
       },
       registerInterest: async (draft: InterestDraft) => {
+        await loadResidenceRules();
         const seen = snapshotRef.current;
         const projectId = draft.projectId || null;
         const requestId = draft.requestId || null;
@@ -603,7 +605,8 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
         );
         return commitFlag(local, () => postInterest(draft));
       },
-      addCommitment: (commitment) => {
+      addCommitment: async (commitment) => {
+        await loadResidenceRules();
         const seen = snapshotRef.current;
         const project = seen.projects.find((item) => item.id === commitment.projectId);
         const reserved = project
@@ -649,6 +652,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
         const local =
           seen.role === "investor" &&
           Boolean(askedPlace(draft.countryId, draft.parishId, draft.townId)) &&
+          !placeIsBlocked(draft.countryId, draft.parishId, draft.townId) &&
           draft.budget > 0 &&
           Number.isInteger(draft.workersNeeded) &&
           draft.workersNeeded >= 1 &&
@@ -662,6 +666,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
         return commitId(local, () => postRequest(draft));
       },
       pledgeToRequest: async (input) => {
+        await loadResidenceRules();
         const seen = snapshotRef.current;
         if (!canCommitMoney(seen.profile?.residence)) return "closed";
         const blocked = joinBlock({
@@ -769,6 +774,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
         const local =
           seen.role === "worker" &&
           Boolean(askedPlace(draft.countryId, draft.parishId, draft.townId)) &&
+          !placeIsBlocked(draft.countryId, draft.parishId, draft.townId) &&
           draft.skills.length > 0;
         return commitId(local, () => postAvailability(draft));
       },
@@ -822,6 +828,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
         return true;
       },
       startProject: async (requestId, name) => {
+        await loadResidenceRules();
         const seen = snapshotRef.current;
         const trimmed = name.trim().slice(0, 80);
         const request = seen.requests.find((item) => item.id === requestId);
@@ -831,7 +838,8 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
             request &&
             request.userId === seen.userId &&
             request.status === "team-ready" &&
-            !request.projectId,
+            !request.projectId &&
+            !placeIsBlocked(request.countryId, request.parishId, request.townId),
         );
         const id = await commitId(local, () => startProjectAction(requestId, trimmed));
         if (id) setOpenedProject(true);

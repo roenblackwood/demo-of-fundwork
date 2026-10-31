@@ -34,7 +34,7 @@ import { useDemo } from "@/lib/demo-store";
 import { money, placeLine } from "@/lib/format";
 import { priceRange } from "@/lib/guides";
 import { aboutUsd } from "@/lib/rates";
-import { sectorSources, suitedSector } from "@/lib/region-fit";
+import { sectorSources, suitedSector, usePlaceNotes } from "@/lib/region-fit";
 import { currencyOf, getCity, getCountry, getParish, getTown, requestPlace } from "@/lib/seed";
 import { useProfileGate } from "@/components/profile-gate";
 import type { Readiness, Sector, SiteStatus, Skill } from "@/lib/types";
@@ -76,6 +76,7 @@ function isStep(value: string | null): value is Step {
 }
 
 export function StartRequestScreen({ placeId, townId }: { placeId: string; townId: string }) {
+  usePlaceNotes();
   const demo = useDemo();
   const allowed = useProfileGate();
   const show = useSnackbar();

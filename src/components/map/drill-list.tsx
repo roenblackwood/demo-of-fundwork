@@ -8,6 +8,7 @@ export type DrillRow = {
   name: string;
   counts: PlaceCounts;
   suited: string[];
+  chip?: string;
 };
 
 const rowClass =
@@ -66,6 +67,11 @@ export function DrillRows({
           onMouseLeave={() => onHover?.(null)}
         >
           <span className="text-base font-semibold">{row.name}</span>
+          {row.chip ? (
+            <span className="mt-1 inline-flex items-center rounded-full border-2 border-border px-3 py-1 text-sm font-semibold">
+              {row.chip}
+            </span>
+          ) : null}
           <span className="text-sm text-muted-foreground">{countLine(row.counts)}</span>
           {row.suited.length > 0 ? (
             <span className="text-sm">Suited here: {row.suited.join(", ")}</span>

@@ -1,3 +1,4 @@
+import { areaMark } from "@/lib/area-rules";
 import { countryRule, countryRules, isListableCountry } from "@/lib/country-rules";
 import { getCountry, getParish, getParishes } from "@/lib/seed";
 import type { Town } from "@/lib/types";
@@ -103,6 +104,9 @@ export function drillFix(
     return null;
   }
   if (knownAreas && !knownAreas.has(areaId)) return `/?country=${encodeURIComponent(countryId)}`;
+  if (areaMark(countryId, areaId) === "blocked" && townId) {
+    return `/?country=${encodeURIComponent(countryId)}&area=${encodeURIComponent(areaId)}`;
+  }
   if (!townId) return null;
   const towns = townsInArea(countryId, areaId);
   if (!towns.some((town) => town.id === townId)) {

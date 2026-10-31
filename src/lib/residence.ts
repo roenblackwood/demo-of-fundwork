@@ -1,4 +1,3 @@
-import raw from "../../data/residence-rules.json";
 import { countryRule } from "@/lib/country-rules";
 
 export type InvestRule = "open" | "interest-only" | "blocked";
@@ -27,8 +26,32 @@ type ResidenceFile = {
 // A lawyer must review the blocked list before it is treated as final.
 // Identity checks through a licensed provider are the real residence control. Not built.
 // Per-state rules for the United States are not built.
-const FILE = raw as ResidenceFile;
-const LISTED = FILE.countries;
+let listed: ResidenceRule[] | null = null;
+let byCode = new Map<string, ResidenceRule>();
+let loading: Promise<void> | null = null;
+const listeners = new Set<() => void>();
+
+export function residenceReady(): boolean {
+  return listed !== null;
+}
+
+export function subscribeResidence(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+/** The rules file loads with the screen that needs it, not with the home map. */
+export function loadResidenceRules(): Promise<void> {
+  if (listed) return Promise.resolve();
+  loading ??= import("../../data/residence-rules.json").then((mod) => {
+    const file = (mod.default ?? mod) as ResidenceFile;
+    listed = file.countries;
+    byCode = new Map(listed.map((row) => [row.code, row]));
+    choices = null;
+    for (const listener of listeners) listener();
+  });
+  return loading;
+}
 
 const DEFAULTS: Pick<ResidenceRule, "invest" | "work" | "note" | "sources" | "checkedOn"> = {
   invest: "interest-only",
@@ -78,10 +101,8 @@ const CODES = [
   "TV", "UG", "UA", "AE", "GB", "US", "UY", "UZ", "VU", "VA", "VE", "VN", "YE", "ZM", "ZW",
 ];
 
-const byCode = new Map(LISTED.map((row) => [row.code, row]));
-
 export function residenceRules(): ResidenceRule[] {
-  return LISTED;
+  return listed ?? [];
 }
 
 export function residenceFor(code: string | null | undefined): ResidenceRule {
@@ -152,9 +173,9 @@ function allChoices(): CountryChoice[] {
   }
   for (const code of CODES) add(code);
   for (const item of OCCUPIED) add(item.code);
-  for (const row of LISTED) add(row.code);
+  for (const row of listed ?? []) add(row.code);
   rows.sort((a, b) => a.name.localeCompare(b.name));
-  choices = rows;
+  if (listed) choices = rows;
   return rows;
 }
 

@@ -1,0 +1,15 @@
+{
+  "comment": "OFAC Ukraine-/Russia-related sanctions. A lawyer must review this before it is treated as final.",
+  "source": {
+    "title": "OFAC, Ukraine-/Russia-related sanctions",
+    "url": "https://ofac.treasury.gov/sanctions-programs-and-country-information/ukraine-russia-related-sanctions"
+  },
+  "areas": [
+    { "countryId": "ukraine", "id": "crimea", "status": "blocked" },
+    { "countryId": "ukraine", "id": "sevastopol", "status": "blocked" },
+    { "countryId": "ukraine", "id": "donetsk", "status": "blocked" },
+    { "countryId": "ukraine", "id": "luhansk", "status": "blocked" },
+    { "countryId": "ukraine", "id": "kherson", "status": "caution" },
+    { "countryId": "ukraine", "id": "zaporizhzhia", "status": "caution" }
+  ]
+}

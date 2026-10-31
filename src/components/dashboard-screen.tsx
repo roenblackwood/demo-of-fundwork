@@ -27,12 +27,14 @@ import { firstName, placeLine } from "@/lib/format";
 import { explorerUrl, sameAddress } from "@/lib/money";
 import { investorUnits, workerUnits } from "@/lib/ownership";
 import { investStanding } from "@/lib/residence";
+import { useResidenceReady } from "@/lib/use-residence";
 import { acceptedCount, waitingCount } from "@/lib/requests";
 import { gatePath } from "@/lib/start-gate";
 import { currencyOf, requestPlace } from "@/lib/seed";
 import type { Application } from "@/lib/types";
 
 export function DashboardScreen() {
+  useResidenceReady();
   const demo = useDemo();
   const router = useRouter();
   if (!demo.ready) return <PageBusy />;

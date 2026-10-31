@@ -11,6 +11,7 @@ import { MapLoadNote, PlaceSearch, ShowMapButton } from "@/components/map/chrome
 import { useMapPhase } from "@/components/map/lite";
 import { MapView } from "@/components/map/map-view";
 import { readSheetStop, ResultsSheet, writeSheetStop, type SheetStop } from "@/components/map/results-sheet";
+import { AREA_BLOCKED_LINE, AREA_CAUTION_CHIP, areaMark } from "@/lib/area-rules";
 import { boundsOfFeature, loadAdmin1, areaNoun, withAreaDetails, type AdminCollection } from "@/lib/admin1";
 import { ADMIN1_BOUNDS } from "@/lib/admin1-bounds";
 import { chipLabel, countryRule, countryRules, isListableCountry, rulesSummary } from "@/lib/country-rules";
@@ -48,7 +49,7 @@ import {
 } from "@/lib/profile";
 import type { ScorePart } from "@/lib/recommend";
 import { countLine, countsFor } from "@/lib/place-counts";
-import { topSectorTitles } from "@/lib/region-fit";
+import { topSectorTitles, usePlaceNotes } from "@/lib/region-fit";
 import { getRegion, showcaseById, REGIONS } from "@/lib/regions";
 import { getCity, getParish, getTown } from "@/lib/seed";
 import { gatePath } from "@/lib/start-gate";
@@ -121,6 +122,7 @@ function OpeningCard({
 }
 
 export function HomeScreen() {
+  usePlaceNotes();
   const demo = useDemo();
   const router = useRouter();
   const search = useSearchParams();
@@ -272,9 +274,12 @@ export function HomeScreen() {
       name: area.name,
       counts: countsFor({ countryId: countryQ ?? "", areaId: area.id }, tally, townIds),
       suited: topSectorTitles(area.id),
+      chip: areaMark(countryQ ?? "", area.id) === "caution" ? AREA_CAUTION_CHIP : undefined,
     };
   });
-  const townRecords = countryQ && areaQ ? townsInArea(countryQ, areaQ) : [];
+  const areaBlockedHere = Boolean(countryQ && areaQ && areaMark(countryQ, areaQ) === "blocked");
+  const areaCautionHere = Boolean(countryQ && areaQ && areaMark(countryQ, areaQ) === "caution");
+  const townRecords = countryQ && areaQ && !areaBlockedHere ? townsInArea(countryQ, areaQ) : [];
   const townRows: DrillRow[] = townRecords.map((town) => ({
     id: town.id,
     name: town.name,
@@ -316,7 +321,9 @@ export function HomeScreen() {
       : level === "country"
         ? `${areaRows.length} ${countryQ === "jamaica" ? "parishes" : "areas"}`
         : level === "area"
-          ? `${townRows.length} towns`
+          ? areaBlockedHere
+            ? (areaRecords.find((area) => area.id === areaQ)?.name ?? "This area")
+            : `${townRows.length} towns`
           : level === "town"
             ? openLine(townCards.length, regionCount(townCards))
             : activeRule?.name || (countryQ ? countryDisplayName(countryQ) : ""));
@@ -325,7 +332,9 @@ export function HomeScreen() {
       ? `${activeRule.name} does not allow crypto yet, so Fundwork cannot open here.`
       : outsideHere && countryQ
         ? `Fundwork has no projects in ${countryDisplayName(countryQ)} yet.`
-        : null;
+        : areaBlockedHere
+          ? AREA_BLOCKED_LINE
+          : null;
   const mapAreas =
     !areasReady || !areaData || !countryQ
       ? null
@@ -525,7 +534,7 @@ export function HomeScreen() {
     crumbs.push({ label: townRecords.find((town) => town.id === townQ)?.name ?? townQ });
   }
   const placeActions = (() => {
-    if (!countryQ || (level !== "area" && level !== "town")) return { start: null, post: null };
+    if (areaBlockedHere || !countryQ || (level !== "area" && level !== "town")) return { start: null, post: null };
     const place = countryQ === "jamaica" ? areaQ ?? countryQ : countryQ;
     const startPath = townQ ? `/invest/start/${place}/${townQ}` : `/invest/start/${place}`;
     const postPath = townQ ? `/work/available/${place}/${townQ}` : `/work/available/${place}`;
@@ -555,7 +564,12 @@ export function HomeScreen() {
       {level === "country" && !loadingLine ? (
         <DrillRows rows={areaRows} selectedId={areaQ} onOpen={openArea} onHover={hoverArea} />
       ) : null}
-      {level === "area" ? (
+      {level === "area" && areaCautionHere ? (
+        <span className="inline-flex min-h-11 items-center rounded-full border-2 border-border px-3 text-sm font-semibold">
+          {AREA_CAUTION_CHIP}
+        </span>
+      ) : null}
+      {level === "area" && !areaBlockedHere ? (
         townRows.length > 0 ? (
           <DrillRows rows={townRows} selectedId={townQ} onOpen={openTown} />
         ) : (
@@ -705,8 +719,8 @@ export function HomeScreen() {
               fly={fly}
               areas={mapAreas}
               areaKey={`${countryQ ?? ""}:${areasReady ? "ready" : areaStatus}:${areaRows.map((row) => `${countLine(row.counts)}:${row.suited.join(",")}`).join("|")}`}
-              towns={level === "area" || level === "town" ? townMarkers : []}
-              drill={level === "area" || level === "town" ? "towns" : level === "country" ? "areas" : "world"}
+              towns={areaBlockedHere ? [] : level === "area" || level === "town" ? townMarkers : []}
+              drill={areaBlockedHere ? "areas" : level === "area" || level === "town" ? "towns" : level === "country" ? "areas" : "world"}
               selectedAreaId={areaQ}
               hoverAreaId={hoverAreaId}
               onCountry={openCountry}

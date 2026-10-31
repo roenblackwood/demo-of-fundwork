@@ -21,5 +21,5 @@ export const ADMIN1_BOUNDS: Record<string, MapBounds> = {
   "jordan": { west: 34.949, south: 29.19, east: 39.292, north: 33.372 },
   "moldova": { west: 26.618, south: 45.462, east: 30.132, north: 48.484 },
   "romania": { west: 20.243, south: 43.65, east: 29.7, north: 48.274 },
-  "ukraine": { west: 22.133, south: 45.216, east: 40.16, north: 52.369 },
+  "ukraine": { west: 22.133, south: 44.383, east: 40.16, north: 52.369 },
 };

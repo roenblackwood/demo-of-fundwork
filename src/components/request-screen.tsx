@@ -16,7 +16,8 @@ import { useSnackbar } from "@/components/snackbar";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { BeforeYouApply, WhatItTakes } from "@/components/guide-card";
 import { ProjectPhases, ReadinessReport } from "@/components/needs-panel";
-import { PageHero, PhotoAdder, usePhotos } from "@/components/photo-box";
+import { PhotoAdder } from "@/components/photo-adder";
+import { PageHero, usePhotos } from "@/components/photo-box";
 import { ThisPlace } from "@/components/place-fit";
 import { BackersRow, CapitalBar, TeamBar } from "@/components/pledge-bars";
 import { kindById } from "@/lib/blueprints";
@@ -28,12 +29,14 @@ import { matchWorkers } from "@/lib/match";
 import { acceptedCount } from "@/lib/requests";
 import { activePledges, backerMarks, pledgedAmount } from "@/lib/pledges";
 import { investStanding } from "@/lib/residence";
+import { useResidenceReady } from "@/lib/use-residence";
 import { currencyOf, getCountry, requestPlace } from "@/lib/seed";
 import { gatePath } from "@/lib/start-gate";
 import { RulesHere } from "@/components/rules-panel";
 import type { Application } from "@/lib/types";
 
 export function RequestScreen({ id }: { id: string }) {
+  useResidenceReady();
   const demo = useDemo();
   const show = useSnackbar();
   const photos = usePhotos("request", id);

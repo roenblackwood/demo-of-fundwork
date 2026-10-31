@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { ActionBar, LearnMore, StepHeader, sectionTitle } from "@/components/parts";
-import { PhotoAdder } from "@/components/photo-box";
+import { PhotoAdder } from "@/components/photo-adder";
 import { buttonVariants } from "@/components/ui/button";
 import { proofTip } from "@/lib/ai";
 import { skillTitle } from "@/lib/catalog";

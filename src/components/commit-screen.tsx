@@ -14,6 +14,7 @@ import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
 import { firstName, money } from "@/lib/format";
 import { investStanding, residenceFor } from "@/lib/residence";
+import { useResidenceReady } from "@/lib/use-residence";
 import { isLive } from "@/lib/mode";
 import { capitalReserved, investorUnits, moneyStillOpen } from "@/lib/ownership";
 import { convertedBacking } from "@/lib/pledges";
@@ -84,6 +85,7 @@ function RegisterCommit({ project }: { project: Project }) {
 }
 
 export function CommitScreen({ id }: { id: string }) {
+  useResidenceReady();
   const router = useRouter();
   const demo = useDemo();
   const allowed = useProfileGate();

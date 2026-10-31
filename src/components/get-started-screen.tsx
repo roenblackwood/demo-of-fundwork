@@ -30,6 +30,7 @@ import {
 import { countriesIn, REGIONS, type RegionId } from "@/lib/regions";
 import { getCity, getCountry, getParish, getParishes, getTown } from "@/lib/seed";
 import { browserSupabase } from "@/lib/supabase/browser";
+import { useResidenceReady } from "@/lib/use-residence";
 import type { PathChoice, Sector, Skill } from "@/lib/types";
 import { cn } from "cn";
 
@@ -143,6 +144,7 @@ function isPhase(value: unknown): value is Phase {
 }
 
 export function GetStartedScreen({ hintCountry }: { hintCountry: string | null }) {
+  useResidenceReady();
   const demo = useDemo();
   const router = useRouter();
   const params = useSearchParams();

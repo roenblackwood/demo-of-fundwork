@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { VideoRecorder } from "@/components/video-recorder";
+import dynamic from "next/dynamic";
 import { sectionTitle } from "@/components/parts";
 import { Button } from "@/components/ui/button";
 import { isLive } from "@/lib/mode";
@@ -24,6 +24,10 @@ import {
   type ShownVideo,
 } from "@/lib/videos";
 import type { Project } from "@/lib/types";
+
+const VideoRecorder = dynamic(() => import("@/components/video-recorder").then((mod) => mod.VideoRecorder), {
+  ssr: false,
+});
 
 function NoSoundTag() {
   return (

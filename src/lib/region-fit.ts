@@ -1,4 +1,6 @@
-import raw from "../../data/region-fit.json";
+"use client";
+
+import { useEffect, useSyncExternalStore } from "react";
 import { sectorTitle } from "@/lib/catalog";
 import { getCountry, getParish } from "@/lib/seed";
 import type { Sector } from "@/lib/types";
@@ -44,7 +46,32 @@ export type PlaceFit = {
 export const NOT_WRITTEN = "We have not written this up yet.";
 export const NOT_ADVICE = "Fundwork does not give legal or investment advice.";
 
-const places = (raw as { places: PlaceFit[] }).places;
+let places: PlaceFit[] | null = null;
+let loading: Promise<void> | null = null;
+const listeners = new Set<() => void>();
+
+export function loadPlaceNotes(): Promise<void> {
+  if (places) return Promise.resolve();
+  loading ??= import("../../data/region-fit.json").then((mod) => {
+    places = ((mod.default ?? mod) as { places: PlaceFit[] }).places;
+    for (const listener of listeners) listener();
+  });
+  return loading;
+}
+
+function subscribe(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+/** Place notes load with the list that shows them, not inside the first script. */
+export function usePlaceNotes(): boolean {
+  const ready = useSyncExternalStore(subscribe, () => places !== null, () => false);
+  useEffect(() => {
+    void loadPlaceNotes();
+  }, []);
+  return ready;
+}
 
 function uniqueSources(sources: FitSource[]): FitSource[] {
   const seen = new Set<string>();
@@ -56,7 +83,7 @@ function uniqueSources(sources: FitSource[]): FitSource[] {
 }
 
 export function placeFit(id: string): PlaceFit | null {
-  const found = places.find((place) => place.id === id);
+  const found = places?.find((place) => place.id === id);
   if (!found) return null;
   const count = found.sectors.length + found.seasons.length + found.risks.length + found.advice.length;
   return count > 0 ? found : null;

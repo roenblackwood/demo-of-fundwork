@@ -7,6 +7,13 @@
  * Source file: ADMIN1_SRC, or /tmp/ne_10m_admin_1_states_provinces.geojson.
  * Each open, limited, and not-checked country is simplified to 60 KB or less.
  * Non-Jamaica cities in data/seed.json get an admin1Id from point-in-polygon.
+ *
+ * Crimea and Sevastopol are Natural Earth admin-1 features assigned to Russia.
+ * This script keeps them in Ukraine, matching the Ukraine point of view.
+ * Area status comes from data/area-status.json.
+ * OFAC Ukraine-/Russia-related sanctions:
+ * https://ofac.treasury.gov/sanctions-programs-and-country-information/ukraine-russia-related-sanctions
+ * A lawyer must review that page before the blocked areas are treated as final.
  */
 import { spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
@@ -80,6 +87,75 @@ function uniqueId(name, used) {
   const id = `${base}-${n}`;
   used.add(id);
   return id;
+}
+
+const CRIMEA_NAMES = new Set(["Autonomous Republic of Crimea", "Sevastopol"]);
+
+function sourceName(feature) {
+  return feature.properties?.name_en || feature.properties?.name || "Area";
+}
+
+function mergeGeometries(geometries) {
+  const coordinates = [];
+  for (const geometry of geometries) {
+    if (!geometry) continue;
+    if (geometry.type === "Polygon") coordinates.push(geometry.coordinates);
+    else if (geometry.type === "MultiPolygon") coordinates.push(...geometry.coordinates);
+  }
+  if (coordinates.length === 0) return null;
+  if (coordinates.length === 1) return { type: "Polygon", coordinates: coordinates[0] };
+  return { type: "MultiPolygon", coordinates };
+}
+
+/** Same name and type are one area. Natural Earth splits a few of them. */
+function mergeTwins(features) {
+  const groups = new Map();
+  for (const feature of features) {
+    const key = `${sourceName(feature)}::${feature.properties?.type_en || ""}`;
+    const list = groups.get(key) ?? [];
+    list.push(feature);
+    groups.set(key, list);
+  }
+  const merged = [];
+  for (const list of groups.values()) {
+    if (list.length === 1) {
+      merged.push(list[0]);
+      continue;
+    }
+    const geometry = mergeGeometries(list.map((feature) => cleanGeometry(feature.geometry)));
+    merged.push({
+      ...list[0],
+      geometry,
+    });
+  }
+  return merged;
+}
+
+function displayName(feature, peers) {
+  const name = sourceName(feature) === "Autonomous Republic of Crimea" ? "Crimea" : sourceName(feature);
+  if (peers.length < 2) return name;
+  const type = feature.properties?.type_en || "";
+  if (/city|municipality/i.test(type)) return name;
+  if (type === "Region") return `${name} region`;
+  if (type === "Province") return `${name} province`;
+  const alt = String(feature.properties?.name_alt || "").split("|")[0].trim();
+  if (alt && alt !== name) return alt;
+  return type ? `${name} ${type.toLowerCase()}` : name;
+}
+
+function boxArea(feature) {
+  let west = Infinity;
+  let south = Infinity;
+  let east = -Infinity;
+  let north = -Infinity;
+  walkCoords(feature.geometry, (lng, lat) => {
+    west = Math.min(west, lng);
+    east = Math.max(east, lng);
+    south = Math.min(south, lat);
+    north = Math.max(north, lat);
+  });
+  if (!Number.isFinite(west)) return Infinity;
+  return Math.abs(east - west) * Math.abs(north - south);
 }
 
 function cleanGeometry(geometry) {
@@ -242,12 +318,19 @@ function simplify(input, output) {
 }
 
 const countries = JSON.parse(readFileSync(join(root, "data/countries.json"), "utf8"));
+const areaStatusFile = JSON.parse(readFileSync(join(root, "data/area-status.json"), "utf8"));
+const areaStatus = new Map(
+  (areaStatusFile.areas ?? []).map((row) => [`${row.countryId}:${row.id}`, row.status]),
+);
 const wanted = countries.filter((country) => country.status === "open" || country.status === "limited" || country.status === "not-checked");
 const raw = JSON.parse(readFileSync(sourcePath, "utf8"));
 const byIso = new Map();
+const crimea = [];
 for (const feature of raw.features ?? []) {
+  const name = sourceName(feature);
+  if (CRIMEA_NAMES.has(name)) crimea.push(feature);
   const iso = feature.properties?.iso_a2;
-  if (!iso) continue;
+  if (!iso || iso === "RU") continue;
   const list = byIso.get(iso) ?? [];
   list.push(feature);
   byIso.set(iso, list);
@@ -261,28 +344,55 @@ const collections = new Map();
 for (const country of wanted) {
   const iso = ISO[country.id];
   if (!iso) throw new Error(`No ISO code for ${country.id}.`);
-  const sourceFeatures = byIso.get(iso) ?? [];
+  let sourceFeatures = mergeTwins(byIso.get(iso) ?? []);
+  if (country.id === "ukraine") {
+    const have = new Set(sourceFeatures.map((feature) => sourceName(feature)));
+    for (const feature of crimea) {
+      if (have.has(sourceName(feature))) continue;
+      sourceFeatures.push(feature);
+    }
+    if (!sourceFeatures.some((feature) => sourceName(feature) === "Autonomous Republic of Crimea")) {
+      throw new Error("Ukraine is missing Crimea. Check the Natural Earth admin-1 file.");
+    }
+    if (!sourceFeatures.some((feature) => sourceName(feature) === "Sevastopol")) {
+      throw new Error("Ukraine is missing Sevastopol. Check the Natural Earth admin-1 file.");
+    }
+  }
   if (sourceFeatures.length === 0) {
     throw new Error(`${country.name} has no admin-1 features. Add an admin-0 fallback before shipping.`);
   }
+  const nameGroups = new Map();
+  for (const feature of sourceFeatures) {
+    const key = sourceName(feature) === "Autonomous Republic of Crimea" ? "Crimea" : sourceName(feature);
+    const list = nameGroups.get(key) ?? [];
+    list.push(feature);
+    nameGroups.set(key, list);
+  }
   const used = new Set();
+  const seenNames = new Set();
   const features = [];
   for (const feature of sourceFeatures) {
     const geometry = cleanGeometry(feature.geometry);
     if (!geometry) continue;
-    const sourceName = feature.properties?.name_en || feature.properties?.name || "Area";
+    const labelKey = sourceName(feature) === "Autonomous Republic of Crimea" ? "Crimea" : sourceName(feature);
+    const label = displayName(feature, nameGroups.get(labelKey) ?? [feature]);
+    if (seenNames.has(label)) throw new Error(`${country.id} has two areas named ${label}.`);
+    seenNames.add(label);
     let id;
     if (country.id === "jamaica") {
-      id = JAMAICA[sourceName];
-      if (!id) throw new Error(`Jamaica parish "${sourceName}" has no id.`);
+      id = JAMAICA[label];
+      if (!id) throw new Error(`Jamaica parish "${label}" has no id.`);
       if (used.has(id)) throw new Error(`Duplicate Jamaica id ${id}.`);
       used.add(id);
     } else {
-      id = uniqueId(sourceName, used);
+      id = uniqueId(label, used);
     }
+    const status = areaStatus.get(`${country.id}:${id}`) ?? null;
+    const properties = { id, name: label, countryId: country.id };
+    if (status === "blocked" || status === "caution") properties.areaStatus = status;
     features.push({
       type: "Feature",
-      properties: { id, name: sourceName, countryId: country.id },
+      properties,
       geometry,
     });
   }
@@ -298,15 +408,20 @@ for (const country of wanted) {
   const simplified = JSON.parse(readFileSync(rough, "utf8"));
   const cleaned = {
     type: "FeatureCollection",
-    features: (simplified.features ?? []).map((feature) => ({
-      type: "Feature",
-      properties: {
+    features: (simplified.features ?? []).map((feature) => {
+      const properties = {
         id: String(feature.properties?.id ?? ""),
         name: String(feature.properties?.name ?? ""),
         countryId: country.id,
-      },
-      geometry: feature.geometry,
-    })),
+      };
+      const status = feature.properties?.areaStatus;
+      if (status === "blocked" || status === "caution") properties.areaStatus = status;
+      return {
+        type: "Feature",
+        properties,
+        geometry: feature.geometry,
+      };
+    }),
   };
   if (cleaned.features.some((feature) => !feature.properties.id || !feature.properties.name)) {
     throw new Error(`${country.id} lost a name while simplifying.`);
@@ -337,7 +452,9 @@ for (const country of seed.countries) {
   const collection = collections.get(country.id);
   if (!collection) throw new Error(`No admin-1 file for ${country.id}.`);
   for (const city of country.cities) {
-    const hit = collection.features.find((feature) => featureContains(feature, city.lng, city.lat));
+    const hits = collection.features.filter((feature) => featureContains(feature, city.lng, city.lat));
+    hits.sort((a, b) => boxArea(a) - boxArea(b));
+    const hit = hits[0];
     if (hit) {
       city.admin1Id = hit.properties.id;
       continue;

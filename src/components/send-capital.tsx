@@ -10,6 +10,7 @@ import { NEVER_HOLDS_LINE, TEST_NETWORK_LINE, WALLET_CHECK_LATER } from "@/lib/c
 import { useDemo } from "@/lib/demo-store";
 import { refreshLiveStore } from "@/lib/live-store";
 import { investStanding } from "@/lib/residence";
+import { useResidenceReady } from "@/lib/use-residence";
 import { isLive } from "@/lib/mode";
 import { chainTitle, SAMPLE_PAYMENT_LINE, SAMPLE_PROJECT_ADDRESS } from "@/lib/money";
 import type { ProjectWallet } from "@/lib/types";
@@ -24,6 +25,7 @@ function CoverLine({ phase, amount, asset }: { phase: string; amount: number; as
 }
 
 export function SendCapital({ projectId, pledge }: { projectId: string; pledge: number }) {
+  useResidenceReady();
   const demo = useDemo();
   const project = demo.projects.find((item) => item.id === projectId);
   const commitment =

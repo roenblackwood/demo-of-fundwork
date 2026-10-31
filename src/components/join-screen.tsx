@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { useDemo } from "@/lib/demo-store";
 import { money, placeLine } from "@/lib/format";
 import { investStanding, residenceFor } from "@/lib/residence";
+import { useResidenceReady } from "@/lib/use-residence";
 import { leftToPledge } from "@/lib/pledges";
 import { currencyOf, requestPlace } from "@/lib/seed";
 import { useProfileGate } from "@/components/profile-gate";
@@ -29,6 +30,7 @@ function formatAmountInput(text: string): string {
 }
 
 export function JoinScreen({ id }: { id: string }) {
+  useResidenceReady();
   const demo = useDemo();
   const router = useRouter();
   const allowed = useProfileGate();

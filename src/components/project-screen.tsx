@@ -22,7 +22,8 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { Progress, ProgressLabel } from "@/components/ui/progress";
 import { BeforeYouApply, WhatItTakes } from "@/components/guide-card";
-import { PageHero, PhotoAdder, usePhotos } from "@/components/photo-box";
+import { PhotoAdder } from "@/components/photo-adder";
+import { PageHero, usePhotos } from "@/components/photo-box";
 import { TeamBar } from "@/components/pledge-bars";
 import { ProjectPhases, ReadinessReport } from "@/components/needs-panel";
 import { PhasePlan } from "@/components/phase-plan";
@@ -32,6 +33,7 @@ import { ThisWeekCard } from "@/components/this-week";
 import { checkNote, projectNote } from "@/lib/ai";
 import { canStillCommit } from "@/lib/catalog";
 import { investStanding } from "@/lib/residence";
+import { useResidenceReady } from "@/lib/use-residence";
 import { SendCapital } from "@/components/send-capital";
 import { NEVER_HOLDS_LINE, TEST_NETWORK_LINE, UNITS_PAYOUT_LINE } from "@/lib/copy";
 import { ThisPlace } from "@/components/place-fit";
@@ -58,6 +60,7 @@ import { gatePath } from "@/lib/start-gate";
 import type { Skill } from "@/lib/types";
 
 export function ProjectScreen({ id }: { id: string }) {
+  useResidenceReady();
   const demo = useDemo();
   const router = useRouter();
   const show = useSnackbar();

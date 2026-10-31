@@ -813,6 +813,15 @@ for (const rule of adminRules) {
       break;
     }
   }
+  const seenNames = new Set();
+  for (const feature of geo.features ?? []) {
+    const name = feature?.properties?.name;
+    if (typeof name !== "string" || seenNames.has(name)) {
+      errors.push(`${rule.id} has two areas named ${name}.`);
+      break;
+    }
+    seenNames.add(name);
+  }
   if (rule.id === "jamaica") {
     for (const parish of seed.parishes) {
       if (!ids.has(parish.id)) errors.push(`Jamaica admin1 is missing ${parish.id}.`);
@@ -825,6 +834,68 @@ for (const rule of adminRules) {
     }
   }
 }
+const areaStatusFile = JSON.parse(readFileSync(new URL("../data/area-status.json", import.meta.url), "utf8"));
+if (!String(areaStatusFile.comment || "").toLowerCase().includes("lawyer")) {
+  errors.push("area-status.json must say a lawyer has to review it.");
+}
+const areaSource = String(areaStatusFile.source?.url || "");
+if (!areaSource.includes("ofac.treasury.gov")) {
+  errors.push("area-status.json must cite the OFAC sanctions page.");
+}
+const blockedAreas = new Set();
+for (const row of areaStatusFile.areas ?? []) {
+  if (row.status !== "blocked" && row.status !== "caution") {
+    errors.push(`${row.countryId} ${row.id} has a bad area status.`);
+    continue;
+  }
+  if (row.status === "blocked") blockedAreas.add(`${row.countryId}:${row.id}`);
+  const fileUrl = new URL(`../public/maps/admin1/${row.countryId}.json`, import.meta.url);
+  let feature;
+  try {
+    const geo = JSON.parse(readFileSync(fileUrl, "utf8"));
+    feature = (geo.features ?? []).find((item) => item?.properties?.id === row.id);
+  } catch {
+    feature = null;
+  }
+  if (!feature) {
+    errors.push(`${row.countryId} is missing area ${row.id}.`);
+    continue;
+  }
+  if (feature.properties?.areaStatus !== row.status) {
+    errors.push(`${row.countryId} ${row.id} should be ${row.status}.`);
+  }
+  if (row.id === "crimea" && feature.properties?.name !== "Crimea") {
+    errors.push("Crimea should be named Crimea.");
+  }
+}
+const ukraineGeo = JSON.parse(readFileSync(new URL("../public/maps/admin1/ukraine.json", import.meta.url), "utf8"));
+const kyivRegion = (ukraineGeo.features ?? []).find((item) => item?.properties?.id === "kyiv-region");
+const kyivCityArea = (ukraineGeo.features ?? []).find((item) => item?.properties?.id === "kyiv");
+if (kyivRegion?.properties?.name !== "Kyiv region") errors.push("The Kyiv oblast should be named Kyiv region.");
+if (kyivCityArea?.properties?.name !== "Kyiv") errors.push("Kyiv the city should be named Kyiv.");
+function areaKey(countryId, parishId, townId) {
+  if (countryId === "jamaica") return parishId ? `${countryId}:${parishId}` : "";
+  const country = (seed.countries ?? []).find((item) => item.id === countryId);
+  const city = (country?.cities ?? []).find((item) => item.id === townId);
+  return city?.admin1Id ? `${countryId}:${city.admin1Id}` : "";
+}
+for (const project of seed.projects ?? []) {
+  if (blockedAreas.has(areaKey(project.countryId, project.parishId, project.townId))) {
+    errors.push(`${project.id} sits in a blocked area.`);
+  }
+}
+for (const request of seed.requests ?? []) {
+  if (blockedAreas.has(areaKey(request.countryId, request.parishId, request.townId))) {
+    errors.push(`${request.id} sits in a blocked area.`);
+  }
+}
+for (const post of seed.availability ?? []) {
+  if (blockedAreas.has(areaKey(post.countryId, post.parishId, post.townId))) {
+    errors.push(`${post.id} sits in a blocked area.`);
+  }
+}
+const kyiv = (seed.countries ?? []).find((item) => item.id === "ukraine")?.cities?.find((city) => city.id === "kyiv");
+if (kyiv && kyiv.admin1Id !== "kyiv") errors.push("Kyiv the city should use the Kyiv area, not the region.");
 const countryAskSql = readFileSync(new URL("../supabase/migrations/0016_country_requests.sql", import.meta.url), "utf8");
 if (!countryAskSql.includes("create table public.country_requests")) {
   errors.push("0016 needs the country_requests table.");

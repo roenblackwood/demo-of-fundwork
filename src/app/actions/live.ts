@@ -1,9 +1,10 @@
 "use server";
 
+import { placeIsBlocked } from "@/lib/area-rules";
 import { cleanReadiness, isSite, kindById } from "@/lib/blueprints";
 import type { InterestDraft } from "@/lib/interests";
 import { profileToRow, type PersonProfile } from "@/lib/profile";
-import { cleanResidence, investStanding } from "@/lib/residence";
+import { cleanResidence, investStanding, loadResidenceRules } from "@/lib/residence";
 import { defaultPhases } from "@/lib/capital";
 import { isSector, isSkill } from "@/lib/catalog";
 import { askedPlace } from "@/lib/seed";
@@ -88,6 +89,7 @@ export async function postRequest(input: {
   const id = await callerId();
   if (!id) return null;
   if (!askedPlace(input.countryId, input.parishId, input.townId)) return null;
+  if (placeIsBlocked(input.countryId, input.parishId, input.townId)) return null;
   if (!isSector(input.sector) || !(input.budget > 0)) return null;
   if (!Number.isInteger(input.workersNeeded) || input.workersNeeded < 1 || input.workersNeeded > 10) {
     return null;
@@ -166,6 +168,7 @@ export async function postAvailability(input: {
   const id = await callerId();
   if (!id) return null;
   if (!askedPlace(input.countryId, input.parishId, input.townId)) return null;
+  if (placeIsBlocked(input.countryId, input.parishId, input.townId)) return null;
   const skills = [...new Set(input.skills.filter((item) => isSkill(item)))];
   if (skills.length === 0) return null;
   const supabase = await serverSupabase();
@@ -254,6 +257,7 @@ export async function postInterest(input: InterestDraft): Promise<boolean> {
   if (!projectId && !requestId) return false;
   const supabase = await serverSupabase();
   const { data: profile } = await supabase.from("profiles").select("residence_country").eq("id", id).maybeSingle();
+  await loadResidenceRules();
   if (investStanding(cleanResidence(profile?.residence_country)) !== "interest") return false;
   const amount =
     typeof input.amount === "number" && Number.isFinite(input.amount) && input.amount >= 1
@@ -428,6 +432,22 @@ export async function startProject(requestId: string, name: string): Promise<str
   const trimmed = name.trim().slice(0, 80);
   if (!id || !trimmed) return null;
   const supabase = await serverSupabase();
+  const existing = await supabase
+    .from("capital_requests")
+    .select("country_id, parish_id, town_id")
+    .eq("id", requestId)
+    .maybeSingle();
+  const place = existing.data;
+  if (
+    place &&
+    placeIsBlocked(
+      String(place.country_id ?? ""),
+      typeof place.parish_id === "string" ? place.parish_id : null,
+      String(place.town_id ?? ""),
+    )
+  ) {
+    return null;
+  }
   const { data, error } = await supabase.rpc("start_project", {
     request_id: requestId,
     name: trimmed,
