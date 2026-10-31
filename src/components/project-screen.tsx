@@ -31,6 +31,7 @@ import { LessonList } from "@/components/lesson-card";
 import { ThisWeekCard } from "@/components/this-week";
 import { checkNote, projectNote } from "@/lib/ai";
 import { canStillCommit } from "@/lib/catalog";
+import { investStanding } from "@/lib/residence";
 import { SendCapital } from "@/components/send-capital";
 import { NEVER_HOLDS_LINE, TEST_NETWORK_LINE, UNITS_PAYOUT_LINE } from "@/lib/copy";
 import { ThisPlace } from "@/components/place-fit";
@@ -152,7 +153,7 @@ export function ProjectScreen({ id }: { id: string }) {
     <>
       {canCommit ? (
         <Link href={gatePath(`/projects/${project.id}/commit`, demo.profileSet)} className={cn(buttonVariants({ size: "lg" }), "w-full")}>
-          Commit capital
+          {investStanding(demo.profile.residence) === "interest" ? "Register interest" : "Commit capital"}
         </Link>
       ) : null}
       {showWork ? (

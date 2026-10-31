@@ -27,6 +27,7 @@ import { firstName, nameWithInitial, placeLine, postedDate } from "@/lib/format"
 import { matchWorkers } from "@/lib/match";
 import { acceptedCount } from "@/lib/requests";
 import { activePledges, backerMarks, pledgedAmount } from "@/lib/pledges";
+import { investStanding } from "@/lib/residence";
 import { currencyOf, getCountry, requestPlace } from "@/lib/seed";
 import { gatePath } from "@/lib/start-gate";
 import { RulesHere } from "@/components/rules-panel";
@@ -81,7 +82,7 @@ export function RequestScreen({ id }: { id: string }) {
       ) : null}
       {canJoin ? (
         <Link href={gatePath(`/requests/${request.id}/join`, demo.profileSet)} className={cn(buttonVariants({ size: "lg" }), "w-full")}>
-          Join this request
+          {investStanding(demo.profile.residence) === "interest" ? "Register interest" : "Join this request"}
         </Link>
       ) : null}
       {canWithdraw && mine ? (

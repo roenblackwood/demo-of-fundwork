@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PageBusy } from "@/components/busy";
@@ -24,6 +24,11 @@ export function InvestorBasics() {
   const lessons = lessonsForMoment("investor", "investor-basics");
   const [picks, setPicks] = useState<Record<string, boolean | undefined>>({});
 
+  useEffect(() => {
+    if (!demo.ready || !demo.investorBasicsDone || !back) return;
+    router.replace(back);
+  }, [back, demo.investorBasicsDone, demo.ready, router]);
+
   if (!demo.ready) return <PageBusy />;
 
   const checks = INVESTOR_CHECKS.map((check) => {
@@ -40,7 +45,7 @@ export function InvestorBasics() {
   function finish() {
     if (!passed) return;
     demo.passInvestorBasics();
-    router.push(back ?? "/invest");
+    router.replace(back ?? "/invest");
   }
 
   return (

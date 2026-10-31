@@ -26,6 +26,7 @@ import { browserSupabase } from "@/lib/supabase/browser";
 import { firstName, placeLine } from "@/lib/format";
 import { explorerUrl, sameAddress } from "@/lib/money";
 import { investorUnits, workerUnits } from "@/lib/ownership";
+import { investStanding } from "@/lib/residence";
 import { acceptedCount, waitingCount } from "@/lib/requests";
 import { gatePath } from "@/lib/start-gate";
 import { currencyOf, requestPlace } from "@/lib/seed";
@@ -132,7 +133,9 @@ export function DashboardScreen() {
                             : `About ${units} ownership units if accepted`}
                       </p>
                       {onChain && commitment.status === "pledged" ? (
-                        <p className="mt-2 font-semibold text-primary">Send it</p>
+                        <p className="mt-2 font-semibold text-primary">
+                          {investStanding(demo.profile.residence) === "interest" ? "Register interest" : "Send it"}
+                        </p>
                       ) : null}
                     </CardContent>
                   </Card>

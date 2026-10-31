@@ -57,6 +57,8 @@ let availabilityId = null;
 let cofundRequestId = null;
 let cofundProjectId = null;
 let videoProjectId = null;
+const residenceRequestIds = [];
+let userCount = 0;
 
 function userClient() {
   return createClient(url, anonKey, {
@@ -64,8 +66,9 @@ function userClient() {
   });
 }
 
-async function makeUser(role, name) {
-  const email = `live-check-${role}-${stamp}@example.com`;
+async function makeUser(role, name, options = {}) {
+  userCount += 1;
+  const email = `live-check-${role}-${userCount}-${stamp}@example.com`;
   const created = await admin.auth.admin.createUser({
     email,
     password,
@@ -76,6 +79,7 @@ async function makeUser(role, name) {
   }
   const id = created.data.user.id;
   userIds.push(id);
+  const residence = Object.prototype.hasOwnProperty.call(options, "residence") ? options.residence : "ZZ";
   const profile = await admin.from("profiles").insert({
     id,
     name,
@@ -85,6 +89,7 @@ async function makeUser(role, name) {
     town_id: "tamale",
     skill: role === "worker" ? "water" : null,
     extra_skills: [],
+    residence_country: residence,
   });
   if (profile.error) throw new Error(profile.error.message);
   const client = userClient();
@@ -126,7 +131,9 @@ async function cleanup() {
     }
     if (paths.length > 0) await admin.storage.from("videos").remove(paths);
   }
+  await admin.from("residence_invest_open").delete().eq("code", "ZZ");
   if (userIds.length > 0) {
+    await admin.from("capital_interests").delete().in("user_id", userIds);
     await admin.from("wallet_checks").delete().in("user_id", userIds);
     await admin.from("wallets").delete().in("user_id", userIds);
     await admin.from("request_pledges").delete().in("user_id", userIds);
@@ -150,7 +157,7 @@ async function cleanup() {
     await admin.from("applications").delete().in("worker_id", userIds);
     await admin.from("availability").delete().in("user_id", userIds);
   }
-  for (const id of [requestId, cofundRequestId]) {
+  for (const id of [requestId, cofundRequestId, ...residenceRequestIds]) {
     if (!id) continue;
     await admin.from("applications").delete().eq("request_id", id);
     await admin.from("capital_requests").delete().eq("id", id);
@@ -174,6 +181,8 @@ function hidden(result, secretIds) {
 }
 
 try {
+  const allow = await admin.from("residence_invest_open").upsert({ code: "ZZ" });
+  if (allow.error) throw new Error(allow.error.message);
   const investor = await makeUser("investor", "Marcia Bennett");
   const member = await makeUser("worker", "Keisha Palmer");
   const outsider = await makeUser("worker", "Omar Grant");
@@ -1045,6 +1054,131 @@ try {
       !organizerHide.error &&
       afterOrganizer.data?.hidden === true,
     "Only the owner or the organizer can hide a video.",
+  );
+
+  const usInvestor = await makeUser("investor", "US Interest", { residence: "US" });
+  const nowhere = await makeUser("investor", "No Residence", { residence: null });
+  const blockedHome = await makeUser("investor", "Blocked Residence", { residence: "CU" });
+  const usHost = await makeUser("investor", "US Host", { residence: "US" });
+  await usInvestor.client.rpc("pass_investor_basics");
+  await nowhere.client.rpc("pass_investor_basics");
+  await blockedHome.client.rpc("pass_investor_basics");
+  await usHost.client.rpc("pass_investor_basics");
+  const usCommit = await usInvestor.client.from("commitments").insert({
+    user_id: usInvestor.id,
+    project_id: projectA,
+    amount: 9,
+    status: "pledged",
+  });
+  const nullCommit = await nowhere.client.from("commitments").insert({
+    user_id: nowhere.id,
+    project_id: projectA,
+    amount: 9,
+    status: "pledged",
+  });
+  const blockedCommit = await blockedHome.client.from("commitments").insert({
+    user_id: blockedHome.id,
+    project_id: projectA,
+    amount: 9,
+    status: "pledged",
+  });
+  report(
+    Boolean(usCommit.error) && Boolean(nullCommit.error) && Boolean(blockedCommit.error),
+    "A commitment insert is refused unless residence is invest open.",
+  );
+  const pledgeInsert = await usInvestor.client.from("request_pledges").insert({
+    request_id: cofundRequestId,
+    user_id: usInvestor.id,
+    amount: 10,
+    status: "pledged",
+  });
+  report(Boolean(pledgeInsert.error), "A request pledge insert is refused unless residence is invest open.");
+  const openForRefuse = await admin
+    .from("capital_requests")
+    .insert({
+      user_id: usHost.id,
+      country_id: "ghana",
+      parish_id: null,
+      town_id: "tamale",
+      sector: "water",
+      budget: 1000,
+      poster_amount: 100,
+      workers_needed: 1,
+      skills: ["water"],
+      note: "Residence refuse.",
+      status: "open",
+      kind: "rainwater",
+      site: "own",
+      readiness: {},
+    })
+    .select("id")
+    .single();
+  if (openForRefuse.error || !openForRefuse.data) throw new Error(openForRefuse.error?.message ?? "Could not post a refusal request.");
+  residenceRequestIds.push(openForRefuse.data.id);
+  const usPledge = await usInvestor.client.rpc("pledge_to_request", {
+    request_id: openForRefuse.data.id,
+    amount: 10,
+    show_name: false,
+  });
+  const nullPledge = await nowhere.client.rpc("pledge_to_request", {
+    request_id: openForRefuse.data.id,
+    amount: 10,
+    show_name: false,
+  });
+  const blockedPledge = await blockedHome.client.rpc("pledge_to_request", {
+    request_id: openForRefuse.data.id,
+    amount: 10,
+    show_name: false,
+  });
+  report(
+    usPledge.data === null &&
+      nullPledge.data === null &&
+      blockedPledge.data === null &&
+      !usPledge.error &&
+      !nullPledge.error &&
+      !blockedPledge.error,
+    "pledge_to_request returns null unless residence is invest open.",
+  );
+  const startForRefuse = await admin
+    .from("capital_requests")
+    .insert({
+      user_id: usHost.id,
+      country_id: "ghana",
+      parish_id: null,
+      town_id: "tamale",
+      sector: "water",
+      budget: 1000,
+      poster_amount: 100,
+      workers_needed: 1,
+      skills: ["water"],
+      note: "Residence start.",
+      status: "team-ready",
+      kind: "rainwater",
+      site: "own",
+      readiness: {},
+    })
+    .select("id")
+    .single();
+  if (startForRefuse.error || !startForRefuse.data) throw new Error(startForRefuse.error?.message ?? "Could not post a start refusal.");
+  residenceRequestIds.push(startForRefuse.data.id);
+  const accepted = await admin.from("applications").insert({
+    request_id: startForRefuse.data.id,
+    worker_id: member.id,
+    skill: "water",
+    origin: "applied",
+    status: "accepted",
+  });
+  const refusedStart = await usHost.client.rpc("start_project", {
+    request_id: startForRefuse.data.id,
+    name: "Should not start",
+  });
+  const startedRows = await admin.from("projects").select("id").eq("organizer_id", usHost.id);
+  report(
+    !accepted.error &&
+      refusedStart.data === null &&
+      !refusedStart.error &&
+      (startedRows.data ?? []).length === 0,
+    "start_project refuses an organizer whose residence is not invest open, including their own pledge.",
   );
 } catch (error) {
   report(false, error instanceof Error ? error.message : "The live check stopped.");

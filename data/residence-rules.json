@@ -1,0 +1,330 @@
+{
+  "comment": "Invest is open only for countries a lawyer has cleared. None are cleared. A lawyer must review the blocked list. Identity checks through a licensed provider are the real residence control. Per-state rules for the United States are not built.",
+  "countries": [
+    {
+      "code": "US",
+      "invest": "interest-only",
+      "work": "blocked",
+      "note": "Investing from the United States is not open yet. You can save projects and register interest.",
+      "sources": [
+        {
+          "title": "No lawyer has cleared investing from the United States",
+          "url": "https://www.sec.gov/resources-small-businesses"
+        }
+      ],
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "code": "JM",
+      "invest": "interest-only",
+      "work": "open",
+      "note": "You can look for work here. Investing is not open yet. You can save projects and register interest.",
+      "sources": [
+        {
+          "title": "Financial Services Commission public notice",
+          "url": "https://www.fscjamaica.org/wp-content/uploads/2026/10/Public-Notice-Cassandra-Rose.pdf"
+        }
+      ],
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "code": "DO",
+      "invest": "interest-only",
+      "work": "open",
+      "note": "You can look for work here. Investing is not open yet. You can save projects and register interest.",
+      "sources": [
+        {
+          "title": "Central Bank of the Dominican Republic",
+          "url": "https://bancentral.gov.do/a/d/5196-comunicado-sobre-criptomonedas-y-monedas-y-activos-virtuales"
+        }
+      ],
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "code": "BB",
+      "invest": "interest-only",
+      "work": "open",
+      "note": "You can look for work here. Investing is not open yet. You can save projects and register interest.",
+      "sources": [
+        {
+          "title": "Financial Services Commission legislation list",
+          "url": "https://www.fsc.gov.bb/legislation"
+        }
+      ],
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "code": "SV",
+      "invest": "interest-only",
+      "work": "open",
+      "note": "You can look for work here. Investing is not open yet. You can save projects and register interest.",
+      "sources": [
+        {
+          "title": "Legislative Assembly decree, 29 January 2025",
+          "url": "https://www.asamblea.gob.sv/sites/default/files/documents/decretos/FC2C7E66-490B-4420-B8B5-221C2F2A4C28.pdf"
+        }
+      ],
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "code": "CO",
+      "invest": "interest-only",
+      "work": "open",
+      "note": "You can look for work here. Investing is not open yet. You can save projects and register interest.",
+      "sources": [
+        {
+          "title": "Superintendencia Financiera de Colombia",
+          "url": "https://www.superfinanciera.gov.co/publicaciones/10115324/que-son-los-activos-digitales-o-criptoactivos/"
+        }
+      ],
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "code": "MX",
+      "invest": "interest-only",
+      "work": "open",
+      "note": "You can look for work here. Investing is not open yet. You can save projects and register interest.",
+      "sources": [
+        {
+          "title": "Law to Regulate Financial Technology Institutions",
+          "url": "https://www.diputados.gob.mx/LeyesBiblio/pdf/LRITF.pdf"
+        }
+      ],
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "code": "KE",
+      "invest": "interest-only",
+      "work": "open",
+      "note": "You can look for work here. Investing is not open yet. You can save projects and register interest.",
+      "sources": [
+        {
+          "title": "Virtual Assets Service Providers Act, 2025",
+          "url": "https://new.kenyalaw.org/akn/ke/act/2025/20"
+        }
+      ],
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "code": "GH",
+      "invest": "interest-only",
+      "work": "open",
+      "note": "You can look for work here. Investing is not open yet. You can save projects and register interest.",
+      "sources": [
+        {
+          "title": "Bank of Ghana press release, 22 December 2025",
+          "url": "https://www.bog.gov.gh/wp-content/uploads/2025/12/PRESS-RELEASE-PASSAGE-OF-THE-VIRTUAL-ASSET-SERVICE-PROVIDERS-BILL221225-1.pdf"
+        }
+      ],
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "code": "RW",
+      "invest": "interest-only",
+      "work": "open",
+      "note": "You can look for work here. Investing is not open yet. You can save projects and register interest.",
+      "sources": [
+        {
+          "title": "Law regulating virtual asset business, 28 May 2026",
+          "url": "https://www.cma.rw/fileadmin/user_upload/law_regulating_virtual_asset_business.pdf"
+        }
+      ],
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "code": "IN",
+      "invest": "interest-only",
+      "work": "open",
+      "note": "You can look for work here. Investing is not open yet. You can save projects and register interest.",
+      "sources": [
+        {
+          "title": "Financial Intelligence Unit, downloads",
+          "url": "https://fiuindia.gov.in/files/Downloads/Downloads.html"
+        }
+      ],
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "code": "ID",
+      "invest": "interest-only",
+      "work": "open",
+      "note": "You can look for work here. Investing is not open yet. You can save projects and register interest.",
+      "sources": [
+        {
+          "title": "OJK regulation 27 of 2024, effective 10 January 2025",
+          "url": "https://www.ojk.go.id/id/regulasi/Pages/POJK-27-2024-AKD-AK.aspx"
+        }
+      ],
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "code": "PH",
+      "invest": "interest-only",
+      "work": "open",
+      "note": "You can look for work here. Investing is not open yet. You can save projects and register interest.",
+      "sources": [
+        {
+          "title": "BSP Circular 1108",
+          "url": "https://www.bsp.gov.ph/Regulations/Issuances/2021/1108.pdf"
+        }
+      ],
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "code": "BR",
+      "invest": "interest-only",
+      "work": "open",
+      "note": "You can look for work here. Investing is not open yet. You can save projects and register interest.",
+      "sources": [
+        {
+          "title": "Law 14.478 of 2022",
+          "url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2022/lei/l14478.htm"
+        }
+      ],
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "code": "NG",
+      "invest": "interest-only",
+      "work": "open",
+      "note": "You can look for work here. Investing is not open yet. You can save projects and register interest.",
+      "sources": [
+        {
+          "title": "Investments and Securities Act, 2025",
+          "url": "https://sec.gov.ng/our-mandate/regulation/acts/"
+        }
+      ],
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "code": "VN",
+      "invest": "interest-only",
+      "work": "open",
+      "note": "You can look for work here. Investing is not open yet. You can save projects and register interest.",
+      "sources": [
+        {
+          "title": "State Securities Commission, Resolution 05/2025",
+          "url": "https://ssc.gov.vn/webcenter/portal/ssc/pages_r/l/chitit?dDocName=APPSSCGOVVN1620158982"
+        }
+      ],
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "code": "PK",
+      "invest": "interest-only",
+      "work": "open",
+      "note": "You can look for work here. Investing is not open yet. You can save projects and register interest.",
+      "sources": [
+        {
+          "title": "Gazette ordinance, July 2025",
+          "url": "https://www.pvara.gov.pk/documents/Ex%20Gaz-I%20LAW.pdf"
+        }
+      ],
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "code": "JO",
+      "invest": "interest-only",
+      "work": "open",
+      "note": "You can look for work here. Investing is not open yet. You can save projects and register interest.",
+      "sources": [
+        {
+          "title": "Jordan Securities Commission, Regulation 94 of 2025",
+          "url": "https://www.jsc.gov.jo/News/en/12582"
+        }
+      ],
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "code": "CU",
+      "invest": "blocked",
+      "work": "blocked",
+      "note": "Fundwork cannot serve people who live here.",
+      "sources": [
+        {
+          "title": "US Treasury OFAC sanctions programs and country information",
+          "url": "https://ofac.treasury.gov/sanctions-programs-and-country-information"
+        }
+      ],
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "code": "IR",
+      "invest": "blocked",
+      "work": "blocked",
+      "note": "Fundwork cannot serve people who live here.",
+      "sources": [
+        {
+          "title": "US Treasury OFAC sanctions programs and country information",
+          "url": "https://ofac.treasury.gov/sanctions-programs-and-country-information"
+        }
+      ],
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "code": "KP",
+      "invest": "blocked",
+      "work": "blocked",
+      "note": "Fundwork cannot serve people who live here.",
+      "sources": [
+        {
+          "title": "US Treasury OFAC sanctions programs and country information",
+          "url": "https://ofac.treasury.gov/sanctions-programs-and-country-information"
+        }
+      ],
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "code": "SY",
+      "invest": "blocked",
+      "work": "blocked",
+      "note": "Fundwork cannot serve people who live here.",
+      "sources": [
+        {
+          "title": "US Treasury OFAC sanctions programs and country information",
+          "url": "https://ofac.treasury.gov/sanctions-programs-and-country-information"
+        }
+      ],
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "code": "UA-CR",
+      "invest": "blocked",
+      "work": "blocked",
+      "note": "Fundwork cannot serve people who live here.",
+      "sources": [
+        {
+          "title": "US Treasury OFAC sanctions programs and country information",
+          "url": "https://ofac.treasury.gov/sanctions-programs-and-country-information"
+        }
+      ],
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "code": "UA-DT",
+      "invest": "blocked",
+      "work": "blocked",
+      "note": "Fundwork cannot serve people who live here.",
+      "sources": [
+        {
+          "title": "US Treasury OFAC sanctions programs and country information",
+          "url": "https://ofac.treasury.gov/sanctions-programs-and-country-information"
+        }
+      ],
+      "checkedOn": "2026-10-30"
+    },
+    {
+      "code": "UA-LH",
+      "invest": "blocked",
+      "work": "blocked",
+      "note": "Fundwork cannot serve people who live here.",
+      "sources": [
+        {
+          "title": "US Treasury OFAC sanctions programs and country information",
+          "url": "https://ofac.treasury.gov/sanctions-programs-and-country-information"
+        }
+      ],
+      "checkedOn": "2026-10-30"
+    }
+  ]
+}

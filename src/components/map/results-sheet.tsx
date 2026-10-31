@@ -161,7 +161,11 @@ export function ResultsSheet({
         </div>
         <p className="pb-1 text-center text-sm text-muted-foreground">{label}</p>
         {notice ? <p className="px-1 pb-2 text-center text-base">{notice}</p> : null}
-        {toolbar ? <div className="px-1 pb-2">{toolbar}</div> : null}
+        {toolbar ? (
+          <div className="px-1 pb-2" onPointerDown={(event) => event.stopPropagation()}>
+            {toolbar}
+          </div>
+        ) : null}
       </div>
       <div
         className={cn("min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain px-3 pb-3", !open && "hidden")}

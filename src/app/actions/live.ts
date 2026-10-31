@@ -1,7 +1,9 @@
 "use server";
 
 import { cleanReadiness, isSite, kindById } from "@/lib/blueprints";
+import type { InterestDraft } from "@/lib/interests";
 import { profileToRow, type PersonProfile } from "@/lib/profile";
+import { cleanResidence, investStanding } from "@/lib/residence";
 import { defaultPhases } from "@/lib/capital";
 import { isSector, isSkill } from "@/lib/catalog";
 import { askedPlace } from "@/lib/seed";
@@ -24,6 +26,7 @@ export async function saveProfile(input: {
   townId: string;
   skill: Skill | null;
   extraSkills: Skill[];
+  residence?: string | null;
 }): Promise<boolean> {
   const id = await callerId();
   if (!id) return false;
@@ -36,19 +39,18 @@ export async function saveProfile(input: {
     ? [...new Set(input.extraSkills.filter((item) => isSkill(item) && item !== skill))]
     : [];
   const supabase = await serverSupabase();
-  const { error } = await supabase.from("profiles").upsert(
-    {
-      id,
-      name,
-      role: input.role,
-      country_id: input.countryId,
-      parish_id: input.parishId,
-      town_id: input.townId,
-      skill,
-      extra_skills: extra,
-    },
-    { onConflict: "id" },
-  );
+  const row: Record<string, unknown> = {
+    id,
+    name,
+    role: input.role,
+    country_id: input.countryId,
+    parish_id: input.parishId,
+    town_id: input.townId,
+    skill,
+    extra_skills: extra,
+  };
+  if (input.residence !== undefined) row.residence_country = cleanResidence(input.residence);
+  const { error } = await supabase.from("profiles").upsert(row, { onConflict: "id" });
   return !error;
 }
 
@@ -235,6 +237,35 @@ export async function saveProfileDetails(profile: PersonProfile): Promise<boolea
     profileToRow(id, { ...profile, done: true }),
     { onConflict: "user_id" },
   );
+  if (error) return false;
+  const { error: residenceError } = await supabase
+    .from("profiles")
+    .update({ residence_country: cleanResidence(profile.residence) })
+    .eq("id", id);
+  return !residenceError;
+}
+
+export async function postInterest(input: InterestDraft): Promise<boolean> {
+  const id = await callerId();
+  if (!id) return false;
+  if (input.kind !== "commit" && input.kind !== "join" && input.kind !== "send") return false;
+  const projectId = input.projectId || null;
+  const requestId = input.requestId || null;
+  if (!projectId && !requestId) return false;
+  const supabase = await serverSupabase();
+  const { data: profile } = await supabase.from("profiles").select("residence_country").eq("id", id).maybeSingle();
+  if (investStanding(cleanResidence(profile?.residence_country)) !== "interest") return false;
+  const amount =
+    typeof input.amount === "number" && Number.isFinite(input.amount) && input.amount >= 1
+      ? Math.round(input.amount)
+      : null;
+  const { error } = await supabase.from("capital_interests").insert({
+    user_id: id,
+    project_id: projectId,
+    request_id: requestId,
+    amount,
+    kind: input.kind,
+  });
   return !error;
 }
 

@@ -77,7 +77,7 @@ export function OnboardingScreen() {
     }
     const dest = next === "/you" ? (role === "worker" ? "/work" : "/invest") : next;
     await refreshLiveStore();
-    router.push(dest);
+    router.replace(dest);
   }
 
   const leadSkills = countryId === "jamaica"

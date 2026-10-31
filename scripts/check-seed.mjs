@@ -731,6 +731,65 @@ if (!fitRaw || !Array.isArray(fitRaw.places)) {
   }
 }
 
+const RESIDENCE_MARKET = {
+  JM: "jamaica",
+  DO: "dominican-republic",
+  BB: "barbados",
+  SV: "el-salvador",
+  CO: "colombia",
+  MX: "mexico",
+  KE: "kenya",
+  GH: "ghana",
+  RW: "rwanda",
+  IN: "india",
+  ID: "indonesia",
+  PH: "philippines",
+  BR: "brazil",
+  NG: "nigeria",
+  VN: "vietnam",
+  PK: "pakistan",
+  JO: "jordan",
+};
+const residenceFile = JSON.parse(readFileSync(new URL("../data/residence-rules.json", import.meta.url), "utf8"));
+if (typeof residenceFile?.comment !== "string" || !/lawyer/i.test(residenceFile.comment)) {
+  errors.push("residence-rules.json needs a comment that a lawyer clears invest and reviews the blocked list.");
+}
+const residenceRows = Array.isArray(residenceFile?.countries) ? residenceFile.countries : null;
+if (!residenceRows) {
+  errors.push("residence-rules.json needs a countries list.");
+} else {
+  const seenCodes = new Set();
+  const workOpenMarkets = new Set();
+  for (const row of residenceRows) {
+    const code = typeof row?.code === "string" ? row.code : "?";
+    if (seenCodes.has(code)) errors.push(`Duplicate residence ${code}.`);
+    seenCodes.add(code);
+    if (!["open", "interest-only", "blocked"].includes(row?.invest)) errors.push(`${code} has a bad invest rule.`);
+    if (!["open", "blocked"].includes(row?.work)) errors.push(`${code} has a bad work rule.`);
+    plainLine(row?.note, `${code} residence note`);
+    checkSources(row, `${code} residence`);
+    if (row?.work !== "open") continue;
+    const market = RESIDENCE_MARKET[code];
+    const rule = Array.isArray(rules) ? rules.find((item) => item?.id === market) : null;
+    if (!market || !rule) {
+      errors.push(`${code} is work open and missing from countries.json.`);
+      continue;
+    }
+    if (rule.status !== "open" && rule.status !== "limited") {
+      errors.push(`${code} is work open but ${market} is ${rule.status}.`);
+      continue;
+    }
+    workOpenMarkets.add(market);
+  }
+  if (Array.isArray(rules)) {
+    for (const rule of rules) {
+      if ((rule?.status === "open" || rule?.status === "limited") && !workOpenMarkets.has(rule.id)) {
+        errors.push(`${rule.id} is open for work in countries.json but not in residence-rules.json.`);
+      }
+    }
+  }
+}
+
 if (errors.length) {
   console.error(errors.join("\n"));
   process.exit(1);

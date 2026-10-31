@@ -9,6 +9,7 @@ import { openSlice, phasesFor } from "@/lib/capital";
 import { NEVER_HOLDS_LINE, TEST_NETWORK_LINE, WALLET_CHECK_LATER } from "@/lib/copy";
 import { useDemo } from "@/lib/demo-store";
 import { refreshLiveStore } from "@/lib/live-store";
+import { investStanding } from "@/lib/residence";
 import { isLive } from "@/lib/mode";
 import { chainTitle, SAMPLE_PAYMENT_LINE, SAMPLE_PROJECT_ADDRESS } from "@/lib/money";
 import type { ProjectWallet } from "@/lib/types";
@@ -38,9 +39,45 @@ export function SendCapital({ projectId, pledge }: { projectId: string; pledge: 
   });
   const note = project?.phaseNote ?? "";
   const wallets = demo.projectWallets.filter((item) => item.projectId === projectId);
+  if (investStanding(demo.profile.residence) === "interest") {
+    return <InterestSend projectId={projectId} amount={pledge} />;
+  }
   if (!isLive()) return <SampleSend phase={slice.phase} amount={slice.amount} note={note} />;
   if (wallets.length === 0) return null;
   return <LiveSend projectId={projectId} phase={slice.phase} amount={slice.amount} note={note} wallets={wallets} />;
+}
+
+function InterestSend({ projectId, amount }: { projectId: string; amount: number }) {
+  const demo = useDemo();
+  const [saved, setSaved] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  async function register() {
+    if (busy || saved) return;
+    setBusy(true);
+    const ok = await demo.registerInterest({
+      projectId,
+      requestId: null,
+      amount: amount >= 1 ? amount : null,
+      kind: "send",
+    });
+    setBusy(false);
+    if (ok) setSaved(true);
+  }
+
+  return (
+    <section id="send" className="space-y-3">
+      <h2 className="text-xl font-semibold">Register interest</h2>
+      <p className="text-lg leading-relaxed">This is not a commitment. No money moves.</p>
+      {saved ? (
+        <p className="text-lg">Your interest is saved.</p>
+      ) : (
+        <Button type="button" size="lg" className="w-full" disabled={busy} aria-busy={busy} onClick={() => void register()}>
+          Register interest
+        </Button>
+      )}
+    </section>
+  );
 }
 
 function SampleSend({ phase, amount, note }: { phase: string; amount: number; note: string }) {

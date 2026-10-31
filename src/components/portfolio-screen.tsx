@@ -55,6 +55,38 @@ function PledgedRequests({ demo }: { demo: ReturnType<typeof useDemo> }) {
   );
 }
 
+function InterestSection({ demo }: { demo: ReturnType<typeof useDemo> }) {
+  const mine = demo.capitalInterests.filter((item) => item.userId === demo.userId);
+  if (mine.length === 0) return null;
+  return (
+    <section className="space-y-4">
+      <h2 className={sectionTitle}>Interest</h2>
+      <p className="text-lg leading-relaxed">This is not a commitment. No money moves.</p>
+      {mine.map((item) => {
+        const project = item.projectId ? demo.projects.find((row) => row.id === item.projectId) : undefined;
+        const request = item.requestId ? demo.requests.find((row) => row.id === item.requestId) : undefined;
+        const countryId = project?.countryId ?? request?.countryId ?? "";
+        const name = project?.name ?? (request ? sectorTitle(request.sector) : "A project");
+        const href = project ? `/projects/${project.id}` : request ? `/requests/${request.id}` : "/invest";
+        return (
+          <article key={item.id} className="space-y-1">
+            <h3 className="text-lg font-semibold">
+              <Link href={href} className="text-primary">
+                {name}
+              </Link>
+            </h3>
+            {item.amount !== null && countryId ? (
+              <p className="text-base">{money(item.amount, currencyOf(countryId))}</p>
+            ) : (
+              <p className="text-base">Amount not set</p>
+            )}
+          </article>
+        );
+      })}
+    </section>
+  );
+}
+
 function viewFor(demo: ReturnType<typeof useDemo>): PortfolioView {
   return buildPortfolio({
     userId: demo.userId,
@@ -154,6 +186,8 @@ export function PortfolioScreen() {
           <p className="text-base">How units pay out is not set yet.</p>
         </div>
       </section>
+
+      <InterestSection demo={demo} />
 
       <SplitBars title="By country" note={barNote} rows={view.countries} />
       <SplitBars title="By sector" note={barNote} rows={view.sectors} />

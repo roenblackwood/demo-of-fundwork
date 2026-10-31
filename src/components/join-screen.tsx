@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useDemo } from "@/lib/demo-store";
 import { money, placeLine } from "@/lib/format";
+import { investStanding, residenceFor } from "@/lib/residence";
 import { leftToPledge } from "@/lib/pledges";
 import { currencyOf, requestPlace } from "@/lib/seed";
 import { useProfileGate } from "@/components/profile-gate";
@@ -36,6 +37,7 @@ export function JoinScreen({ id }: { id: string }) {
   const [text, setText] = useState("");
   const [notice, setNotice] = useState("");
   const [showName, setShowName] = useState(false);
+  const [savedInterest, setSavedInterest] = useState(false);
 
   if (!demo.ready || !allowed) return <PageBusy />;
   if (!request) {
@@ -53,10 +55,23 @@ export function JoinScreen({ id }: { id: string }) {
   const left = leftToPledge(request.budget, demo.pledges, request.id);
   const amount = readAmount(text);
   const tooMuch = amount !== null && amount > left;
+  const standing = investStanding(demo.profile.residence);
+  const interestOnly = standing === "interest";
   const open = (request.status === "open" || request.status === "team-ready") && !request.projectId && left >= 1;
   const mine = demo.pledges.find(
     (item) => item.requestId === request.id && item.userId === demo.userId && item.status === "pledged",
   );
+
+  async function register() {
+    if (!request || demo.saving || savedInterest) return;
+    const ok = await demo.registerInterest({
+      projectId: null,
+      requestId: request.id,
+      amount,
+      kind: "join",
+    });
+    if (ok) setSavedInterest(true);
+  }
 
   async function join() {
     if (!request || !amount || demo.saving || amount > left) return;
@@ -81,8 +96,10 @@ export function JoinScreen({ id }: { id: string }) {
 
   return (
     <div className="space-y-6">
-      <StepHeader backHref={`/requests/${request.id}`} title="Join this request" hint={place} />
-      {demo.role !== "investor" ? (
+      <StepHeader backHref={`/requests/${request.id}`} title={interestOnly ? "Register interest" : "Join this request"} hint={place} />
+      {standing === "blocked" ? (
+        <p className="text-lg leading-relaxed">{residenceFor(demo.profile.residence).note}</p>
+      ) : demo.role !== "investor" ? (
         <p className="text-lg">This page is for investors.</p>
       ) : mine ? (
         <p className="text-lg">You already pledged to this request.</p>
@@ -115,17 +132,27 @@ export function JoinScreen({ id }: { id: string }) {
             />
             Show my name on projects I back
           </label>
+          {interestOnly ? <p className="text-lg leading-relaxed">This is not a commitment. No money moves.</p> : null}
+          {interestOnly && savedInterest ? (
+            <p className="text-lg">
+              Your interest is saved.{" "}
+              <Link href="/you/portfolio" className="font-semibold text-primary">
+                See it in your portfolio
+              </Link>
+            </p>
+          ) : (
           <ActionBar>
             <Button
               size="lg"
               className="w-full"
-              disabled={!amount || tooMuch || demo.saving}
+              disabled={interestOnly ? demo.saving : !amount || tooMuch || demo.saving}
               aria-busy={demo.saving}
-              onClick={() => void join()}
+              onClick={() => void (interestOnly ? register() : join())}
             >
-              Join this request
+              {interestOnly ? "Register interest" : "Join this request"}
             </Button>
           </ActionBar>
+          )}
         </>
       )}
       <Link href={`/requests/${request.id}`} className="inline-flex min-h-11 items-center font-semibold text-primary">

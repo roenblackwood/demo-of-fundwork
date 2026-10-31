@@ -8,6 +8,7 @@ import {
   postApplication,
   postAvailability,
   postCommitment,
+  postInterest,
   acceptContribution as acceptContributionAction,
   postContribution,
   postRequest,
@@ -28,13 +29,16 @@ import {
 import { cleanReadiness, isSite, kindById } from "@/lib/blueprints";
 import { phasesFor, readinessChangeNote } from "@/lib/capital";
 import { isSkill } from "@/lib/catalog";
+import { cleanInterests, type CapitalInterest, type InterestDraft } from "@/lib/interests";
 import {
+  emptyProfile,
   profileFromRow,
   resolvedProfile,
   sectorDown as sectorDownOf,
   trackFor,
   type PersonProfile,
 } from "@/lib/profile";
+import { canCommitMoney, cleanResidence, investStanding } from "@/lib/residence";
 import { investorBasicsIds, stageLessons } from "@/lib/lessons";
 import type { WeekPlan } from "@/lib/progress";
 import { DemoContext, type AvailabilityDraft, type DemoValue, type Flow, type Proof, type RequestDraft } from "@/lib/demo-store";
@@ -84,6 +88,7 @@ type Snapshot = {
   homeSkill: Skill | null;
   homeExtraSkills: Skill[];
   commitments: Commitment[];
+  capitalInterests: CapitalInterest[];
   contributions: Contribution[];
   reviewContributions: Contribution[];
   addedCommitments: Commitment[];
@@ -121,6 +126,7 @@ const emptySnapshot: Snapshot = {
   homeSkill: null,
   homeExtraSkills: [],
   commitments: [],
+  capitalInterests: [],
   contributions: [],
   reviewContributions: [],
   addedCommitments: [],
@@ -198,11 +204,19 @@ function rowsOf(value: { data: unknown[] | null }): Record<string, unknown>[] {
   return (value.data ?? []).filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object");
 }
 
+function liveProfile(row: Record<string, unknown> | null, residence: unknown): PersonProfile | null {
+  const details = profileFromRow(row);
+  const code = cleanResidence(residence);
+  if (details) return { ...details, residence: code };
+  if (!code) return null;
+  return { ...emptyProfile(), done: true, residence: code };
+}
+
 async function loadSnapshot(): Promise<Snapshot> {
   const supabase = browserSupabase();
   const { data: auth } = await supabase.auth.getUser();
   const user = auth.user;
-  const [projectRows, memberRows, requestRows, applicationRows, availabilityRows, peopleRows, commitmentRows, contributionRows, mine, goalRows, lessonRows, walletRows, projectWalletRows, paymentRows, trancheRows, detailRows, signalRows, pledgeRows, pledgeNameRows] =
+  const [projectRows, memberRows, requestRows, applicationRows, availabilityRows, peopleRows, commitmentRows, contributionRows, mine, goalRows, lessonRows, walletRows, projectWalletRows, paymentRows, trancheRows, detailRows, signalRows, pledgeRows, pledgeNameRows, interestRows] =
     await Promise.all([
       supabase.from("projects").select("*"),
       supabase.from("project_members").select("project_id, worker_id"),
@@ -213,7 +227,7 @@ async function loadSnapshot(): Promise<Snapshot> {
       user ? supabase.from("commitments").select("*") : Promise.resolve({ data: [] }),
       user ? supabase.from("contributions").select("*") : Promise.resolve({ data: [] }),
       user
-        ? supabase.from("profiles").select("name, role, country_id, parish_id, town_id, skill, extra_skills, investor_basics_at").eq("id", user.id).maybeSingle()
+        ? supabase.from("profiles").select("name, role, country_id, parish_id, town_id, skill, extra_skills, investor_basics_at, residence_country").eq("id", user.id).maybeSingle()
         : Promise.resolve({ data: null }),
       user ? supabase.from("weekly_goals").select("*") : Promise.resolve({ data: [] }),
       user ? supabase.from("lesson_progress").select("lesson_id, seen_at, done_at") : Promise.resolve({ data: [] }),
@@ -228,6 +242,9 @@ async function loadSnapshot(): Promise<Snapshot> {
       supabase.from("request_pledges").select("id, request_id, amount, status, created_at"),
       user
         ? supabase.from("request_pledge_names").select("id, request_id, user_id, name, show_name, amount, status, created_at")
+        : Promise.resolve({ data: [] }),
+      user
+        ? supabase.from("capital_interests").select("id, user_id, project_id, request_id, amount, kind, created_at").eq("user_id", user.id)
         : Promise.resolve({ data: [] }),
     ]);
 
@@ -352,7 +369,18 @@ async function loadSnapshot(): Promise<Snapshot> {
       const item = mapPayment(row);
       return item ? [item] : [];
     }),
-    profile: profileFromRow(detailRows.data as Record<string, unknown> | null),
+    capitalInterests: cleanInterests(
+      rowsOf(interestRows).map((row) => ({
+        id: row.id,
+        userId: row.user_id,
+        projectId: row.project_id,
+        requestId: row.request_id,
+        amount: typeof row.amount === "number" ? row.amount : typeof row.amount === "string" ? Number(row.amount) : null,
+        kind: row.kind,
+        createdAt: row.created_at,
+      })),
+    ),
+    profile: liveProfile(detailRows.data as Record<string, unknown> | null, profile?.residence_country),
     savedIds: rowsOf(signalRows).flatMap((row) =>
       row.kind === "saved" && typeof row.item_id === "string" ? [row.item_id] : [],
     ),
@@ -506,6 +534,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
       proof,
       proofLabel: null,
       commitments: current.commitments,
+      capitalInterests: current.capitalInterests,
       contributions: current.contributions,
       acceptContribution: (id) => {
         const seen = snapshotRef.current;
@@ -547,6 +576,17 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
         if (id && id === current.userId) return current.name.trim();
         return "";
       },
+      registerInterest: async (draft: InterestDraft) => {
+        const seen = snapshotRef.current;
+        const projectId = draft.projectId || null;
+        const requestId = draft.requestId || null;
+        const local = Boolean(
+          investStanding(seen.profile?.residence) === "interest" &&
+            seen.role === "investor" &&
+            (projectId || requestId),
+        );
+        return commitFlag(local, () => postInterest(draft));
+      },
       addCommitment: (commitment) => {
         const seen = snapshotRef.current;
         const project = seen.projects.find((item) => item.id === commitment.projectId);
@@ -558,6 +598,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
           : 0;
         const room = project ? Math.max(0, project.goalJmd - reserved) : 0;
         const local =
+          canCommitMoney(seen.profile?.residence) &&
           seen.role === "investor" &&
           commitment.userId === seen.userId &&
           commitment.amountJmd > 0 &&
@@ -606,6 +647,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
       },
       pledgeToRequest: async (input) => {
         const seen = snapshotRef.current;
+        if (!canCommitMoney(seen.profile?.residence)) return "closed";
         const blocked = joinBlock({
           role: seen.role,
           basics: seen.investorBasicsDone,
@@ -768,7 +810,8 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
         const trimmed = name.trim().slice(0, 80);
         const request = seen.requests.find((item) => item.id === requestId);
         const local = Boolean(
-          trimmed &&
+          canCommitMoney(seen.profile?.residence) &&
+            trimmed &&
             request &&
             request.userId === seen.userId &&
             request.status === "team-ready" &&
@@ -981,6 +1024,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
           townId: place.townId,
           skill: draft.skill,
           extraSkills: draft.extraSkills,
+          residence: draft.profile.residence,
         });
         if (!saved) {
           notifySaveError();

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Check } from "lucide-react";
 import { PageBusy } from "@/components/busy";
 import { BeforeYouStart, WhatThisNeeds } from "@/components/needs-panel";
@@ -16,6 +16,7 @@ import { WhatItTakes } from "@/components/guide-card";
 import {
   applySiteReadiness,
   defaultCounts,
+  isSite,
   kindById,
   kindOptionLine,
   kindsFor,
@@ -68,11 +69,18 @@ function formatAmountInput(text: string): string {
 }
 
 const OPEN_PANEL: Step[] = ["kind", "site", "team", "budget"];
+const STEPS: Step[] = ["sector", "kind", "site", "team", "budget", "note", "review", "posted"];
+
+function isStep(value: string | null): value is Step {
+  return STEPS.includes(value as Step);
+}
 
 export function StartRequestScreen({ placeId, townId }: { placeId: string; townId: string }) {
   const demo = useDemo();
   const allowed = useProfileGate();
   const show = useSnackbar();
+  const router = useRouter();
+  const search = useSearchParams();
   const parish = getParish(placeId);
   const countryId = parish ? "jamaica" : placeId;
   const parishId = parish?.id ?? null;
@@ -81,9 +89,12 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
   const place = where ? placeLine(where.town, where.parish) : "";
   const currency = currencyOf(countryId);
   const countryName = getCountry(countryId)?.name ?? "this country";
-  const sectorQuery = useSearchParams().get("sector");
+  const sectorQuery = search.get("sector");
+  const stepQuery = search.get("step");
   const presetSector = sectorQuery && isSector(sectorQuery) ? sectorQuery : null;
-  const [step, setStep] = useState<Step>(presetSector ? "kind" : "sector");
+  const fallbackStep: Step = presetSector ? "kind" : "sector";
+  const step: Step = isStep(stepQuery) ? stepQuery : fallbackStep;
+  const [draftReady, setDraftReady] = useState(false);
   const [sector, setSector] = useState<Sector | null>(presetSector);
   const [kindId, setKindId] = useState<string | null>(null);
   const [site, setSite] = useState<SiteStatus | null>(null);
@@ -117,6 +128,74 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [step]);
+
+  useEffect(() => {
+    if (!demo.ready || !allowed || !town) return;
+    if (isStep(stepQuery)) return;
+    const query = new URLSearchParams(window.location.search);
+    query.set("step", fallbackStep);
+    router.replace(`${window.location.pathname}?${query.toString()}`);
+  }, [allowed, demo.ready, fallbackStep, router, stepQuery, town]);
+
+  useEffect(() => {
+    const key = `fundwork-start-project:${placeId}:${townId}`;
+    // Restore this flow's answers after mount so the server HTML matches the first paint.
+    const raw = sessionStorage.getItem(key);
+    if (raw) {
+      try {
+        const saved = JSON.parse(raw) as {
+          sector?: Sector | null;
+          kindId?: string | null;
+          site?: SiteStatus | null;
+          counts?: Record<string, number>;
+          budgetText?: string;
+          shareText?: string;
+          shareTouched?: boolean;
+          note?: string;
+          readiness?: Readiness;
+          callerName?: string;
+        };
+        /* eslint-disable react-hooks/set-state-in-effect */
+        if (saved.sector && isSector(saved.sector)) setSector(saved.sector);
+        if (typeof saved.kindId === "string") setKindId(saved.kindId);
+        if (saved.site && isSite(saved.site)) setSite(saved.site);
+        if (saved.counts && typeof saved.counts === "object") setCounts(saved.counts);
+        if (typeof saved.budgetText === "string") setBudgetText(saved.budgetText);
+        if (typeof saved.shareText === "string") setShareText(saved.shareText);
+        if (saved.shareTouched === true) setShareTouched(true);
+        if (typeof saved.note === "string") setNote(saved.note);
+        if (saved.readiness && typeof saved.readiness === "object") setReadiness(saved.readiness);
+        if (typeof saved.callerName === "string") setCallerName(saved.callerName);
+      } catch {
+        sessionStorage.removeItem(key);
+      }
+    }
+    setDraftReady(true);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [placeId, townId]);
+
+  useEffect(() => {
+    if (!draftReady) return;
+    const key = `fundwork-start-project:${placeId}:${townId}`;
+    sessionStorage.setItem(
+      key,
+      JSON.stringify({ sector, kindId, site, counts, budgetText, shareText, shareTouched, note, readiness, callerName }),
+    );
+  }, [budgetText, callerName, counts, draftReady, kindId, note, placeId, readiness, sector, shareText, shareTouched, site, townId]);
+
+  function setStep(next: Step) {
+    const query = new URLSearchParams(window.location.search);
+    query.set("step", next);
+    router.push(`${window.location.pathname}?${query.toString()}`);
+  }
+
+  function stepBack() {
+    if (window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.replace(`/invest/start/${placeId}`);
+  }
 
   if (!town || !where) return null;
   if (!demo.ready || !allowed) return <PageBusy />;
@@ -612,20 +691,7 @@ export function StartRequestScreen({ placeId, townId }: { placeId: string; townI
                 ? "A short note"
                 : "Review";
 
-  const back =
-    step === "sector"
-      ? undefined
-      : step === "kind"
-        ? () => setStep("sector")
-        : step === "site"
-          ? () => setStep("kind")
-          : step === "team"
-            ? () => setStep("site")
-            : step === "budget"
-              ? () => setStep("team")
-              : step === "note"
-                ? () => setStep("budget")
-                : () => setStep("note");
+  const back = stepBack;
 
   return (
     <div className="min-[840px]:grid min-[840px]:grid-cols-[minmax(0,640px)_minmax(16rem,1fr)] min-[840px]:items-start min-[840px]:gap-8">

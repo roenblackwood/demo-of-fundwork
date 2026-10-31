@@ -12,7 +12,8 @@ import { SendCapital } from "@/components/send-capital";
 import { COMMIT_LINE, moneyNote, savedLabel } from "@/lib/copy";
 import { cn } from "cn";
 import { useDemo } from "@/lib/demo-store";
-import { firstName } from "@/lib/format";
+import { firstName, money } from "@/lib/format";
+import { investStanding, residenceFor } from "@/lib/residence";
 import { isLive } from "@/lib/mode";
 import { capitalReserved, investorUnits, moneyStillOpen } from "@/lib/ownership";
 import { convertedBacking } from "@/lib/pledges";
@@ -20,6 +21,67 @@ import { currencyOf } from "@/lib/seed";
 import { useProfileGate } from "@/components/profile-gate";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { Project } from "@/lib/types";
+
+function readInterestAmount(text: string): number | null {
+  const digits = text.replace(/[^\d]/g, "");
+  if (!digits) return null;
+  const value = Number(digits);
+  return Number.isFinite(value) && value >= 1 ? value : null;
+}
+
+function RegisterCommit({ project }: { project: Project }) {
+  const demo = useDemo();
+  const currency = currencyOf(project.countryId);
+  const [text, setText] = useState("");
+  const [saved, setSaved] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const amount = readInterestAmount(text);
+
+  async function register() {
+    if (busy || saved) return;
+    setBusy(true);
+    const ok = await demo.registerInterest({
+      projectId: project.id,
+      requestId: null,
+      amount,
+      kind: "commit",
+    });
+    setBusy(false);
+    if (ok) setSaved(true);
+  }
+
+  return (
+    <div className="space-y-6">
+      <StepHeader backHref={`/projects/${project.id}`} title="How much?" hint={project.name} />
+      <p className="text-lg leading-relaxed">This is not a commitment. No money moves.</p>
+      <div className="space-y-2">
+        <Label htmlFor="interest-amount">Amount, optional</Label>
+        <Input
+          id="interest-amount"
+          inputMode="numeric"
+          value={text}
+          onChange={(event) => {
+            const digits = event.target.value.replace(/[^\d]/g, "");
+            setText(digits ? Number(digits).toLocaleString("en-US") : "");
+          }}
+        />
+      </div>
+      {saved ? (
+        <p className="text-lg">
+          {amount ? `${money(amount, currency)} is saved under Interest.` : "Your interest is saved."}{" "}
+          <Link href="/you/portfolio" className="font-semibold text-primary">
+            See it in your portfolio
+          </Link>
+        </p>
+      ) : (
+        <Button type="button" size="lg" className="w-full" disabled={busy} aria-busy={busy} onClick={() => void register()}>
+          Register interest
+        </Button>
+      )}
+    </div>
+  );
+}
 
 export function CommitScreen({ id }: { id: string }) {
   const router = useRouter();
@@ -49,6 +111,20 @@ export function CommitScreen({ id }: { id: string }) {
       </div>
     );
   }
+
+  const standing = investStanding(demo.profile.residence);
+  if (standing === "blocked") {
+    return (
+      <div className="space-y-4">
+        <StepHeader backHref={`/projects/${project.id}`} title={project.name} />
+        <p className="text-lg leading-relaxed">{residenceFor(demo.profile.residence).note}</p>
+        <Link href="/" className="inline-flex min-h-11 items-center font-semibold text-primary">
+          Look around
+        </Link>
+      </div>
+    );
+  }
+  if (standing === "interest") return <RegisterCommit project={project} />;
 
   const reserved = Math.max(
     capitalReserved(project.committedJmd, demo.addedCommitments, project.id),

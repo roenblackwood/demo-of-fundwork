@@ -14,6 +14,7 @@ import {
   type WorkItem,
 } from "@/lib/recommend";
 import { acceptedCount } from "@/lib/requests";
+import { cleanResidence } from "@/lib/residence";
 import { USD_RATES } from "@/lib/rates";
 import { currencyOf, getCity, getCountries, getCountry, getParish, getParishes, getTown, getUser } from "@/lib/seed";
 import type {
@@ -42,6 +43,7 @@ export type WorkPhoto = {
 
 export type PersonProfile = {
   done: boolean;
+  residence: string | null;
   reach: ReachChoice;
   skillLevels: { skill: Skill; level: SkillLevelName }[];
   tools: string[];
@@ -121,6 +123,7 @@ const SHORT_SKILL: Record<Skill, string> = {
 export function emptyProfile(): PersonProfile {
   return {
     done: false,
+    residence: null,
     reach: "town",
     skillLevels: [],
     tools: [],
@@ -182,6 +185,7 @@ export function storedProfile(value: unknown): PersonProfile | null {
     ...emptyProfile(),
     ...row,
     done: row.done,
+    residence: cleanResidence(row.residence),
     reach: row.reach,
     skillLevels: Array.isArray(row.skillLevels) ? row.skillLevels : [],
     tools: Array.isArray(row.tools) ? row.tools : [],
@@ -486,7 +490,10 @@ function distance(lat: number, lng: number, point: TownPoint): number {
   return 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-/** Nearest seeded town. Returns ids only. */
+const EARTH_KM = 6371;
+const TOWN_LIMIT_KM = 150;
+
+/** Nearest seeded town within 150 km. Returns ids only. A farther town is not a match. */
 export function nearestTown(lat: number, lng: number): PlacePick | null {
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
   let best: TownPoint | null = null;
@@ -498,7 +505,7 @@ export function nearestTown(lat: number, lng: number): PlacePick | null {
       bestDistance = gap;
     }
   }
-  if (!best) return null;
+  if (!best || EARTH_KM * bestDistance > TOWN_LIMIT_KM) return null;
   return { countryId: best.countryId, parishId: best.parishId, townId: best.townId };
 }
 
@@ -579,6 +586,7 @@ export function profileFromRow(row: Record<string, unknown> | null | undefined):
     horizon: typeof row.horizon === "string" && isHorizon(row.horizon) ? row.horizon : null,
     goals: stringList(row.goals).filter((item): item is GoalChoice => GOAL_IDS.includes(item as GoalChoice)),
     showName: row.show_name !== false,
+    residence: null,
   };
 }
 

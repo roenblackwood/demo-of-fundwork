@@ -1,15 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { nearestTown, type PlacePick } from "@/lib/profile";
+import { useDemo } from "@/lib/demo-store";
+import { readPhonePlace } from "@/lib/locate";
+import type { PlacePick } from "@/lib/profile";
 
 export function UseMyLocation({
   onTown,
   className,
+  who,
 }: {
   onTown: (place: PlacePick) => void;
   className: string;
+  who?: "investor" | "worker";
 }) {
+  const demo = useDemo();
+  const role = who ?? (demo.role === "worker" ? "worker" : "investor");
   const [note, setNote] = useState("");
 
   function ask() {
@@ -20,12 +26,12 @@ export function UseMyLocation({
     }
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const place = nearestTown(position.coords.latitude, position.coords.longitude);
-        if (!place) {
-          setNote("No problem. Pick your town instead.");
+        const found = readPhonePlace(position.coords.latitude, position.coords.longitude, role);
+        if (!found.place) {
+          setNote(found.note || "No problem. Pick your town instead.");
           return;
         }
-        onTown(place);
+        onTown(found.place);
       },
       () => setNote("No problem. Pick your town instead."),
       { enableHighAccuracy: false },

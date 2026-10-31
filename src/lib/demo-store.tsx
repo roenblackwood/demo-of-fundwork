@@ -20,7 +20,9 @@ import {
   type WithdrawResult,
 } from "@/lib/pledges";
 import { openChecks, sectorWeekly } from "@/lib/catalog";
+import { cleanInterests, type CapitalInterest, type InterestDraft } from "@/lib/interests";
 import { clearPhotoStore } from "@/lib/photos";
+import { canCommitMoney, investStanding } from "@/lib/residence";
 import { clearVideoStore } from "@/lib/videos";
 import { investorBasicsIds, stageLessons } from "@/lib/lessons";
 import {
@@ -108,6 +110,7 @@ type Session = {
   flow: Flow | null;
   proofs: Record<string, Proof>;
   commitments: Commitment[];
+  capitalInterests: CapitalInterest[];
   contributions: Contribution[];
   requests: CapitalRequest[];
   pledges: RequestPledge[];
@@ -164,6 +167,7 @@ const initialSession: Session = {
   flow: null,
   proofs: {},
   commitments: [],
+  capitalInterests: [],
   contributions: [],
   requests: [],
   pledges: [],
@@ -272,6 +276,7 @@ function normalize(input: Partial<Session>): Session {
       : null,
     proofs: input.proofs ?? {},
     commitments: Array.isArray(input.commitments) ? input.commitments : [],
+    capitalInterests: cleanInterests(input.capitalInterests),
     contributions: Array.isArray(input.contributions) ? input.contributions : [],
     requests: Array.isArray(input.requests)
       ? input.requests.map((request) => ({
@@ -575,6 +580,10 @@ function workerSkills(session: Session): Skill[] {
   return listedSkills([session.flow?.skill, ...(session.flow?.extraSkills ?? []), ...fromProfile]);
 }
 
+function callerResidence(session: Session): string | null {
+  return session.profiles[currentUserId(session)]?.residence ?? null;
+}
+
 function roleOf(session: Session): PathChoice | null {
   if (session.roleLock === "investor" || session.roleLock === "worker") return session.roleLock;
   const sample = session.mode === "sample" && session.sampleId ? getUser(session.sampleId) : undefined;
@@ -664,6 +673,7 @@ export type DemoValue = {
   proof: Proof | null;
   proofLabel: string | null;
   commitments: Commitment[];
+  capitalInterests: CapitalInterest[];
   contributions: Contribution[];
   addedCommitments: Commitment[];
   requests: CapitalRequest[];
@@ -692,6 +702,7 @@ export type DemoValue = {
   setDisplayName: (name: string) => void | Promise<void>;
   displayNameFor: (userId: string) => string;
   addCommitment: (commitment: Commitment) => Promise<boolean>;
+  registerInterest: (draft: InterestDraft) => Promise<boolean>;
   addContribution: (contribution: Contribution) => Promise<boolean>;
   acceptContribution: (id: string) => Promise<boolean>;
   reviewContributions: Contribution[];
@@ -778,6 +789,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   const addCommitment = useCallback(async (commitment: Commitment) => {
     let saved = false;
     setSession((current) => {
+      if (!canCommitMoney(callerResidence(current))) return current;
       const project = listProjects(current).find((item) => item.id === commitment.projectId);
       if (!project || !(commitment.amountJmd >= 1)) return current;
       if (commitment.userId !== currentUserId(current) || roleOf(current) !== "investor") return current;
@@ -785,6 +797,37 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       if (commitment.amountJmd > Math.max(0, project.goalJmd - reserved)) return current;
       saved = true;
       return { ...current, commitments: [...current.commitments, commitment] };
+    });
+    return saved;
+  }, []);
+
+  const registerInterest = useCallback(async (draft: InterestDraft) => {
+    const seen = sessionRef.current;
+    const userId = currentUserId(seen);
+    if (investStanding(callerResidence(seen)) !== "interest" || roleOf(seen) !== "investor") return false;
+    const projectId = draft.projectId || null;
+    const requestId = draft.requestId || null;
+    if (!projectId && !requestId) return false;
+    if (projectId && !listProjects(seen).some((item) => item.id === projectId)) return false;
+    if (requestId && !listRequests(seen).some((item) => item.id === requestId)) return false;
+    const amount =
+      typeof draft.amount === "number" && Number.isFinite(draft.amount) && draft.amount >= 1
+        ? Math.round(draft.amount)
+        : null;
+    const row: CapitalInterest = {
+      id: crypto.randomUUID(),
+      userId,
+      projectId,
+      requestId,
+      amount,
+      kind: draft.kind,
+      createdAt: new Date().toISOString(),
+    };
+    let saved = false;
+    setSession((current) => {
+      if (investStanding(callerResidence(current)) !== "interest" || roleOf(current) !== "investor") return current;
+      saved = true;
+      return { ...current, capitalInterests: [...current.capitalInterests, row] };
     });
     return saved;
   }, []);
@@ -883,6 +926,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     const stamp = { id: crypto.randomUUID(), createdAt: new Date().toISOString() };
     const seen = sessionRef.current;
     const userId = currentUserId(seen);
+    if (!canCommitMoney(callerResidence(seen))) return "closed";
     const pledges = withLeadPledges(listRequests(seen), seen.pledges);
     const blocked = joinBlock({
       role: roleOf(seen),
@@ -894,6 +938,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     });
     if (blocked) return blocked;
     const saved = writeDecision(sessionRef, setSession, (current) => {
+      if (!canCommitMoney(callerResidence(current))) return null;
       const nextUser = currentUserId(current);
       const known = withLeadPledges(listRequests(current), current.pledges);
       const again = joinBlock({
@@ -1014,6 +1059,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   const startProject = useCallback(async (requestId: string, name: string) => {
     const trimmed = name.trim().slice(0, 80);
     if (!trimmed) return null;
+    if (!canCommitMoney(callerResidence(sessionRef.current))) return null;
     const seen = listRequests(sessionRef.current).find((item) => item.id === requestId);
     if (
       !seen ||
@@ -1025,6 +1071,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     }
     const id = crypto.randomUUID();
     setSession((current) => {
+      if (!canCommitMoney(callerResidence(current))) return current;
       const shown = listRequests(current).find((item) => item.id === requestId);
       if (!shown || shown.userId !== currentUserId(current) || shown.status !== "team-ready" || shown.projectId) {
         return current;
@@ -1468,6 +1515,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       proof,
       proofLabel: sample?.proofLabel ?? null,
       commitments,
+      capitalInterests: session.capitalInterests.filter((item) => item.userId === userId),
       contributions,
       addedCommitments: session.commitments,
       requests: listRequests(session),
@@ -1508,6 +1556,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         return getUser(id)?.name.trim() ?? "";
       },
       addCommitment,
+      registerInterest,
       addContribution,
       acceptContribution,
       reviewContributions: reviewRows(session),
@@ -1550,6 +1599,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   }, [
     addAvailability,
     addCommitment,
+    registerInterest,
     addContribution,
     acceptContribution,
     addRequest,

@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useId, useState, useSyncExternalStore } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { ChevronDown, MapPin, X } from "lucide-react";
 import { SECTORS, SKILLS, skillTitle } from "@/lib/catalog";
 import type { AppliedFilters, ListOrder } from "@/lib/list-filters";
-import { nearestTown, type PlacePick } from "@/lib/profile";
+import { useDemo } from "@/lib/demo-store";
+import { readPhonePlace } from "@/lib/locate";
+import type { PlacePick } from "@/lib/profile";
 import type { Sector, Skill } from "@/lib/types";
 import { cn } from "cn";
 
@@ -272,6 +274,8 @@ function PlaceMenu({
   onNearMe?: (value: boolean) => void;
   onSeeEverywhere?: (value: boolean) => void;
 }) {
+  const demo = useDemo();
+  const role = demo.role === "worker" ? "worker" : "investor";
   const [note, setNote] = useState("");
 
   function ask(done: () => void) {
@@ -282,12 +286,12 @@ function PlaceMenu({
     }
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const place = nearestTown(position.coords.latitude, position.coords.longitude);
-        if (!place) {
-          setNote("No problem. Pick your town instead.");
+        const found = readPhonePlace(position.coords.latitude, position.coords.longitude, role);
+        if (!found.place) {
+          setNote(found.note || "No problem. Pick your town instead.");
           return;
         }
-        onTown(place);
+        onTown(found.place);
         done();
       },
       () => setNote("No problem. Pick your town instead."),
@@ -514,6 +518,8 @@ function MenuButton({
   children: (close: () => void) => React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const [spot, setSpot] = useState<{ top: number | null; bottom: number | null; left: number } | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
 
   useEffect(() => {
@@ -534,28 +540,53 @@ function MenuButton({
     };
   }, [open, menuId]);
 
+  function toggle() {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    const rect = rootRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const width = 224;
+    const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
+    if (window.innerHeight - rect.bottom < 280) {
+      setSpot({ top: null, bottom: window.innerHeight - rect.top + 4, left });
+    } else {
+      setSpot({ top: rect.bottom + 4, bottom: null, left });
+    }
+    setOpen(true);
+  }
+
+  const menu =
+    open && spot && typeof document !== "undefined"
+      ? createPortal(
+          <div
+            id={menuId}
+            role="menu"
+            data-menu={menuId}
+            style={{ position: "fixed", left: spot.left, top: spot.top ?? undefined, bottom: spot.bottom ?? undefined, zIndex: 50 }}
+            className="max-h-72 w-56 overflow-y-auto rounded-2xl border-2 border-border bg-card py-1 shadow-sm"
+          >
+            {children(() => setOpen(false))}
+          </div>,
+          document.body,
+        )
+      : null;
+
   return (
-    <div className="relative shrink-0" data-menu={menuId}>
+    <div ref={rootRef} className="relative shrink-0" data-menu={menuId}>
       <button
         type="button"
         className={cn(chip, pressed && "border-foreground")}
         aria-expanded={open}
         aria-controls={menuId}
-        onClick={() => setOpen((value) => !value)}
+        onClick={toggle}
       >
         {icon}
         {label}
         <ChevronDown className="size-4 shrink-0" aria-hidden />
       </button>
-      {open ? (
-        <div
-          id={menuId}
-          role="menu"
-          className="absolute top-12 left-0 z-30 max-h-72 w-56 overflow-y-auto rounded-2xl border-2 border-border bg-card py-1 shadow-sm"
-        >
-          {children(() => setOpen(false))}
-        </div>
-      ) : null}
+      {menu}
     </div>
   );
 }
