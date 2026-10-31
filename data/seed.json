@@ -1361,13 +1361,15 @@
           "id": "bridgetown",
           "name": "Bridgetown",
           "lat": 13.0975,
-          "lng": -59.6167
+          "lng": -59.6167,
+          "admin1Id": "saint-michael"
         },
         {
           "id": "speightstown",
           "name": "Speightstown",
           "lat": 13.2506,
-          "lng": -59.6418
+          "lng": -59.6418,
+          "admin1Id": "saint-peter"
         }
       ]
     },
@@ -1381,13 +1383,15 @@
           "id": "kisumu",
           "name": "Kisumu",
           "lat": -0.1022,
-          "lng": 34.7617
+          "lng": 34.7617,
+          "admin1Id": "nyanza"
         },
         {
           "id": "nairobi",
           "name": "Nairobi",
           "lat": -1.2864,
-          "lng": 36.8172
+          "lng": 36.8172,
+          "admin1Id": "nairobi"
         }
       ]
     },
@@ -1401,13 +1405,15 @@
           "id": "tamale",
           "name": "Tamale",
           "lat": 9.4034,
-          "lng": -0.8393
+          "lng": -0.8393,
+          "admin1Id": "northern"
         },
         {
           "id": "accra",
           "name": "Accra",
           "lat": 5.6037,
-          "lng": -0.187
+          "lng": -0.187,
+          "admin1Id": "greater-accra"
         }
       ]
     },
@@ -1421,13 +1427,15 @@
           "id": "lagos",
           "name": "Lagos",
           "lat": 6.4541,
-          "lng": 3.3947
+          "lng": 3.3947,
+          "admin1Id": "lagos"
         },
         {
           "id": "kano",
           "name": "Kano",
           "lat": 12.0022,
-          "lng": 8.592
+          "lng": 8.592,
+          "admin1Id": "kano-state"
         }
       ]
     },
@@ -1441,13 +1449,15 @@
           "id": "medellin",
           "name": "Medellín",
           "lat": 6.2476,
-          "lng": -75.5658
+          "lng": -75.5658,
+          "admin1Id": "antioquia"
         },
         {
           "id": "cartagena",
           "name": "Cartagena",
           "lat": 10.3997,
-          "lng": -75.5144
+          "lng": -75.5144,
+          "admin1Id": "bolivar"
         }
       ]
     },
@@ -1461,13 +1471,15 @@
           "id": "oaxaca",
           "name": "Oaxaca",
           "lat": 17.0732,
-          "lng": -96.7266
+          "lng": -96.7266,
+          "admin1Id": "oaxaca"
         },
         {
           "id": "merida",
           "name": "Mérida",
           "lat": 20.9674,
-          "lng": -89.5926
+          "lng": -89.5926,
+          "admin1Id": "yucatan"
         }
       ]
     },
@@ -1481,13 +1493,15 @@
           "id": "salvador",
           "name": "Salvador",
           "lat": -12.9777,
-          "lng": -38.5016
+          "lng": -38.5016,
+          "admin1Id": "bahia"
         },
         {
           "id": "belem",
           "name": "Belém",
           "lat": -1.4558,
-          "lng": -48.4902
+          "lng": -48.4902,
+          "admin1Id": "para"
         }
       ]
     },
@@ -1501,13 +1515,15 @@
           "id": "amman",
           "name": "Amman",
           "lat": 31.9539,
-          "lng": 35.9106
+          "lng": 35.9106,
+          "admin1Id": "amman"
         },
         {
           "id": "irbid",
           "name": "Irbid",
           "lat": 32.5556,
-          "lng": 35.85
+          "lng": 35.85,
+          "admin1Id": "irbid"
         }
       ]
     },
@@ -1521,13 +1537,15 @@
           "id": "chisinau",
           "name": "Chișinău",
           "lat": 47.0105,
-          "lng": 28.8638
+          "lng": 28.8638,
+          "admin1Id": "chisinau"
         },
         {
           "id": "balti",
           "name": "Bălți",
           "lat": 47.7617,
-          "lng": 27.9289
+          "lng": 27.9289,
+          "admin1Id": "balti"
         }
       ]
     },
@@ -1541,13 +1559,15 @@
           "id": "cluj",
           "name": "Cluj-Napoca",
           "lat": 46.7712,
-          "lng": 23.6236
+          "lng": 23.6236,
+          "admin1Id": "cluj"
         },
         {
           "id": "iasi",
           "name": "Iași",
           "lat": 47.1585,
-          "lng": 27.6014
+          "lng": 27.6014,
+          "admin1Id": "iasi"
         }
       ]
     },
@@ -1561,13 +1581,15 @@
           "id": "lviv",
           "name": "Lviv",
           "lat": 49.8397,
-          "lng": 24.0297
+          "lng": 24.0297,
+          "admin1Id": "lviv"
         },
         {
           "id": "kyiv",
           "name": "Kyiv",
           "lat": 50.4501,
-          "lng": 30.5234
+          "lng": 30.5234,
+          "admin1Id": "kyiv-2"
         }
       ]
     },
@@ -1581,13 +1603,15 @@
           "id": "jaipur",
           "name": "Jaipur",
           "lat": 26.9124,
-          "lng": 75.7873
+          "lng": 75.7873,
+          "admin1Id": "rajasthan"
         },
         {
           "id": "kochi",
           "name": "Kochi",
           "lat": 9.9312,
-          "lng": 76.2673
+          "lng": 76.2673,
+          "admin1Id": "kerala"
         }
       ]
     },
@@ -1601,13 +1625,15 @@
           "id": "ubud",
           "name": "Ubud",
           "lat": -8.5069,
-          "lng": 115.2625
+          "lng": 115.2625,
+          "admin1Id": "bali"
         },
         {
           "id": "denpasar",
           "name": "Denpasar",
           "lat": -8.6705,
-          "lng": 115.2126
+          "lng": 115.2126,
+          "admin1Id": "bali"
         }
       ]
     },
@@ -1621,13 +1647,15 @@
           "id": "cebu",
           "name": "Cebu",
           "lat": 10.3157,
-          "lng": 123.8854
+          "lng": 123.8854,
+          "admin1Id": "cebu"
         },
         {
           "id": "manila",
           "name": "Manila",
           "lat": 14.5995,
-          "lng": 120.9842
+          "lng": 120.9842,
+          "admin1Id": "metro-manila"
         }
       ]
     },
@@ -1641,13 +1669,15 @@
           "id": "hue",
           "name": "Hue",
           "lat": 16.4637,
-          "lng": 107.5909
+          "lng": 107.5909,
+          "admin1Id": "thua-thien-hue"
         },
         {
           "id": "hanoi",
           "name": "Hanoi",
           "lat": 21.0278,
-          "lng": 105.8342
+          "lng": 105.8342,
+          "admin1Id": "hanoi"
         }
       ]
     },
@@ -1661,13 +1691,15 @@
           "id": "santo-domingo",
           "name": "Santo Domingo",
           "lat": 18.4861,
-          "lng": -69.9312
+          "lng": -69.9312,
+          "admin1Id": "nacional"
         },
         {
           "id": "santiago",
           "name": "Santiago",
           "lat": 19.4517,
-          "lng": -70.697
+          "lng": -70.697,
+          "admin1Id": "santiago"
         }
       ]
     },
@@ -1681,13 +1713,15 @@
           "id": "san-salvador",
           "name": "San Salvador",
           "lat": 13.6929,
-          "lng": -89.2182
+          "lng": -89.2182,
+          "admin1Id": "san-salvador"
         },
         {
           "id": "santa-ana",
           "name": "Santa Ana",
           "lat": 13.9942,
-          "lng": -89.5597
+          "lng": -89.5597,
+          "admin1Id": "santa-ana"
         }
       ]
     },
@@ -1701,13 +1735,15 @@
           "id": "kigali",
           "name": "Kigali",
           "lat": -1.9441,
-          "lng": 30.0619
+          "lng": 30.0619,
+          "admin1Id": "kigali"
         },
         {
           "id": "musanze",
           "name": "Musanze",
           "lat": -1.4998,
-          "lng": 29.6349
+          "lng": 29.6349,
+          "admin1Id": "northern"
         }
       ]
     },
@@ -1721,13 +1757,15 @@
           "id": "lahore",
           "name": "Lahore",
           "lat": 31.5204,
-          "lng": 74.3587
+          "lng": 74.3587,
+          "admin1Id": "punjab"
         },
         {
           "id": "karachi",
           "name": "Karachi",
           "lat": 24.8607,
-          "lng": 67.0011
+          "lng": 67.0011,
+          "admin1Id": "sindh"
         }
       ]
     }

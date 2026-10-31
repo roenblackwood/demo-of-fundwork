@@ -290,7 +290,7 @@ export async function saveHomeTown(input: {
 
 export async function setSignal(input: {
   itemId: string;
-  kind: "saved" | "hidden" | "clear";
+  kind: "saved" | "hidden" | "clear" | "watch";
   sector: string;
 }): Promise<boolean> {
   const id = await callerId();

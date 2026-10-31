@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { FeatureCollection, Point } from "geojson";
+import type { FeatureCollection, MultiPolygon, Point, Polygon } from "geojson";
 import { Map as MapLibreMap, NavigationControl, setWorkerUrl, type GeoJSONSource } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import regions from "@/lib/maps/regions-110m.json";
@@ -38,6 +38,25 @@ const COUNTRY_LABELS = "fw-country-labels";
 const POINT_CIRCLES = "fw-point-circles";
 const POINT_LABELS = "fw-point-labels";
 const POINT_LAYERS = [REGION_CIRCLES, REGION_LABELS, COUNTRY_CIRCLES, COUNTRY_LABELS, POINT_CIRCLES, POINT_LABELS];
+const AREA_FILL = "fw-admin1-fill";
+const AREA_LINE = "fw-admin1-line";
+const AREA_HIT = "fw-admin1-hit";
+const AREA_LABELS = "fw-admin1-labels";
+const TOWN_HIT = "fw-town-hit";
+const TOWN_CIRCLES = "fw-town-circles";
+const TOWN_LABELS = "fw-town-labels";
+const AREA_LAYERS = [AREA_FILL, AREA_LINE, AREA_HIT, AREA_LABELS];
+const TOWN_LAYERS = [TOWN_HIT, TOWN_CIRCLES, TOWN_LABELS];
+
+export type TownMarker = {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  detail: string;
+};
+
+export type DrillMode = "world" | "areas" | "towns";
 
 export type MapViewState = {
   bounds: MapBounds;
@@ -51,6 +70,10 @@ type Handlers = {
   onBlocked: (name: string) => void;
   onPoint: (id: string) => void;
   onFail: () => void;
+  onCountry?: (id: string) => void;
+  onArea?: (id: string) => void;
+  onTown?: (id: string) => void;
+  onMapCountry?: (name: string) => void;
 };
 
 type Pad = { top: number; bottom: number; left: number; right: number };
@@ -84,6 +107,55 @@ function fitZoom(width: number, height: number): number {
 
 function emptyGeo(): FeatureCollection<Point> {
   return { type: "FeatureCollection", features: [] };
+}
+
+function emptyAreas(): FeatureCollection<Polygon | MultiPolygon> {
+  return { type: "FeatureCollection", features: [] };
+}
+
+function ringCenter(feature: { geometry: Polygon | MultiPolygon }): [number, number] | null {
+  const ring = feature.geometry.type === "Polygon" ? feature.geometry.coordinates[0] : feature.geometry.coordinates[0]?.[0];
+  if (!ring || ring.length === 0) return null;
+  let lng = 0;
+  let lat = 0;
+  for (const pair of ring) {
+    lng += pair[0];
+    lat += pair[1];
+  }
+  return [lng / ring.length, lat / ring.length];
+}
+
+function areaLabels(data: FeatureCollection<Polygon | MultiPolygon>): FeatureCollection<Point> {
+  return {
+    type: "FeatureCollection",
+    features: data.features.flatMap((feature) => {
+      const center = ringCenter(feature as { geometry: Polygon | MultiPolygon });
+      const id = feature.properties?.id;
+      const name = feature.properties?.name;
+      if (!center || typeof id !== "string" || typeof name !== "string") return [];
+      const detail = typeof feature.properties?.detail === "string" ? feature.properties.detail : "";
+      return [
+        {
+          type: "Feature" as const,
+          id,
+          properties: { id, name, detail },
+          geometry: { type: "Point" as const, coordinates: center },
+        },
+      ];
+    }),
+  };
+}
+
+function townGeo(towns: TownMarker[]): FeatureCollection<Point> {
+  return {
+    type: "FeatureCollection",
+    features: towns.map((town) => ({
+      type: "Feature" as const,
+      id: town.id,
+      properties: { id: town.id, name: town.name, detail: town.detail },
+      geometry: { type: "Point" as const, coordinates: [town.lng, town.lat] },
+    })),
+  };
 }
 
 function spread(points: MarkerPoint[]): MarkerPoint[] {
@@ -191,7 +263,7 @@ function restyle(map: MapLibreMap) {
   }
 }
 
-function setGeo(map: MapLibreMap, id: string, data: FeatureCollection<Point>) {
+function setGeo(map: MapLibreMap, id: string, data: FeatureCollection) {
   const source = map.getSource(id) as GeoJSONSource | undefined;
   source?.setData(data);
 }
@@ -235,6 +307,16 @@ export function FundworkMap({
   onBlocked,
   onPoint,
   onFail,
+  areas = null,
+  areaKey = "",
+  towns = [],
+  drill = "world",
+  selectedAreaId = null,
+  hoverAreaId = null,
+  onCountry,
+  onArea,
+  onTown,
+  onMapCountry,
 }: {
   points: MarkerPoint[];
   showMarkers: boolean;
@@ -247,21 +329,34 @@ export function FundworkMap({
   onBlocked: (name: string) => void;
   onPoint: (id: string) => void;
   onFail: () => void;
+  areas?: FeatureCollection<Polygon | MultiPolygon> | null;
+  areaKey?: string;
+  towns?: TownMarker[];
+  drill?: DrillMode;
+  selectedAreaId?: string | null;
+  hoverAreaId?: string | null;
+  onCountry?: (id: string) => void;
+  onArea?: (id: string) => void;
+  onTown?: (id: string) => void;
+  onMapCountry?: (name: string) => void;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
-  const handlers = useRef<Handlers>({ onReady, onMove, onRegion, onBlocked, onPoint, onFail });
+  const handlers = useRef<Handlers>({ onReady, onMove, onRegion, onBlocked, onPoint, onFail, onCountry, onArea, onTown, onMapCountry });
   const pointsRef = useRef(points);
   const showRef = useRef(showMarkers);
   const selectedRef = useRef(selectedId);
   const syncRef = useRef<(() => void) | null>(null);
+  const syncDrill = useRef<(() => void) | null>(null);
+  const drillRef = useRef({ areas, areaKey, towns, drill, selectedAreaId, hoverAreaId });
   const flyRef = useRef<((request: FlyRequest) => void) | null>(null);
   const pendingFly = useRef<FlyRequest | null>(null);
+  const latestFly = useRef<FlyRequest | null>(null);
   const dataKey = useRef("");
   const selectedKey = useRef<string | null>(null);
 
   useEffect(() => {
-    handlers.current = { onReady, onMove, onRegion, onBlocked, onPoint, onFail };
+    handlers.current = { onReady, onMove, onRegion, onBlocked, onPoint, onFail, onCountry, onArea, onTown, onMapCountry };
   });
 
   useEffect(() => {
@@ -269,7 +364,13 @@ export function FundworkMap({
     showRef.current = showMarkers;
     selectedRef.current = selectedId;
     syncRef.current?.();
+    syncDrill.current?.();
   }, [points, showMarkers, selectedId]);
+
+  useEffect(() => {
+    drillRef.current = { areas, areaKey, towns, drill, selectedAreaId, hoverAreaId };
+    syncDrill.current?.();
+  }, [areas, areaKey, towns, drill, selectedAreaId, hoverAreaId]);
 
   useEffect(() => {
     const container = host.current;
@@ -447,7 +548,6 @@ export function FundworkMap({
       }
       lookAt(bounds, request.maxZoom);
     };
-    flyRef.current = moveTo;
 
     const markSelected = () => {
       const next = showRef.current ? selectedRef.current : null;
@@ -624,6 +724,157 @@ export function FundworkMap({
         paint: { "text-color": INK, "text-halo-color": PAPER, "text-halo-width": 1.2 },
       });
 
+      map.addSource("fw-admin1", { type: "geojson", data: emptyAreas(), promoteId: "id" });
+      map.addSource("fw-admin1-labels", { type: "geojson", data: emptyGeo(), promoteId: "id" });
+      map.addSource("fw-towns", { type: "geojson", data: emptyGeo(), promoteId: "id" });
+      map.addLayer({
+        id: AREA_FILL,
+        type: "fill",
+        source: "fw-admin1",
+        layout: { visibility: "none" },
+        paint: {
+          "fill-color": [
+            "case",
+            ["boolean", ["feature-state", "selected"], false],
+            "#0e5c3a",
+            ["boolean", ["feature-state", "hover"], false],
+            "#1f7a52",
+            "#9ec4b3",
+          ],
+          "fill-opacity": [
+            "case",
+            ["boolean", ["feature-state", "selected"], false],
+            0.72,
+            ["boolean", ["feature-state", "hover"], false],
+            0.5,
+            0.38,
+          ],
+        },
+      });
+      map.addLayer({
+        id: AREA_LINE,
+        type: "line",
+        source: "fw-admin1",
+        layout: { visibility: "none" },
+        paint: {
+          "line-color": ["case", ["boolean", ["feature-state", "selected"], false], "#0e5c3a", "#f4f1e8"],
+          "line-width": ["case", ["boolean", ["feature-state", "selected"], false], 2.5, 1.25],
+        },
+      });
+      map.addLayer({
+        id: AREA_HIT,
+        type: "circle",
+        source: "fw-admin1-labels",
+        layout: { visibility: "none" },
+        paint: { "circle-radius": 22, "circle-color": OPEN, "circle-opacity": 0 },
+      });
+      map.addLayer({
+        id: AREA_LABELS,
+        type: "symbol",
+        source: "fw-admin1-labels",
+        layout: {
+          visibility: "none",
+          "text-field": ["concat", ["get", "name"], "\n", ["get", "detail"]],
+          "text-font": ["Noto Sans Regular"],
+          "text-size": 14,
+          "text-max-width": 14,
+          "text-optional": true,
+        },
+        paint: { "text-color": INK, "text-halo-color": PAPER, "text-halo-width": 1.2 },
+      });
+      map.addLayer({
+        id: TOWN_HIT,
+        type: "circle",
+        source: "fw-towns",
+        layout: { visibility: "none" },
+        paint: { "circle-radius": 22, "circle-color": OPEN, "circle-opacity": 0 },
+      });
+      map.addLayer({
+        id: TOWN_CIRCLES,
+        type: "circle",
+        source: "fw-towns",
+        layout: { visibility: "none" },
+        paint: {
+          "circle-radius": ["case", ["boolean", ["feature-state", "selected"], false], 14, 8],
+          "circle-color": OPEN,
+          "circle-stroke-width": 2,
+          "circle-stroke-color": PAPER,
+        },
+      });
+      map.addLayer({
+        id: TOWN_LABELS,
+        type: "symbol",
+        source: "fw-towns",
+        layout: {
+          visibility: "none",
+          "text-field": ["concat", ["get", "name"], "\n", ["get", "detail"]],
+          "text-font": ["Noto Sans Regular"],
+          "text-size": 14,
+          "text-offset": [0, 1.15],
+          "text-anchor": "top",
+          "text-optional": true,
+          "text-max-width": 14,
+        },
+        paint: { "text-color": INK, "text-halo-color": PAPER, "text-halo-width": 1.2 },
+      });
+
+      let areaDataKey = "";
+      let townDataKey = "";
+      let markedArea: string | null = null;
+      let markedHover: string | null = null;
+      let markedTown: string | null = null;
+      const showLayer = (id: string, on: boolean) => {
+        if (!map.getLayer(id)) return;
+        map.setLayoutProperty(id, "visibility", on ? "visible" : "none");
+      };
+      const markArea = (source: string, previous: string | null, next: string | null, key: "selected" | "hover") => {
+        if (previous && previous !== next) {
+          try {
+            map.setFeatureState({ source, id: previous }, { [key]: false });
+          } catch {
+            // The shape was replaced.
+          }
+        }
+        if (next) {
+          try {
+            map.setFeatureState({ source, id: next }, { [key]: true });
+          } catch {
+            // The shape is not loaded yet.
+          }
+        }
+      };
+      const syncAreas = () => {
+        if (!map.getSource("fw-admin1")) return;
+        const state = drillRef.current;
+        const showing = state.drill === "areas" || state.drill === "towns";
+        if (state.areaKey !== areaDataKey) {
+          areaDataKey = state.areaKey;
+          const data = showing && state.areas ? state.areas : emptyAreas();
+          setGeo(map, "fw-admin1", data);
+          setGeo(map, "fw-admin1-labels", state.areas ? areaLabels(state.areas) : emptyGeo());
+          markedArea = null;
+          markedHover = null;
+        }
+        for (const id of AREA_LAYERS) showLayer(id, showing && Boolean(state.areas?.features.length));
+        for (const id of TOWN_LAYERS) showLayer(id, state.drill === "towns");
+        for (const id of [...POINT_LAYERS, "regions-fill", "regions-line"]) showLayer(id, state.drill === "world");
+        const nextTowns = state.drill === "towns" ? state.towns : [];
+        const townKey = nextTowns.map((town) => `${town.id}:${town.detail}`).join("|");
+        if (townKey !== townDataKey) {
+          townDataKey = townKey;
+          setGeo(map, "fw-towns", townGeo(nextTowns));
+          markedTown = null;
+        }
+        markArea("fw-admin1", markedArea, state.selectedAreaId, "selected");
+        markedArea = state.selectedAreaId;
+        markArea("fw-admin1", markedHover, state.hoverAreaId, "hover");
+        markedHover = state.hoverAreaId;
+        const townSelected = state.drill === "towns" ? selectedRef.current : null;
+        markArea("fw-towns", markedTown, townSelected, "selected");
+        markedTown = townSelected;
+      };
+      syncDrill.current = syncAreas;
+
       const openRegion = (id: string) => {
         handlers.current.onRegion(id);
         const camera = REGION_CAMERA[id];
@@ -658,7 +909,37 @@ export function FundworkMap({
         const id = event.features?.[0]?.properties?.id;
         if (typeof id === "string") handlers.current.onPoint(id);
       });
-      for (const layerId of ["blocked-fill", "regions-fill", ...POINT_LAYERS]) {
+      const pickArea = (event: { point: { x: number; y: number }; features?: { properties?: { id?: unknown } | null }[] }) => {
+        if (drillRef.current.drill === "towns") {
+          const townHit = map.queryRenderedFeatures([event.point.x, event.point.y], {
+            layers: TOWN_LAYERS.filter((id) => map.getLayer(id)),
+          });
+          if (townHit.length > 0) return;
+        }
+        const id = event.features?.[0]?.properties?.id;
+        if (typeof id === "string") handlers.current.onArea?.(id);
+      };
+      map.on("click", AREA_FILL, pickArea);
+      map.on("click", AREA_HIT, pickArea);
+      map.on("click", AREA_LABELS, pickArea);
+      const pickTown = (event: { features?: { properties?: { id?: unknown } | null }[] }) => {
+        const id = event.features?.[0]?.properties?.id;
+        if (typeof id === "string") handlers.current.onTown?.(id);
+      };
+      map.on("click", TOWN_HIT, pickTown);
+      map.on("click", TOWN_CIRCLES, pickTown);
+      map.on("click", TOWN_LABELS, pickTown);
+      map.on("click", (event) => {
+        if (!handlers.current.onMapCountry || drillRef.current.drill !== "world") return;
+        const own = [...POINT_LAYERS, "blocked-fill", "regions-fill"].filter((id) => map.getLayer(id));
+        if (map.queryRenderedFeatures(event.point, { layers: own }).length > 0) return;
+        const labels = ["label_country_1", "label_country_2", "label_country_3"].filter((id) => map.getLayer(id));
+        if (labels.length === 0) return;
+        const hit = map.queryRenderedFeatures(event.point, { layers: labels })[0];
+        const name = hit?.properties?.name_en || hit?.properties?.name;
+        if (typeof name === "string" && name.trim()) handlers.current.onMapCountry(name.trim());
+      });
+      for (const layerId of ["blocked-fill", "regions-fill", ...POINT_LAYERS, ...AREA_LAYERS, ...TOWN_LAYERS]) {
         map.on("mouseenter", layerId, pointer);
         map.on("mouseleave", layerId, plain);
       }
@@ -667,13 +948,20 @@ export function FundworkMap({
       applyPad();
       applyLimits();
       syncData();
-      const waiting = pendingFly.current;
+      syncAreas();
+      flyRef.current = moveTo;
+      const waiting = latestFly.current ?? pendingFly.current;
       pendingFly.current = null;
       moveTo(waiting ?? { kind: "world" });
     });
 
     function openCountry(properties: GeoJSON.GeoJsonProperties | null | undefined) {
       if (!properties) return;
+      const id = properties.key;
+      if (typeof id === "string" && handlers.current.onCountry) {
+        handlers.current.onCountry(id);
+        return;
+      }
       const west = Number(properties.west);
       const east = Number(properties.east);
       const south = Number(properties.south);
@@ -700,6 +988,7 @@ export function FundworkMap({
       resizeObserver.disconnect();
       mutation.disconnect();
       syncRef.current = null;
+      syncDrill.current = null;
       flyRef.current = null;
       map.remove();
       mapRef.current = null;
@@ -708,6 +997,7 @@ export function FundworkMap({
 
   useEffect(() => {
     if (!fly) return;
+    latestFly.current = fly;
     if (flyRef.current) flyRef.current(fly);
     else pendingFly.current = fly;
   }, [fly]);

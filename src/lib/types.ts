@@ -41,6 +41,8 @@ export type Town = {
   name: string;
   lat: number;
   lng: number;
+  /** Admin-1 area for a city outside Jamaica. Parishes cover Jamaica towns. */
+  admin1Id?: string;
 };
 
 export type Parish = {

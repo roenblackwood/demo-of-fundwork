@@ -132,6 +132,7 @@ async function cleanup() {
     if (paths.length > 0) await admin.storage.from("videos").remove(paths);
   }
   await admin.from("residence_invest_open").delete().eq("code", "ZZ");
+  await admin.from("country_requests").delete().eq("country_id", "ZZ");
   if (userIds.length > 0) {
     await admin.from("capital_interests").delete().in("user_id", userIds);
     await admin.from("wallet_checks").delete().in("user_id", userIds);
@@ -1179,6 +1180,14 @@ try {
       !refusedStart.error &&
       (startedRows.data ?? []).length === 0,
     "start_project refuses an organizer whose residence is not invest open, including their own pledge.",
+  );
+  const ask = await anon.from("country_requests").insert({ country_id: "ZZ", role: null });
+  const askRead = await anon.from("country_requests").select("country_id");
+  const askCount = await anon.from("country_request_counts").select("asks").eq("country_id", "ZZ");
+  const asks = Number(askCount.data?.[0]?.asks ?? 0);
+  report(
+    !ask.error && Boolean(askRead.error) && !askCount.error && asks >= 1,
+    "country_requests takes an insert with no personal fields, and counts are read from the view.",
   );
 } catch (error) {
   report(false, error instanceof Error ? error.message : "The live check stopped.");

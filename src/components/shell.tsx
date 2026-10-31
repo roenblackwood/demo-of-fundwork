@@ -9,7 +9,8 @@ import { usePhotos } from "@/components/photo-box";
 import { useDemo } from "@/lib/demo-store";
 import { Avatar } from "@/components/parts";
 import { buttonVariants } from "@/components/ui/button";
-import { searchPlaces, type SearchHit } from "@/lib/openings";
+import { loadAreaNames, type AreaName } from "@/lib/admin1";
+import { drillHref, searchPlaces, type SearchHit } from "@/lib/openings";
 import { needsYouCount, youHasUpdate } from "@/lib/requests";
 import { isLive } from "@/lib/mode";
 import { refreshLiveStore } from "@/lib/live-store";
@@ -397,12 +398,22 @@ function NavLink({
 function HeaderSearch() {
   const router = useRouter();
   const [query, setQuery] = useState("");
-  const hits = query.trim().length >= 2 ? searchPlaces(query) : [];
+  const [areas, setAreas] = useState<AreaName[] | undefined>(undefined);
+  useEffect(() => {
+    if (query.trim().length < 2 || areas) return;
+    let live = true;
+    loadAreaNames().then((rows) => {
+      if (live) setAreas(rows);
+    });
+    return () => {
+      live = false;
+    };
+  }, [query, areas]);
+  const hits = query.trim().length >= 2 ? searchPlaces(query, areas) : [];
 
   function pick(hit: SearchHit) {
-    sessionStorage.setItem("fundwork-place", JSON.stringify(hit));
     setQuery("");
-    router.push("/");
+    router.push(drillHref(hit));
   }
 
   return (

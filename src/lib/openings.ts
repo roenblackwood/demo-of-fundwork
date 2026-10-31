@@ -1,4 +1,7 @@
+import type { AreaName } from "@/lib/admin1";
+import { regionCodes } from "@/lib/drill";
 import { sectorTitle } from "@/lib/catalog";
+import { countryRule, countryRules } from "@/lib/country-rules";
 import { bandRank } from "@/lib/match";
 import { boundsContain, countryZoom, type MapBounds } from "@/lib/map-camera";
 import { capitalReserved } from "@/lib/ownership";
@@ -45,11 +48,12 @@ export type SearchHit = {
   lat: number;
   lng: number;
   zoom: number;
-  kind: "country" | "town";
+  kind: "country" | "town" | "area" | "blocked" | "outside";
   regionId: string;
   countryId: string;
   parishId: string | null;
   townId: string | null;
+  areaId?: string | null;
 };
 
 type PlaceName = {
@@ -185,7 +189,50 @@ export function inBounds(rows: Opening[], bounds: MapBounds | null): Opening[] {
   return rows.filter((row) => boundsContain(bounds, row.lat, row.lng));
 }
 
-export function searchPlaces(query: string): SearchHit[] {
+export function drillHref(hit: SearchHit): string {
+  const params = new URLSearchParams();
+  if (hit.kind === "town") {
+    params.set("country", hit.countryId);
+    const area = hit.areaId || hit.parishId;
+    if (area) params.set("area", area);
+    if (hit.townId) params.set("town", hit.townId);
+  } else if (hit.kind === "area") {
+    params.set("country", hit.countryId);
+    if (hit.areaId) params.set("area", hit.areaId);
+  } else if (hit.countryId) {
+    params.set("country", hit.countryId);
+  }
+  const query = params.toString();
+  return query ? `/?${query}` : "/";
+}
+
+function outsideMatches(text: string): SearchHit[] {
+  if (typeof Intl === "undefined" || typeof Intl.DisplayNames !== "function") return [];
+  const names = new Intl.DisplayNames(["en"], { type: "region" });
+  const hits: SearchHit[] = [];
+  for (const code of regionCodes()) {
+    const label = names.of(code);
+    if (!label || !label.toLowerCase().includes(text)) continue;
+    if (countryRules().some((country) => country.name.toLowerCase() === label.toLowerCase())) continue;
+    hits.push({
+      id: `outside-${code}`,
+      label,
+      detail: "Not on Fundwork yet",
+      lat: 0,
+      lng: 0,
+      zoom: 0,
+      kind: "outside",
+      regionId: "",
+      countryId: code,
+      parishId: null,
+      townId: null,
+    });
+    if (hits.length >= 4) break;
+  }
+  return hits;
+}
+
+export function searchPlaces(query: string, areas?: AreaName[]): SearchHit[] {
   const text = query.trim().toLowerCase();
   if (text.length < 2) return [];
   const hits: SearchHit[] = [];
@@ -207,7 +254,40 @@ export function searchPlaces(query: string): SearchHit[] {
       });
     }
   }
+  for (const rule of countryRules()) {
+    if (rule.status !== "blocked" || !rule.name.toLowerCase().includes(text)) continue;
+    hits.push({
+      id: `blocked-${rule.id}`,
+      label: rule.name,
+      detail: "Not open",
+      lat: 0,
+      lng: 0,
+      zoom: 0,
+      kind: "blocked",
+      regionId: rule.regionId,
+      countryId: rule.id,
+      parishId: null,
+      townId: null,
+    });
+  }
   for (const parish of getParishes()) {
+    if (parish.name.toLowerCase().includes(text)) {
+      const town = parish.towns[0];
+      hits.push({
+        id: `area-${parish.id}`,
+        label: parish.name,
+        detail: "Jamaica",
+        lat: town?.lat ?? 18.1,
+        lng: town?.lng ?? -77.3,
+        zoom: 9,
+        kind: "area",
+        regionId: "caribbean",
+        countryId: "jamaica",
+        parishId: parish.id,
+        townId: null,
+        areaId: parish.id,
+      });
+    }
     for (const town of parish.towns) {
       if (!town.name.toLowerCase().includes(text)) continue;
       hits.push({
@@ -222,8 +302,27 @@ export function searchPlaces(query: string): SearchHit[] {
         countryId: "jamaica",
         parishId: parish.id,
         townId: town.id,
+        areaId: parish.id,
       });
     }
+  }
+  for (const area of areas ?? []) {
+    if (area.countryId === "jamaica" || !area.name.toLowerCase().includes(text)) continue;
+    const rule = countryRule(area.countryId);
+    hits.push({
+      id: `area-${area.countryId}-${area.id}`,
+      label: area.name,
+      detail: rule?.name ?? area.countryId,
+      lat: area.lat,
+      lng: area.lng,
+      zoom: 8,
+      kind: "area",
+      regionId: rule?.regionId ?? "",
+      countryId: area.countryId,
+      parishId: null,
+      townId: null,
+      areaId: area.id,
+    });
   }
   for (const region of REGIONS) {
     for (const country of countriesIn(region.id)) {
@@ -244,10 +343,12 @@ export function searchPlaces(query: string): SearchHit[] {
           countryId: country.id,
           parishId: null,
           townId: city.id,
+          areaId: city.admin1Id ?? null,
         });
       }
     }
   }
+  hits.push(...outsideMatches(text));
   const seen = new Set<string>();
   return hits.filter((hit) => {
     if (seen.has(hit.id)) return false;
@@ -293,6 +394,7 @@ export function townsIn(regionId: string, countryId: string): SearchHit[] {
     countryId: country.id,
     parishId: null,
     townId: city.id,
+    areaId: city.admin1Id ?? null,
   }));
 }
 

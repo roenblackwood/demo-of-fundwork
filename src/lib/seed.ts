@@ -77,6 +77,9 @@ function assertSeed(data: Seed): void {
       if (!Number.isFinite(city.lat) || !Number.isFinite(city.lng)) {
         throw new Error(`${city.name} needs a point.`);
       }
+      if (typeof city.admin1Id !== "string" || !city.admin1Id) {
+        throw new Error(`${city.name} needs an area.`);
+      }
       cityIds.add(city.id);
     }
     cities.set(country.id, cityIds);

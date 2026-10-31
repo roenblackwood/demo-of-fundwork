@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 
 const seed = JSON.parse(readFileSync(new URL("../data/seed.json", import.meta.url), "utf8"));
 const errors = [];
@@ -788,6 +788,52 @@ if (!residenceRows) {
       }
     }
   }
+}
+
+const adminRules = JSON.parse(readFileSync(new URL("../data/countries.json", import.meta.url), "utf8"));
+for (const rule of adminRules) {
+  if (rule.status === "blocked") continue;
+  const fileUrl = new URL(`../public/maps/admin1/${rule.id}.json`, import.meta.url);
+  let size = 0;
+  let geo;
+  try {
+    size = statSync(fileUrl).size;
+    geo = JSON.parse(readFileSync(fileUrl, "utf8"));
+  } catch {
+    errors.push(`${rule.id} needs public/maps/admin1/${rule.id}.json.`);
+    continue;
+  }
+  if (size > 60 * 1024) errors.push(`${rule.id} admin1 file is over 60 KB.`);
+  const ids = new Set((geo.features ?? []).map((feature) => feature?.properties?.id).filter(Boolean));
+  if (ids.size === 0) errors.push(`${rule.id} admin1 file has no areas.`);
+  for (const feature of geo.features ?? []) {
+    const props = feature?.properties ?? {};
+    if (!props.id || !props.name || props.countryId !== rule.id) {
+      errors.push(`${rule.id} admin1 feature is missing id, name, or countryId.`);
+      break;
+    }
+  }
+  if (rule.id === "jamaica") {
+    for (const parish of seed.parishes) {
+      if (!ids.has(parish.id)) errors.push(`Jamaica admin1 is missing ${parish.id}.`);
+    }
+  }
+  const country = (seed.countries ?? []).find((item) => item.id === rule.id);
+  for (const city of country?.cities ?? []) {
+    if (!city.admin1Id || !ids.has(city.admin1Id)) {
+      errors.push(`${city.name} admin1Id does not match ${rule.id}.`);
+    }
+  }
+}
+const countryAskSql = readFileSync(new URL("../supabase/migrations/0016_country_requests.sql", import.meta.url), "utf8");
+if (!countryAskSql.includes("create table public.country_requests")) {
+  errors.push("0016 needs the country_requests table.");
+}
+if (!countryAskSql.includes("create view public.country_request_counts")) {
+  errors.push("0016 needs the country request count view.");
+}
+if (!countryAskSql.includes("revoke all on table public.country_requests")) {
+  errors.push("0016 must revoke direct reads of country_requests.");
 }
 
 if (errors.length) {

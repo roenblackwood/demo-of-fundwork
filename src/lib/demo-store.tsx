@@ -125,7 +125,8 @@ type Session = {
   openedProject: boolean;
   progress: ProgressState;
   profiles: Record<string, PersonProfile>;
-  signals: Record<string, { saved: string[]; hidden: { id: string; sector: string }[] }>;
+  signals: Record<string, { saved: string[]; hidden: { id: string; sector: string }[]; watch: string[] }>;
+  countryRequests: { countryId: string; role: PathChoice | null; createdAt: string }[];
   seeEverywhere: Record<string, boolean>;
   nearMe: Record<string, boolean>;
 };
@@ -183,6 +184,7 @@ const initialSession: Session = {
   progress: emptyProgress(),
   profiles: {},
   signals: {},
+  countryRequests: [],
   seeEverywhere: {},
   nearMe: {},
 };
@@ -229,7 +231,28 @@ function cleanSignals(value: unknown): Session["signals"] {
           return [{ id, sector }];
         })
       : [];
-    out[key] = { saved, hidden };
+    const watch = Array.isArray((row as { watch?: unknown }).watch)
+      ? (row as { watch: unknown[] }).watch.filter((item): item is string => typeof item === "string")
+      : [];
+    out[key] = { saved, hidden, watch };
+  }
+  return out;
+}
+
+function cleanCountryAsks(value: unknown): Session["countryRequests"] {
+  if (!Array.isArray(value)) return [];
+  const out: Session["countryRequests"] = [];
+  for (const row of value) {
+    if (!row || typeof row !== "object") continue;
+    const countryId = (row as { countryId?: unknown }).countryId;
+    const createdAt = (row as { createdAt?: unknown }).createdAt;
+    const role = (row as { role?: unknown }).role;
+    if (typeof countryId !== "string" || !countryId || typeof createdAt !== "string") continue;
+    out.push({
+      countryId,
+      role: role === "investor" || role === "worker" ? role : null,
+      createdAt,
+    });
   }
   return out;
 }
@@ -308,6 +331,7 @@ function normalize(input: Partial<Session>): Session {
     progress: normalizeProgress(input.progress),
     profiles: cleanProfiles(input.profiles),
     signals: cleanSignals(input.signals),
+    countryRequests: cleanCountryAsks(input.countryRequests),
     seeEverywhere: flagMap(input.seeEverywhere),
     nearMe: flagMap(input.nearMe),
     path: input.path ?? null,
@@ -729,6 +753,10 @@ export type DemoValue = {
   sectorDown: Record<string, number>;
   seeEverywhere: boolean;
   nearMe: boolean;
+  askCounts: Record<string, number>;
+  askForCountry: (countryId: string) => void;
+  watchedPlaces: string[];
+  watchPlace: (key: string) => void;
   track: { accepted: number; projects: number; payouts: number };
   savePersonProfile: (profile: PersonProfile) => void | Promise<void>;
   saveItem: (id: string, sector: string) => void;
@@ -1372,7 +1400,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   const saveItem = useCallback((itemId: string) => {
     setSession((current) => {
       const id = currentUserId(current);
-      const book = current.signals[id] ?? { saved: [], hidden: [] };
+      const book = current.signals[id] ?? { saved: [], hidden: [], watch: [] };
       const saved = book.saved.includes(itemId)
         ? book.saved.filter((item) => item !== itemId)
         : [...book.saved, itemId];
@@ -1380,7 +1408,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         ...current,
         signals: {
           ...current.signals,
-          [id]: { saved, hidden: book.hidden.filter((item) => item.id !== itemId) },
+          [id]: { saved, hidden: book.hidden.filter((item) => item.id !== itemId), watch: book.watch },
         },
       };
     });
@@ -1389,7 +1417,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   const hideItem = useCallback((itemId: string, sector: string) => {
     setSession((current) => {
       const id = currentUserId(current);
-      const book = current.signals[id] ?? { saved: [], hidden: [] };
+      const book = current.signals[id] ?? { saved: [], hidden: [], watch: [] };
       const hidden = book.hidden.some((item) => item.id === itemId)
         ? book.hidden
         : [...book.hidden, { id: itemId, sector }];
@@ -1397,7 +1425,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         ...current,
         signals: {
           ...current.signals,
-          [id]: { saved: book.saved.filter((item) => item !== itemId), hidden },
+          [id]: { saved: book.saved.filter((item) => item !== itemId), hidden, watch: book.watch },
         },
       };
     });
@@ -1414,6 +1442,35 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     setSession((current) => {
       const id = currentUserId(current);
       return { ...current, nearMe: { ...current.nearMe, [id]: on } };
+    });
+  }, []);
+
+  const askForCountry = useCallback((countryId: string) => {
+    const id = countryId.trim();
+    if (!id) return;
+    setSession((current) => ({
+      ...current,
+      countryRequests: [
+        ...current.countryRequests,
+        { countryId: id, role: roleOf(current), createdAt: new Date().toISOString() },
+      ],
+    }));
+  }, []);
+
+  const watchPlace = useCallback((key: string) => {
+    const placeKey = key.trim();
+    if (!placeKey) return;
+    setSession((current) => {
+      const id = currentUserId(current);
+      const book = current.signals[id] ?? { saved: [], hidden: [], watch: [] };
+      if (book.watch.includes(placeKey)) return current;
+      return {
+        ...current,
+        signals: {
+          ...current.signals,
+          [id]: { ...book, watch: [...book.watch, placeKey] },
+        },
+      };
     });
   }, []);
 
@@ -1485,7 +1542,11 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         : undefined;
     const userId = sample?.id ?? "you";
     const name = sample?.name || session.displayName || "You";
-    const book = session.signals[userId] ?? { saved: [], hidden: [] };
+    const book = session.signals[userId] ?? { saved: [], hidden: [], watch: [] };
+    const askCounts: Record<string, number> = {};
+    for (const row of session.countryRequests) {
+      askCounts[row.countryId] = (askCounts[row.countryId] ?? 0) + 1;
+    }
     const resolved = resolvedProfile(userId, session.profiles[userId]);
     const role = roleOf(session);
     const proof = session.proofs[userId] ?? null;
@@ -1583,6 +1644,10 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       sectorDown: sectorDownOf(book.hidden),
       seeEverywhere: session.seeEverywhere[userId] === true,
       nearMe: session.nearMe[userId] === true,
+      askCounts,
+      askForCountry,
+      watchedPlaces: book.watch,
+      watchPlace,
       track: trackFor(userId, contributions, []),
       savePersonProfile,
       saveItem,
@@ -1635,6 +1700,8 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     setSeeEverywhere,
     setNearMe,
     setHomeTown,
+    askForCountry,
+    watchPlace,
     completeStart,
     switchRole,
   ]);

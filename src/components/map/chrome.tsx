@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useState, useSyncExternalStore } from "react";
 import { Search, X } from "lucide-react";
+import { loadAreaNames, type AreaName } from "@/lib/admin1";
 import { REGIONS } from "@/lib/regions";
 import { searchPlaces, type SearchHit } from "@/lib/openings";
 import { SECTORS } from "@/lib/catalog";
@@ -33,8 +34,19 @@ export function PlaceSearch({
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
+  const [areas, setAreas] = useState<AreaName[] | undefined>(undefined);
   const narrow = useNarrow(379);
-  const hits = query.trim().length >= 2 ? searchPlaces(query) : [];
+  useEffect(() => {
+    if (query.trim().length < 2 || areas) return;
+    let live = true;
+    loadAreaNames().then((rows) => {
+      if (live) setAreas(rows);
+    });
+    return () => {
+      live = false;
+    };
+  }, [query, areas]);
+  const hits = query.trim().length >= 2 ? searchPlaces(query, areas) : [];
   const collapsed = collapsible && narrow && !open;
 
   if (collapsed) {

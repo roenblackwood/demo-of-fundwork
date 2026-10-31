@@ -108,6 +108,8 @@ type Snapshot = {
   profile: PersonProfile | null;
   savedIds: string[];
   hidden: { id: string; sector: string }[];
+  askCounts: Record<string, number>;
+  watchedPlaces: string[];
 };
 
 let reloadLive: (() => Promise<void>) | null = null;
@@ -146,6 +148,8 @@ const emptySnapshot: Snapshot = {
   profile: null,
   savedIds: [],
   hidden: [],
+  askCounts: {},
+  watchedPlaces: [],
 };
 
 function investorTown(places: string[]): { countryId: string; parishId: string | null; townId: string } | null {
@@ -216,7 +220,7 @@ async function loadSnapshot(): Promise<Snapshot> {
   const supabase = browserSupabase();
   const { data: auth } = await supabase.auth.getUser();
   const user = auth.user;
-  const [projectRows, memberRows, requestRows, applicationRows, availabilityRows, peopleRows, commitmentRows, contributionRows, mine, goalRows, lessonRows, walletRows, projectWalletRows, paymentRows, trancheRows, detailRows, signalRows, pledgeRows, pledgeNameRows, interestRows] =
+  const [projectRows, memberRows, requestRows, applicationRows, availabilityRows, peopleRows, commitmentRows, contributionRows, mine, goalRows, lessonRows, walletRows, projectWalletRows, paymentRows, trancheRows, detailRows, signalRows, pledgeRows, pledgeNameRows, interestRows, askRows] =
     await Promise.all([
       supabase.from("projects").select("*"),
       supabase.from("project_members").select("project_id, worker_id"),
@@ -246,6 +250,7 @@ async function loadSnapshot(): Promise<Snapshot> {
       user
         ? supabase.from("capital_interests").select("id, user_id, project_id, request_id, amount, kind, created_at").eq("user_id", user.id)
         : Promise.resolve({ data: [] }),
+      supabase.from("country_request_counts").select("country_id, asks"),
     ]);
 
   const people = rowsOf(peopleRows).flatMap((row) => {
@@ -388,6 +393,17 @@ async function loadSnapshot(): Promise<Snapshot> {
       if (row.kind !== "hidden" || typeof row.item_id !== "string") return [];
       return [{ id: row.item_id, sector: typeof row.sector === "string" ? row.sector : "" }];
     }),
+    askCounts: Object.fromEntries(
+      rowsOf(askRows).flatMap((row) => {
+        const id = typeof row.country_id === "string" ? row.country_id : "";
+        const asks = typeof row.asks === "number" ? row.asks : typeof row.asks === "string" ? Number(row.asks) : NaN;
+        if (!id || !Number.isFinite(asks)) return [];
+        return [[id, asks]];
+      }),
+    ),
+    watchedPlaces: rowsOf(signalRows).flatMap((row) =>
+      row.kind === "watch" && typeof row.item_id === "string" ? [row.item_id] : [],
+    ),
   };
 }
 
@@ -973,6 +989,33 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
       },
       setSeeEverywhere: setSeeEverywhereState,
       setNearMe: setNearMeState,
+      askCounts: current.askCounts,
+      askForCountry: (countryId) => {
+        const id = countryId.trim();
+        if (!id) return;
+        const role = snapshotRef.current.role;
+        setSnapshot((item) => ({
+          ...item,
+          askCounts: { ...item.askCounts, [id]: (item.askCounts[id] ?? 0) + 1 },
+        }));
+        void browserSupabase()
+          .from("country_requests")
+          .insert({ country_id: id, role })
+          .then(({ error }) => {
+            if (error) notifySaveError();
+            return reload();
+          });
+      },
+      watchedPlaces: current.watchedPlaces,
+      watchPlace: (key) => {
+        const placeKey = key.trim();
+        if (!placeKey || snapshotRef.current.watchedPlaces.includes(placeKey)) return;
+        setSnapshot((item) => ({ ...item, watchedPlaces: [...item.watchedPlaces, placeKey] }));
+        void setSignal({ itemId: placeKey, kind: "watch", sector: "" }).then((ok) => {
+          if (!ok) notifySaveError();
+          return reload();
+        });
+      },
       setHomeTown: (place) => {
         setFlow((item) => ({
           extraSkills: item?.extraSkills ?? [],

@@ -119,6 +119,11 @@ export function PlaceScreen({
       chooseTown(hit);
       return;
     }
+    if (hit.kind === "blocked") {
+      showBlocked(hit.label);
+      return;
+    }
+    if (hit.kind === "outside") return;
     chooseCountry(hit.countryId);
   }
 
