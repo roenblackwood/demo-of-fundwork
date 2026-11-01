@@ -1,28 +1,30 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FilterBar } from "@/components/filter-bar";
 import { GetStartedButton } from "@/components/getting-started";
 import { ProjectCard } from "@/components/project-card";
 import { RequestCard } from "@/components/request-card";
 import { DrillBreadcrumb, DrillRows, EmptyPlace, type DrillRow } from "@/components/map/drill-list";
+import { PreviewCard } from "@/components/map/preview-card";
 import { MapLoadNote, PlaceSearch, ShowMapButton } from "@/components/map/chrome";
 import { useMapPhase } from "@/components/map/lite";
 import { MapView } from "@/components/map/map-view";
 import { readSheetStop, ResultsSheet, writeSheetStop, type SheetStop } from "@/components/map/results-sheet";
 import { AREA_BLOCKED_LINE, AREA_CAUTION_CHIP, areaMark } from "@/lib/area-rules";
-import { boundsOfFeature, loadAdmin1, areaNoun, withAreaDetails, type AdminCollection } from "@/lib/admin1";
+import { boundsOfFeature, loadAdmin1, areaNoun, type AdminCollection } from "@/lib/admin1";
 import { ADMIN1_BOUNDS } from "@/lib/admin1-bounds";
 import { chipLabel, countryRule, countryRules, isListableCountry, rulesSummary } from "@/lib/country-rules";
 import { useDemo } from "@/lib/demo-store";
-import { codeForCountryName, countryDisplayName, drillFix, fallbackAreas, isOutsideCode, townsInArea, watchKey } from "@/lib/drill";
+import { codeForCountryName, countryDisplayName, drillFix, fallbackAreas, isOutsideCode, placeHref, samePlace, townsInArea, watchKey } from "@/lib/drill";
 import { defaultListOrder, emptyFilters, passesFilters, type AppliedFilters, type ListOrder } from "@/lib/list-filters";
 import { projectCommitted } from "@/lib/ownership";
 import {
   REGION_CAMERA,
   WORLD_ZOOM,
   boundsAround,
+  boundsContain,
   countryZoom,
   type FlyRequest,
   type FlyTarget,
@@ -30,6 +32,7 @@ import {
 } from "@/lib/map-camera";
 import {
   drillHref,
+  isRegionId,
   openLine,
   openingFromProject,
   openingFromRequest,
@@ -48,7 +51,7 @@ import {
   workerAllows,
 } from "@/lib/profile";
 import type { ScorePart } from "@/lib/recommend";
-import { countLine, countsFor } from "@/lib/place-counts";
+import { countsFor, openItems, placeTip, shadeStep } from "@/lib/place-counts";
 import { topSectorTitles, usePlaceNotes } from "@/lib/region-fit";
 import { getRegion, showcaseById, REGIONS } from "@/lib/regions";
 import { getCity, getParish, getTown } from "@/lib/seed";
@@ -121,18 +124,33 @@ function OpeningCard({
   return null;
 }
 
+function useWideMap(): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      const query = window.matchMedia("(min-width: 840px)");
+      query.addEventListener("change", onChange);
+      return () => query.removeEventListener("change", onChange);
+    },
+    () => window.matchMedia("(min-width: 840px)").matches,
+    () => false,
+  );
+}
+
 export function HomeScreen() {
   usePlaceNotes();
+  const wide = useWideMap();
   const demo = useDemo();
   const router = useRouter();
   const search = useSearchParams();
+  const regionQ = search.get("region");
   const countryQ = search.get("country");
   const areaQ = search.get("area");
   const townQ = search.get("town");
+  const itemQ = search.get("item");
+  const regionOk = regionQ && isRegionId(regionQ) ? regionQ : null;
   const { phase, lite, failed, showMap, mapReady, mapFailed } = useMapPhase();
   const [applied, setApplied] = useState<AppliedFilters>(emptyFilters);
   const [sector, setSector] = useState<Sector | null>(null);
-  const [regionId, setRegionId] = useState<string | null>(null);
   const [areaStatus, setAreaStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [areaData, setAreaData] = useState<AdminCollection | null>(null);
   const [hoverAreaId, setHoverAreaId] = useState<string | null>(null);
@@ -141,6 +159,7 @@ export function HomeScreen() {
   const [areaMoved, setAreaMoved] = useState(false);
   const [zoom, setZoom] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [itemTrail, setItemTrail] = useState<string[]>([]);
   const [stop, setStop] = useState<SheetStop>("peek");
   const [fly, setFly] = useState<FlyRequest | null>(null);
   const profileKey = `${demo.ready ? "1" : "0"}:${demo.userId}:${demo.profileSet ? "1" : "0"}`;
@@ -174,13 +193,20 @@ export function HomeScreen() {
   }, [router]);
 
   useEffect(() => {
-    if (!demo.ready || flew.current || countryQ) return;
+    if (!demo.ready || flew.current || countryQ || regionOk) return;
+    const regions = investorRegions(demo);
+    if (regions) {
+      flew.current = true;
+      token.current += 1;
+      setFly({ kind: "regions", ids: regions, token: token.current });
+      return;
+    }
     const target = reachTarget(demo);
     if (!target) return;
     flew.current = true;
     token.current += 1;
     setFly({ ...target, token: token.current });
-  }, [demo, countryQ]);
+  }, [demo, countryQ, regionOk]);
 
   useEffect(() => {
     if (!countryQ || !isListableCountry(countryQ)) return;
@@ -213,10 +239,30 @@ export function HomeScreen() {
         : areaStatus === "error" && countryQ
           ? new Set(fallbackAreas(countryQ).map((area) => area.id))
           : null;
-    const href = drillFix(countryQ, areaQ, townQ, known);
+    const href = drillFix(regionQ, countryQ, areaQ, townQ, known);
     if (!href) return;
     router.replace(href, { scroll: false });
-  }, [countryQ, areaQ, townQ, areaStatus, areaData, router]);
+  }, [regionQ, countryQ, areaQ, townQ, areaStatus, areaData, router]);
+
+  const hadItem = useRef(false);
+  useEffect(() => {
+    if (itemQ) {
+      hadItem.current = true;
+      return;
+    }
+    if (!hadItem.current) return;
+    hadItem.current = false;
+    document.querySelector<HTMLCanvasElement>(".fw-map canvas")?.focus();
+  }, [itemQ]);
+
+  useEffect(() => {
+    if (!itemQ) return;
+    if (window.matchMedia("(min-width: 840px)").matches) return;
+    // A phone card sits above the sheet, so the sheet stays at peek.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setStop("peek");
+    writeSheetStop("peek");
+  }, [itemQ]);
 
   useEffect(() => {
     const rule = countryQ ? countryRule(countryQ) : undefined;
@@ -235,11 +281,9 @@ export function HomeScreen() {
 
   const rows = useMemo(() => noteRows(demo), [demo]);
 
-  const regionLock = listed && phase === "map" ? null : regionId;
   const filtered = useMemo(() => {
     return rows.filter((row) => {
       if (sector && row.sector !== sector) return false;
-      if (regionLock && row.regionId !== regionLock) return false;
       return passesFilters({
         kind: row.kind,
         checks: row.project?.checks,
@@ -251,7 +295,7 @@ export function HomeScreen() {
         filters: applied,
       });
     });
-  }, [rows, sector, regionLock, applied, demo.addedCommitments]);
+  }, [rows, sector, applied, demo.addedCommitments]);
   const activeRule = countryQ ? countryRule(countryQ) : undefined;
   const outsideHere = Boolean(countryQ && isOutsideCode(countryQ));
   const blockedHere = activeRule?.status === "blocked";
@@ -309,7 +353,19 @@ export function HomeScreen() {
     order,
     demo.profileSet,
   );
-  const level = !countryQ ? "world" : blockedHere ? "blocked" : outsideHere ? "outside" : townQ ? "town" : areaQ ? "area" : "country";
+  const level = !countryQ
+    ? regionOk
+      ? "region"
+      : "world"
+    : blockedHere
+      ? "blocked"
+      : outsideHere
+        ? "outside"
+        : townQ
+          ? "town"
+          : areaQ
+            ? "area"
+            : "country";
   const loadingLine =
     listableHere && activeRule && areaRecords.length === 0 && areaStatus !== "error"
       ? `Loading ${activeRule.name}'s ${areaNoun(activeRule.id)}`
@@ -318,6 +374,8 @@ export function HomeScreen() {
     loadingLine ??
     (level === "world"
       ? `${countryRows.length} countries`
+      : level === "region"
+        ? `${countryRows.filter((row) => row.region === regionOk).length} countries`
       : level === "country"
         ? `${areaRows.length} ${countryQ === "jamaica" ? "parishes" : "areas"}`
         : level === "area"
@@ -338,20 +396,34 @@ export function HomeScreen() {
   const mapAreas =
     !areasReady || !areaData || !countryQ
       ? null
-      : withAreaDetails(areaData, (id) => {
-          const row = areaRows.find((item) => item.id === id);
-          if (!row) return "";
-          const suited = row.suited.length > 0 ? `\nSuited here: ${row.suited.join(", ")}` : "";
-          return `${countLine(row.counts)}${suited}`;
-        });
+      : {
+          type: "FeatureCollection" as const,
+          features: areaData.features.map((feature) => {
+            const row = areaRows.find((item) => item.id === feature.properties.id);
+            const open = row ? openItems(row.counts) : 0;
+            return {
+              ...feature,
+              id: feature.properties.id,
+              properties: {
+                ...feature.properties,
+                open,
+                shade: shadeStep(open),
+                tip: row ? placeTip(feature.properties.name, row.counts) : "Nothing open yet",
+              },
+            };
+          }),
+        };
   const townMarkers = townRecords.map((town) => {
     const row = townRows.find((item) => item.id === town.id);
+    const open = row ? openItems(row.counts) : 0;
     return {
       id: town.id,
       name: town.name,
       lat: town.lat,
       lng: town.lng,
-      detail: row ? countLine(row.counts) : "",
+      detail: "",
+      open,
+      tip: row ? placeTip(town.name, row.counts) : "Nothing open yet",
     };
   });
 
@@ -362,28 +434,27 @@ export function HomeScreen() {
     setFly(request);
   }
 
-  function pushDrill(country: string | null, area: string | null, town: string | null) {
-    const params = new URLSearchParams();
-    if (country) params.set("country", country);
-    if (area) params.set("area", area);
-    if (town) params.set("town", town);
-    const href = params.size ? `/?${params.toString()}` : "/";
-    router.push(href, { scroll: false });
+  function go(href: string, mode: "push" | "replace" = "push") {
+    if (samePlace(search, href)) return;
+    if (mode === "push") router.push(href, { scroll: false });
+    else router.replace(href, { scroll: false });
+  }
+
+  function here(extra: { region?: string | null; country?: string | null; area?: string | null; town?: string | null; item?: string | null }) {
+    return placeHref(extra);
   }
 
   function goRegion(id: string) {
-    const camera = REGION_CAMERA[id];
-    if (!camera) return;
-    setRegionId(id);
+    if (!getRegion(id)) return;
     setSelectedId(null);
-    ask({ kind: "center", center: camera.center, zoom: camera.zoom });
+    setHoverAreaId(null);
+    go(here({ region: id }));
   }
 
   function goWorld() {
-    setRegionId(null);
     setSelectedId(null);
     setHoverAreaId(null);
-    if (countryQ || areaQ || townQ) router.push("/", { scroll: false });
+    if (regionQ || countryQ || areaQ || townQ || itemQ) go(here({}));
     else ask({ kind: "world" });
   }
 
@@ -391,21 +462,24 @@ export function HomeScreen() {
     const id = codeForCountryName(name);
     setSelectedId(null);
     chooseStop("half");
-    if (id) pushDrill(id, null, null);
+    if (!id) return;
+    const rule = countryRule(id);
+    const region = rule?.regionId && getRegion(rule.regionId) ? rule.regionId : null;
+    go(here({ region, country: id }));
   }
 
   function pickSearch(hit: SearchHit) {
-    setRegionId(null);
     setSelectedId(null);
     setHoverAreaId(null);
     if (hit.kind === "blocked" || hit.kind === "outside") chooseStop("half");
-    router.push(drillHref(hit), { scroll: false });
+    go(drillHref(hit));
   }
 
   function pickPoint(id: string) {
-    if (level === "town" || level === "area" || level === "country") return;
     setSelectedId(id);
-    chooseStop("half");
+    setItemTrail([]);
+    if (window.matchMedia("(max-width: 839px)").matches) chooseStop("peek");
+    go(here({ region: regionOk, country: countryQ, area: areaQ, town: townQ, item: id }), itemQ ? "replace" : "push");
     window.requestAnimationFrame(() => {
       const nodes = document.querySelectorAll<HTMLElement>(`[data-opening="${CSS.escape(id)}"]`);
       const node = [...nodes].find((item) => item.getClientRects().length > 0);
@@ -413,33 +487,45 @@ export function HomeScreen() {
     });
   }
 
+  function closeItem() {
+    if (!itemQ) return;
+    router.back();
+  }
+
   function openCountry(id: string) {
-    setRegionId(null);
     setSelectedId(null);
     setHoverAreaId(null);
     const rule = countryRule(id);
+    const region = rule?.regionId && getRegion(rule.regionId) ? rule.regionId : regionOk;
     if (rule?.status === "blocked" || isOutsideCode(id)) chooseStop("half");
-    pushDrill(id, null, null);
+    go(here({ region, country: id }));
   }
 
   function openArea(id: string) {
-    if (!countryQ) return;
+    if (!countryQ || (areaQ === id && !townQ)) return;
     setSelectedId(null);
     setHoverAreaId(null);
-    pushDrill(countryQ, id, null);
+    go(here({ region: regionOk, country: countryQ, area: id }));
   }
 
   function openTown(id: string) {
-    if (!countryQ || !areaQ) return;
-    setSelectedId(id);
-    pushDrill(countryQ, areaQ, id);
+    if (!countryQ || !areaQ || townQ === id) return;
+    setSelectedId(null);
+    go(here({ region: regionOk, country: countryQ, area: areaQ, town: id }));
     chooseStop("half");
   }
 
   useEffect(() => {
     if (phase !== "map") return;
+    if (regionOk && !countryQ) {
+      const key = `place:region:${regionOk}`;
+      if (flown.current === key) return;
+      flown.current = key;
+      ask({ kind: "region", regionId: regionOk });
+      return;
+    }
     if (!listableHere || !countryQ) {
-      if (flown.current.startsWith("place:") && !countryQ) {
+      if (flown.current.startsWith("place:") && !countryQ && !regionOk) {
         flown.current = "world";
         ask({ kind: "world" });
       }
@@ -471,9 +557,9 @@ export function HomeScreen() {
     if (flown.current === key) return;
     flown.current = key;
     ask({ kind: "bounds", bounds: box, maxZoom: 8.4 });
-  }, [phase, listableHere, countryQ, areaQ, townQ, areaData]);
+  }, [phase, listableHere, countryQ, areaQ, townQ, areaData, regionOk]);
 
-  const away = Boolean(countryQ) || Boolean(regionId) || zoom >= WORLD_ZOOM;
+  const away = Boolean(countryQ) || Boolean(regionOk) || zoom >= WORLD_ZOOM;
   const mapLive = phase === "loading" || phase === "map";
 
   function toggleEverywhere(next = !demo.seeEverywhere) {
@@ -508,31 +594,38 @@ export function HomeScreen() {
   const crumbs: { label: string; onClick?: () => void }[] = [
     {
       label: "World",
-      onClick: countryQ
-        ? () => {
-            setRegionId(null);
-            setSelectedId(null);
-            setHoverAreaId(null);
-            router.push("/", { scroll: false });
-          }
-        : undefined,
+      onClick:
+        regionOk || countryQ
+          ? () => {
+              setSelectedId(null);
+              setHoverAreaId(null);
+              go(here({}));
+            }
+          : undefined,
     },
   ];
+  if (regionOk) {
+    crumbs.push({
+      label: getRegion(regionOk)?.name ?? regionOk,
+      onClick: countryQ ? () => go(here({ region: regionOk })) : undefined,
+    });
+  }
   if (countryQ) {
     crumbs.push({
       label: activeRule?.name ?? countryDisplayName(countryQ),
-      onClick: areaQ ? () => pushDrill(countryQ, null, null) : undefined,
+      onClick: areaQ ? () => go(here({ region: regionOk, country: countryQ })) : undefined,
     });
   }
   if (countryQ && areaQ) {
     crumbs.push({
       label: crumbAreaName,
-      onClick: townQ ? () => pushDrill(countryQ, areaQ, null) : undefined,
+      onClick: townQ ? () => go(here({ region: regionOk, country: countryQ, area: areaQ })) : undefined,
     });
   }
   if (townQ) {
     crumbs.push({ label: townRecords.find((town) => town.id === townQ)?.name ?? townQ });
   }
+  const regionCountryRows = regionOk ? countryRows.filter((row) => row.region === regionOk) : [];
   const placeActions = (() => {
     if (areaBlockedHere || !countryQ || (level !== "area" && level !== "town")) return { start: null, post: null };
     const place = countryQ === "jamaica" ? areaQ ?? countryQ : countryQ;
@@ -561,6 +654,7 @@ export function HomeScreen() {
       ) : null}
       {loadingLine ? <p className="text-base">{loadingLine}</p> : null}
       {level === "world" ? <DrillRows rows={countryRows} onOpen={openCountry} /> : null}
+      {level === "region" ? <DrillRows rows={regionCountryRows} onOpen={openCountry} /> : null}
       {level === "country" && !loadingLine ? (
         <DrillRows rows={areaRows} selectedId={areaQ} onOpen={openArea} onHover={hoverArea} />
       ) : null}
@@ -591,8 +685,10 @@ export function HomeScreen() {
                 <OpeningCard
                   key={row.id}
                   row={row}
-                  selected={selectedId === row.id}
-                  onHover={setSelectedId}
+                  selected={itemQ === row.id}
+                  onHover={(id) => {
+                    if (!itemQ) setSelectedId(id);
+                  }}
                   reason={explain}
                   parts={explain ? noted.parts : undefined}
                 />
@@ -635,7 +731,6 @@ export function HomeScreen() {
 
   function renderFilters() {
     const spot = homeSpot(demo);
-    const regionName = regionId ? (getRegion(regionId)?.name ?? "") : "";
     const town = spot?.townId
       ? spot.parishId
         ? getTown(spot.parishId, spot.townId)
@@ -644,7 +739,7 @@ export function HomeScreen() {
     const skills = demo.role === "worker" ? workerSkillIds(demo) : undefined;
     return (
       <FilterBar
-        placeLabel={regionName || town?.name || "Place"}
+        placeLabel={town?.name || "Place"}
         placeHref={applied.kind === "request" ? "/work/place" : "/invest/place"}
         onTown={(place) => {
           demo.setHomeTown(place);
@@ -664,16 +759,7 @@ export function HomeScreen() {
         seeEverywhere={demo.role === "worker" && demo.profileSet ? demo.seeEverywhere : undefined}
         onNearMe={demo.role === "investor" && demo.profileSet ? toggleNear : undefined}
         onSeeEverywhere={demo.role === "worker" && demo.profileSet ? toggleEverywhere : undefined}
-        placeChip={
-          regionName
-            ? {
-                label: regionName,
-                onRemove: () => {
-                  goWorld();
-                },
-              }
-            : null
-        }
+        placeChip={null}
         onClear={() => {
           setApplied(emptyFilters);
           setSector(null);
@@ -683,6 +769,43 @@ export function HomeScreen() {
         }}
       />
     );
+  }
+
+  const mapPoints =
+    level === "town"
+      ? townCards
+      : level === "country" || level === "area" || level === "blocked" || level === "outside"
+        ? []
+        : regionOk
+          ? filtered.filter((row) => row.regionId === regionOk)
+          : filtered;
+  const showMapPoints = level === "world" || level === "region" || level === "town";
+  const itemRow = itemQ ? (rows.find((row) => row.id === itemQ) ?? null) : null;
+  const itemReason = itemRow && demo.profileSet ? itemRow.reasons[0] : undefined;
+  const itemNeighbors = (() => {
+    if (!itemRow) return [];
+    const pool = (listed ? rows.filter((row) => boundsContain(listed, row.lat, row.lng)) : rows).filter(
+      (row) => row.id !== itemRow.id,
+    );
+    const origin = itemRow;
+    return pool.sort((a, b) => squareDistance(origin, a) - squareDistance(origin, b));
+  })();
+  if (!itemQ && itemTrail.length > 0) setItemTrail([]);
+  function stepItem(dir: 1 | -1) {
+    if (!itemRow) return;
+    if (dir < 0) {
+      const prev = itemTrail[itemTrail.length - 1];
+      if (!prev) return;
+      setItemTrail(itemTrail.slice(0, -1));
+      go(here({ region: regionOk, country: countryQ, area: areaQ, town: townQ, item: prev }), "replace");
+      return;
+    }
+    const seen = new Set(itemTrail);
+    seen.add(itemRow.id);
+    const next = itemNeighbors.find((row) => !seen.has(row.id));
+    if (!next) return;
+    setItemTrail([...itemTrail, itemRow.id]);
+    go(here({ region: regionOk, country: countryQ, area: areaQ, town: townQ, item: next.id }), "replace");
   }
 
   const mapFrame =
@@ -698,7 +821,6 @@ export function HomeScreen() {
             <aside className="hidden h-full w-[400px] shrink-0 flex-col border-r border-border bg-background min-[840px]:flex">
               <div className="flex shrink-0 flex-col gap-2 p-3">
                 <DrillBreadcrumb parts={crumbs} />
-                <GetStartedButton />
                 {renderFilters()}
                 <p className="text-sm text-muted-foreground">{sheetLabel}</p>
                 {notice ? <p className="text-base">{notice}</p> : null}
@@ -712,17 +834,21 @@ export function HomeScreen() {
               </div>
             ) : (
             <MapView
-              points={level === "country" || level === "area" || level === "town" ? [] : filtered}
-              showMarkers={level !== "country" && level !== "area" && level !== "town"}
-              selectedId={level === "town" ? townQ : selectedId}
-              regionId={regionId}
+              points={mapPoints}
+              showMarkers={showMapPoints}
+              selectedId={itemQ ?? selectedId}
+              regionId={regionOk}
               fly={fly}
               areas={mapAreas}
-              areaKey={`${countryQ ?? ""}:${areasReady ? "ready" : areaStatus}:${areaRows.map((row) => `${countLine(row.counts)}:${row.suited.join(",")}`).join("|")}`}
+              areaKey={`${countryQ ?? ""}:${areasReady ? "ready" : areaStatus}:${areaRows.map((row) => `${row.counts.projects}:${row.counts.requests}:${row.counts.workers}`).join("|")}`}
               towns={areaBlockedHere ? [] : level === "area" || level === "town" ? townMarkers : []}
               drill={areaBlockedHere ? "areas" : level === "area" || level === "town" ? "towns" : level === "country" ? "areas" : "world"}
               selectedAreaId={areaQ}
               hoverAreaId={hoverAreaId}
+              regionFocus={level === "region" ? regionOk : null}
+              selectedTownId={level === "town" ? townQ : null}
+              preview={wide && itemRow ? <PreviewCard row={itemRow} reason={itemReason} compact={false} onClose={closeItem} /> : null}
+              previewAt={wide && itemRow ? { id: itemRow.id, lng: itemRow.lng, lat: itemRow.lat } : null}
               onCountry={openCountry}
               onArea={openArea}
               onTown={openTown}
@@ -736,20 +862,10 @@ export function HomeScreen() {
                 setZoom(view.zoom);
                 setAreaMoved(false);
                 mapReady();
-                if (!flew.current && regionId && REGION_CAMERA[regionId]) {
-                  ask({
-                    kind: "center",
-                    center: REGION_CAMERA[regionId].center,
-                    zoom: REGION_CAMERA[regionId].zoom,
-                  });
-                }
               }}
               onMove={(view, gesture) => {
                 if (failedRef.current) return;
                 setZoom(view.zoom);
-                if (gesture && view.zoom < WORLD_ZOOM - 0.4) {
-                  setRegionId(null);
-                }
                 if (gesture) {
                   setPending(view.bounds);
                   setAreaMoved(true);
@@ -761,6 +877,7 @@ export function HomeScreen() {
               onRegion={goRegion}
               onBlocked={showBlocked}
               onPoint={pickPoint}
+              onEmpty={closeItem}
               onFail={() => {
                 failedRef.current = true;
                 setListed(null);
@@ -799,6 +916,21 @@ export function HomeScreen() {
               >
                 World
               </button>
+            ) : null}
+            {phase === "map" && !wide && itemRow ? (
+              <div
+                className="absolute inset-x-2 z-30 min-[840px]:hidden"
+                style={{ bottom: "calc(var(--fw-sheet, 7rem) + 0.5rem)" }}
+              >
+                <PreviewCard
+                  row={itemRow}
+                  reason={itemReason}
+                  compact
+                  onClose={closeItem}
+                  onPrev={itemTrail.length > 0 ? () => stepItem(-1) : undefined}
+                  onNext={itemNeighbors.some((row) => !itemTrail.includes(row.id)) ? () => stepItem(1) : undefined}
+                />
+              </div>
             ) : null}
             {phase === "map" ? (
             <ResultsSheet
@@ -849,6 +981,20 @@ export function HomeScreen() {
       )}
     </>
   );
+}
+
+function squareDistance(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const lat = a.lat - b.lat;
+  const lng = a.lng - b.lng;
+  return lat * lat + lng * lng;
+}
+
+function investorRegions(demo: ReturnType<typeof useDemo>): string[] | null {
+  if (!demo.profileSet || demo.role !== "investor") return null;
+  const places = demo.profile.places;
+  if (places.length === 0 || places.includes("anywhere")) return null;
+  const ids = places.filter((id) => isRegionId(id));
+  return ids.length > 0 ? ids : null;
 }
 
 function orderNoted(rows: NotedOpening[], order: ListOrder, profileSet: boolean): NotedOpening[] {

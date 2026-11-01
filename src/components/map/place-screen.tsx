@@ -115,6 +115,10 @@ export function PlaceScreen({
   }
 
   function pickSearch(hit: SearchHit) {
+    if (hit.kind === "region" && isRegionId(hit.regionId)) {
+      chooseRegion(hit.regionId);
+      return;
+    }
     if (hit.kind === "town") {
       chooseTown(hit);
       return;

@@ -287,7 +287,9 @@ function HeaderSearch() {
 
   function pick(hit: SearchHit) {
     setQuery("");
-    router.push(drillHref(hit));
+    const href = drillHref(hit);
+    if (`${window.location.pathname}${window.location.search}` === href) return;
+    router.push(href);
   }
 
   return (

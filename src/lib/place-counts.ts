@@ -6,11 +6,39 @@ export type PlaceCounts = {
   workers: number;
 };
 
+export function openItems(counts: PlaceCounts): number {
+  return counts.projects + counts.requests;
+}
+
+/** 0 is the lightest shade. 2 is the darkest. */
+export function shadeStep(open: number): 0 | 1 | 2 {
+  if (open <= 0) return 0;
+  if (open === 1) return 1;
+  return 2;
+}
+
+function part(count: number, one: string, many: string): string | null {
+  if (count <= 0) return null;
+  return count === 1 ? `1 ${one}` : `${count} ${many}`;
+}
+
 export function countLine(counts: PlaceCounts): string {
-  const projects = counts.projects === 1 ? "1 project" : `${counts.projects} projects`;
-  const requests = counts.requests === 1 ? "1 request" : `${counts.requests} requests`;
-  const workers = counts.workers === 1 ? "1 worker" : `${counts.workers} workers`;
-  return `${projects} · ${requests} · ${workers} available`;
+  const parts = [
+    part(counts.projects, "project", "projects"),
+    part(counts.requests, "request", "requests"),
+    part(counts.workers, "worker", "workers"),
+  ].filter((item): item is string => Boolean(item));
+  return parts.length > 0 ? parts.join(" · ") : "Nothing open yet";
+}
+
+/** Hover line. Workers stay on the list, not on the map. */
+export function placeTip(name: string, counts: PlaceCounts): string {
+  const parts = [
+    part(counts.projects, "project", "projects"),
+    part(counts.requests, "request", "requests"),
+  ].filter((item): item is string => Boolean(item));
+  if (parts.length === 0) return "Nothing open yet";
+  return `${name} · ${parts.join(" · ")}`;
 }
 
 type Placed = {

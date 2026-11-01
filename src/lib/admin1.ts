@@ -6,6 +6,9 @@ export type AdminAreaProps = {
   countryId: string;
   areaStatus?: "blocked" | "caution";
   detail?: string;
+  open?: number;
+  shade?: number;
+  tip?: string;
 };
 
 export type AdminCollection = FeatureCollection<Polygon | MultiPolygon, AdminAreaProps>;

@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { countLine, type PlaceCounts } from "@/lib/place-counts";
+import { countLine, openItems, type PlaceCounts } from "@/lib/place-counts";
 
 export type DrillRow = {
   id: string;
@@ -9,6 +10,7 @@ export type DrillRow = {
   counts: PlaceCounts;
   suited: string[];
   chip?: string;
+  region?: string;
 };
 
 const rowClass =
@@ -55,9 +57,16 @@ export function DrillRows({
   onOpen: (id: string) => void;
   onHover?: (id: string | null) => void;
 }) {
+  const [showQuiet, setShowQuiet] = useState(false);
+  const ranked = [...rows].sort(
+    (a, b) => openItems(b.counts) - openItems(a.counts) || a.name.localeCompare(b.name),
+  );
+  const quiet = ranked.filter((row) => row.counts.projects + row.counts.requests + row.counts.workers === 0);
+  const quietIds = new Set(quiet.map((row) => row.id));
+  const shown = ranked.filter((row) => !quietIds.has(row.id));
   return (
     <div className="space-y-2">
-      {rows.map((row) => (
+      {shown.map((row) => (
         <button
           key={row.id}
           type="button"
@@ -78,6 +87,39 @@ export function DrillRows({
           ) : null}
         </button>
       ))}
+      {quiet.length > 0 ? (
+        <button
+          type="button"
+          className={rowClass}
+          aria-expanded={showQuiet}
+          onClick={() => setShowQuiet((value) => !value)}
+        >
+          <span className="text-base font-semibold">{quiet.length} more with nothing open yet</span>
+        </button>
+      ) : null}
+      {showQuiet
+        ? quiet.map((row) => (
+            <button
+              key={row.id}
+              type="button"
+              className={selectedId === row.id ? `${rowClass} border-primary` : rowClass}
+              onClick={() => onOpen(row.id)}
+              onMouseEnter={() => onHover?.(row.id)}
+              onMouseLeave={() => onHover?.(null)}
+            >
+              <span className="text-base font-semibold">{row.name}</span>
+              {row.chip ? (
+                <span className="mt-1 inline-flex items-center rounded-full border-2 border-border px-3 py-1 text-sm font-semibold">
+                  {row.chip}
+                </span>
+              ) : null}
+              <span className="text-sm text-muted-foreground">{countLine(row.counts)}</span>
+              {row.suited.length > 0 ? (
+                <span className="text-sm">Suited here: {row.suited.join(", ")}</span>
+              ) : null}
+            </button>
+          ))
+        : null}
     </div>
   );
 }

@@ -1,9 +1,9 @@
 import type { AreaName } from "@/lib/admin1";
-import { regionCodes } from "@/lib/drill";
 import { sectorTitle } from "@/lib/catalog";
 import { countryRule, countryRules } from "@/lib/country-rules";
 import { bandRank } from "@/lib/match";
-import { boundsContain, countryZoom, type MapBounds } from "@/lib/map-camera";
+import { regionCodes, placeHref } from "@/lib/drill";
+import { boundsContain, countryZoom, REGION_CAMERA, type MapBounds } from "@/lib/map-camera";
 import { capitalReserved } from "@/lib/ownership";
 import { REGIONS, countriesIn, getRegion, showcaseById, type RegionId } from "@/lib/regions";
 import { getCity, getCountry, getParish, getParishes, getTown } from "@/lib/seed";
@@ -48,7 +48,7 @@ export type SearchHit = {
   lat: number;
   lng: number;
   zoom: number;
-  kind: "country" | "town" | "area" | "blocked" | "outside";
+  kind: "country" | "town" | "area" | "blocked" | "outside" | "region";
   regionId: string;
   countryId: string;
   parishId: string | null;
@@ -190,20 +190,19 @@ export function inBounds(rows: Opening[], bounds: MapBounds | null): Opening[] {
 }
 
 export function drillHref(hit: SearchHit): string {
-  const params = new URLSearchParams();
+  const region = hit.regionId || null;
+  if (hit.kind === "region") return placeHref({ region });
   if (hit.kind === "town") {
-    params.set("country", hit.countryId);
-    const area = hit.areaId || hit.parishId;
-    if (area) params.set("area", area);
-    if (hit.townId) params.set("town", hit.townId);
-  } else if (hit.kind === "area") {
-    params.set("country", hit.countryId);
-    if (hit.areaId) params.set("area", hit.areaId);
-  } else if (hit.countryId) {
-    params.set("country", hit.countryId);
+    return placeHref({
+      region,
+      country: hit.countryId,
+      area: hit.areaId || hit.parishId,
+      town: hit.townId,
+    });
   }
-  const query = params.toString();
-  return query ? `/?${query}` : "/";
+  if (hit.kind === "area") return placeHref({ region, country: hit.countryId, area: hit.areaId });
+  if (hit.countryId) return placeHref({ region, country: hit.countryId });
+  return "/";
 }
 
 function outsideMatches(text: string): SearchHit[] {
@@ -236,6 +235,23 @@ export function searchPlaces(query: string, areas?: AreaName[]): SearchHit[] {
   const text = query.trim().toLowerCase();
   if (text.length < 2) return [];
   const hits: SearchHit[] = [];
+  for (const region of REGIONS) {
+    if (!region.name.toLowerCase().includes(text)) continue;
+    const camera = REGION_CAMERA[region.id];
+    hits.push({
+      id: `region-${region.id}`,
+      label: region.name,
+      detail: "Region",
+      lat: camera?.center[1] ?? 0,
+      lng: camera?.center[0] ?? 0,
+      zoom: camera?.zoom ?? 3,
+      kind: "region",
+      regionId: region.id,
+      countryId: "",
+      parishId: null,
+      townId: null,
+    });
+  }
   for (const region of REGIONS) {
     for (const country of countriesIn(region.id)) {
       if (!country.name.toLowerCase().includes(text)) continue;

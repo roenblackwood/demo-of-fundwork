@@ -44,6 +44,8 @@ export function boundsContain(bounds: MapBounds, lat: number, lng: number): bool
 
 export type FlyTarget =
   | { kind: "world" }
+  | { kind: "region"; regionId: string }
+  | { kind: "regions"; ids: string[] }
   | { kind: "center"; center: [number, number]; zoom: number }
   | { kind: "bounds"; bounds: MapBounds; maxZoom: number };
 

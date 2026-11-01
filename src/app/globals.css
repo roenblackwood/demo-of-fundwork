@@ -145,6 +145,17 @@ body {
   color: #1a2330;
 }
 
+.fw-preview .maplibregl-popup-content {
+  padding: 0;
+  background: transparent;
+  border-radius: 16px;
+  box-shadow: none;
+}
+
+.fw-preview .maplibregl-popup-tip {
+  display: none;
+}
+
 .fw-map .maplibregl-canvas-container.maplibregl-interactive.maplibregl-cooperative-gestures {
   cursor: grab;
 }

@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import type { FeatureCollection, MultiPolygon, Point, Polygon } from "geojson";
-import { Map as MapLibreMap, NavigationControl, setWorkerUrl, type GeoJSONSource } from "maplibre-gl";
+import { Map as MapLibreMap, NavigationControl, Popup, setWorkerUrl, type GeoJSONSource, type MapLayerMouseEvent } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import regions from "@/lib/maps/regions-110m.json";
 import blocked from "@/lib/maps/blocked-110m.json";
 import {
   POINT_ZOOM,
-  REGION_CAMERA,
   WORLD_BOUNDS,
   WORLD_ZOOM,
   type FlyRequest,
@@ -16,6 +16,7 @@ import {
   type MapBounds,
 } from "@/lib/map-camera";
 import type { MarkerPoint } from "@/lib/openings";
+import { placeTip, shadeStep } from "@/lib/place-counts";
 
 // Later, host the tiles as a PMTiles file on our own CDN, so one tile host is not a single point of failure.
 const STYLE = "https://tiles.openfreemap.org/styles/liberty";
@@ -31,22 +32,32 @@ const EASE_MS = 450;
 const FLY_MS = 800;
 const LOAD_MS = 8000;
 
+const SHADE = ["#e7f3ec", "#8fbfa8", "#1f7a52"] as const;
 const REGION_CIRCLES = "fw-region-circles";
 const REGION_LABELS = "fw-region-labels";
+const REGION_COUNTS = "fw-region-counts";
 const COUNTRY_CIRCLES = "fw-country-circles";
 const COUNTRY_LABELS = "fw-country-labels";
+const COUNTRY_COUNTS = "fw-country-counts";
 const POINT_CIRCLES = "fw-point-circles";
 const POINT_LABELS = "fw-point-labels";
-const POINT_LAYERS = [REGION_CIRCLES, REGION_LABELS, COUNTRY_CIRCLES, COUNTRY_LABELS, POINT_CIRCLES, POINT_LABELS];
 const AREA_FILL = "fw-admin1-fill";
 const AREA_LINE = "fw-admin1-line";
 const AREA_HIT = "fw-admin1-hit";
 const AREA_LABELS = "fw-admin1-labels";
+const AREA_COUNTS = "fw-admin1-counts";
 const TOWN_HIT = "fw-town-hit";
 const TOWN_CIRCLES = "fw-town-circles";
 const TOWN_LABELS = "fw-town-labels";
-const AREA_LAYERS = [AREA_FILL, AREA_LINE, AREA_HIT, AREA_LABELS];
-const TOWN_LAYERS = [TOWN_HIT, TOWN_CIRCLES, TOWN_LABELS];
+const TOWN_COUNTS = "fw-town-counts";
+const AREA_LAYERS = [AREA_FILL, AREA_LINE, AREA_HIT, AREA_LABELS, AREA_COUNTS];
+const TOWN_LAYERS = [TOWN_HIT, TOWN_CIRCLES, TOWN_LABELS, TOWN_COUNTS];
+const POINT_HIT = [POINT_CIRCLES, POINT_LABELS];
+const TOWN_PICK = [TOWN_HIT, TOWN_CIRCLES, TOWN_LABELS, TOWN_COUNTS];
+const AREA_PICK = [AREA_FILL, AREA_HIT, AREA_LABELS, AREA_COUNTS];
+const COUNTRY_PICK = [COUNTRY_CIRCLES, COUNTRY_LABELS, COUNTRY_COUNTS];
+const REGION_BUBBLE = [REGION_CIRCLES, REGION_LABELS, REGION_COUNTS];
+const BASE_LABELS = ["label_country_1", "label_country_2", "label_country_3"];
 
 export type TownMarker = {
   id: string;
@@ -54,6 +65,8 @@ export type TownMarker = {
   lat: number;
   lng: number;
   detail: string;
+  open: number;
+  tip: string;
 };
 
 export type DrillMode = "world" | "areas" | "towns";
@@ -74,6 +87,17 @@ type Handlers = {
   onArea?: (id: string) => void;
   onTown?: (id: string) => void;
   onMapCountry?: (name: string) => void;
+  onEmpty?: () => void;
+};
+
+type Hit = {
+  kind: "point" | "town" | "area" | "country" | "region" | "blocked" | "basemap";
+  id: string;
+  tip: string;
+  west?: number;
+  east?: number;
+  south?: number;
+  north?: number;
 };
 
 type Pad = { top: number; bottom: number; left: number; right: number };
@@ -97,13 +121,31 @@ function mercatorY(lat: number): number {
   return 0.5 - Math.log(Math.tan(Math.PI / 4 + rad / 2)) / (2 * Math.PI);
 }
 
-function fitZoom(width: number, height: number): number {
-  const lngSpan = WORLD_BOUNDS.east - WORLD_BOUNDS.west;
-  const ySpan = Math.max(0.0001, mercatorY(WORLD_BOUNDS.south) - mercatorY(WORLD_BOUNDS.north));
-  const zoomX = Math.log2((Math.max(64, width) * 360) / (lngSpan * 512));
-  const zoomY = Math.log2(Math.max(64, height) / (ySpan * 512));
-  return Math.max(0, Math.min(zoomX, zoomY));
+function latFromMercator(y: number): number {
+  const n = Math.PI - 2 * Math.PI * y;
+  return (180 / Math.PI) * Math.atan(Math.sinh(n));
 }
+
+function cameraCenter(center: [number, number] | { lng: number; lat: number } | { lon: number; lat: number }): [number, number] {
+  if (Array.isArray(center)) return [Number(center[0]), Number(center[1])];
+  if ("lng" in center) return [center.lng, center.lat];
+  return [center.lon, center.lat];
+}
+
+/** Geographic frame of the viewport at a camera, used so the pan limit can hold the fitted world. */
+function viewBounds(width: number, height: number, zoom: number, centerLng: number, centerLat: number): MapBounds {
+  const scale = 512 * 2 ** zoom;
+  const x = ((centerLng + 180) / 360) * scale;
+  const y = mercatorY(centerLat) * scale;
+  return {
+    west: ((x - width / 2) / scale) * 360 - 180,
+    east: ((x + width / 2) / scale) * 360 - 180,
+    north: latFromMercator((y - height / 2) / scale),
+    south: latFromMercator((y + height / 2) / scale),
+  };
+}
+
+
 
 function emptyGeo(): FeatureCollection<Point> {
   return { type: "FeatureCollection", features: [] };
@@ -133,12 +175,13 @@ function areaLabels(data: FeatureCollection<Polygon | MultiPolygon>): FeatureCol
       const id = feature.properties?.id;
       const name = feature.properties?.name;
       if (!center || typeof id !== "string" || typeof name !== "string") return [];
-      const detail = typeof feature.properties?.detail === "string" ? feature.properties.detail : "";
+      const open = typeof feature.properties?.open === "number" ? feature.properties.open : 0;
+      const tip = typeof feature.properties?.tip === "string" ? feature.properties.tip : name;
       return [
         {
           type: "Feature" as const,
           id,
-          properties: { id, name, detail },
+          properties: { id, name, open, tip },
           geometry: { type: "Point" as const, coordinates: center },
         },
       ];
@@ -152,7 +195,7 @@ function townGeo(towns: TownMarker[]): FeatureCollection<Point> {
     features: towns.map((town) => ({
       type: "Feature" as const,
       id: town.id,
-      properties: { id: town.id, name: town.name, detail: town.detail },
+      properties: { id: town.id, name: town.name, open: town.open, tip: town.tip },
       geometry: { type: "Point" as const, coordinates: [town.lng, town.lat] },
     })),
   };
@@ -190,15 +233,19 @@ function groupGeo(points: MarkerPoint[], mode: "region" | "country"): FeatureCol
     features: [...groups.entries()].map(([key, list]) => {
       const lat = list.reduce((sum, point) => sum + point.lat, 0) / list.length;
       const lng = list.reduce((sum, point) => sum + point.lng, 0) / list.length;
-      const workOnly = list.every((point) => point.kind === "request");
+      const projects = list.filter((point) => point.kind === "project").length;
+      const requests = list.filter((point) => point.kind === "request").length;
+      const name = mode === "region" ? list[0].regionName : list[0].countryName;
+      const open = projects + requests;
       return {
         type: "Feature",
         id: key,
         properties: {
           key,
-          name: mode === "region" ? list[0].regionName : list[0].countryName,
-          count: list.length,
-          tone: workOnly ? "work" : "open",
+          name,
+          open,
+          shade: shadeStep(open),
+          tip: placeTip(name, { projects, requests, workers: 0 }),
           west: Math.min(...list.map((point) => point.lng)),
           east: Math.max(...list.map((point) => point.lng)),
           south: Math.min(...list.map((point) => point.lat)),
@@ -268,12 +315,42 @@ function setGeo(map: MapLibreMap, id: string, data: FeatureCollection) {
   source?.setData(data);
 }
 
+function boundsForRegions(ids: string[]): MapBounds | null {
+  const wanted = new Set(ids);
+  const box: MapBounds = { west: 180, south: 90, east: -180, north: -90 };
+  let hit = false;
+  const walk = (coords: unknown) => {
+    if (!Array.isArray(coords)) return;
+    if (typeof coords[0] === "number" && typeof coords[1] === "number") {
+      hit = true;
+      box.west = Math.min(box.west, coords[0]);
+      box.east = Math.max(box.east, coords[0]);
+      box.south = Math.min(box.south, coords[1]);
+      box.north = Math.max(box.north, coords[1]);
+      return;
+    }
+    for (const child of coords) walk(child);
+  };
+  for (const feature of (regions as FeatureCollection).features) {
+    const id = feature.properties?.regionId;
+    if (typeof id !== "string" || !wanted.has(id)) continue;
+    walk(feature.geometry);
+  }
+  return hit ? box : null;
+}
+
+function textProp(feature: { properties?: GeoJSON.GeoJsonProperties | null }, key: string): string | null {
+  const value = feature.properties?.[key];
+  return typeof value === "string" && value.trim() ? value : null;
+}
+
 function readPad(container: HTMLElement): Pad {
-  const frame = container.parentElement;
   const box = container.getBoundingClientRect();
   const pad: Pad = { top: 0, bottom: 0, left: 0, right: 0 };
-  if (!frame) return pad;
-  frame.querySelectorAll<HTMLElement>("[data-fw-pad]").forEach((node) => {
+  const frames = [container.parentElement, container.parentElement?.parentElement].filter(
+    (node): node is HTMLElement => Boolean(node),
+  );
+  frames.forEach((frame) => frame.querySelectorAll<HTMLElement>("[data-fw-pad]").forEach((node) => {
     if (node.getClientRects().length === 0) return;
     const rect = node.getBoundingClientRect();
     const edge = node.dataset.fwPad;
@@ -281,7 +358,7 @@ function readPad(container: HTMLElement): Pad {
     if (edge === "bottom") pad.bottom = Math.max(pad.bottom, box.bottom - rect.top);
     if (edge === "left") pad.left = Math.max(pad.left, rect.right - box.left);
     if (edge === "right") pad.right = Math.max(pad.right, box.right - rect.left);
-  });
+  }));
   const height = box.height || container.clientHeight || 1;
   const width = box.width || container.clientWidth || 1;
   if (pad.top + pad.bottom > height - 80) pad.bottom = Math.max(0, height - 80 - pad.top);
@@ -317,6 +394,11 @@ export function FundworkMap({
   onArea,
   onTown,
   onMapCountry,
+  onEmpty,
+  regionFocus = null,
+  selectedTownId = null,
+  preview = null,
+  previewAt = null,
 }: {
   points: MarkerPoint[];
   showMarkers: boolean;
@@ -339,16 +421,23 @@ export function FundworkMap({
   onArea?: (id: string) => void;
   onTown?: (id: string) => void;
   onMapCountry?: (name: string) => void;
+  onEmpty?: () => void;
+  regionFocus?: string | null;
+  selectedTownId?: string | null;
+  preview?: ReactNode;
+  previewAt?: { id: string; lng: number; lat: number } | null;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
-  const handlers = useRef<Handlers>({ onReady, onMove, onRegion, onBlocked, onPoint, onFail, onCountry, onArea, onTown, onMapCountry });
+  const handlers = useRef<Handlers>({ onReady, onMove, onRegion, onBlocked, onPoint, onFail, onCountry, onArea, onTown, onMapCountry, onEmpty });
+  const tipRef = useRef<HTMLDivElement>(null);
+  const [popupSlot, setPopupSlot] = useState<HTMLDivElement | null>(null);
   const pointsRef = useRef(points);
   const showRef = useRef(showMarkers);
   const selectedRef = useRef(selectedId);
   const syncRef = useRef<(() => void) | null>(null);
   const syncDrill = useRef<(() => void) | null>(null);
-  const drillRef = useRef({ areas, areaKey, towns, drill, selectedAreaId, hoverAreaId });
+  const drillRef = useRef({ areas, areaKey, towns, drill, selectedAreaId, hoverAreaId, regionFocus, selectedTownId });
   const flyRef = useRef<((request: FlyRequest) => void) | null>(null);
   const pendingFly = useRef<FlyRequest | null>(null);
   const latestFly = useRef<FlyRequest | null>(null);
@@ -356,7 +445,7 @@ export function FundworkMap({
   const selectedKey = useRef<string | null>(null);
 
   useEffect(() => {
-    handlers.current = { onReady, onMove, onRegion, onBlocked, onPoint, onFail, onCountry, onArea, onTown, onMapCountry };
+    handlers.current = { onReady, onMove, onRegion, onBlocked, onPoint, onFail, onCountry, onArea, onTown, onMapCountry, onEmpty };
   });
 
   useEffect(() => {
@@ -368,9 +457,9 @@ export function FundworkMap({
   }, [points, showMarkers, selectedId]);
 
   useEffect(() => {
-    drillRef.current = { areas, areaKey, towns, drill, selectedAreaId, hoverAreaId };
+    drillRef.current = { areas, areaKey, towns, drill, selectedAreaId, hoverAreaId, regionFocus, selectedTownId };
     syncDrill.current?.();
-  }, [areas, areaKey, towns, drill, selectedAreaId, hoverAreaId]);
+  }, [areas, areaKey, towns, drill, selectedAreaId, hoverAreaId, regionFocus, selectedTownId]);
 
   useEffect(() => {
     const container = host.current;
@@ -422,7 +511,9 @@ export function FundworkMap({
     let gesture = false;
     let flying = false;
     let styleOk = false;
-    let tileOk = false;
+    let framed = false;
+    let worldHold = true;
+    const seenErrors = new Set<string>();
     const fail = () => {
       if (failed) return;
       failed = true;
@@ -430,44 +521,70 @@ export function FundworkMap({
       handlers.current.onFail();
     };
     const timer = window.setTimeout(() => {
-      if (!styleOk || !tileOk) fail();
+      if (!framed) fail();
     }, LOAD_MS);
-    const settled = () => {
-      if (styleOk && tileOk) window.clearTimeout(timer);
+    const logOnce = (message: string) => {
+      const key = message.replace(/\d+/g, "#").slice(0, 180);
+      if (!key || seenErrors.has(key)) return;
+      seenErrors.add(key);
+      console.error(message);
     };
 
     map.on("movestart", (event) => {
       if (event.originalEvent) gesture = true;
     });
     map.on("dragstart", () => {
+      worldHold = false;
       if (flying) map.stop();
     });
     map.on("zoomstart", (event) => {
-      if (event.originalEvent && flying) map.stop();
+      if (!event.originalEvent) return;
+      worldHold = false;
+      if (flying) map.stop();
     });
     map.on("error", (event) => {
-      const message = event.error?.message ?? "";
-      if (message.toLowerCase().includes("webgl")) fail();
-    });
-    map.on("sourcedata", (event) => {
-      const sourceId = event.sourceId ?? "";
-      if (!sourceId || sourceId === "regions" || sourceId === "blocked" || sourceId.startsWith("fw-")) return;
-      if (event.isSourceLoaded) {
-        tileOk = true;
-        settled();
+      const err = event.error as (Error & { url?: string }) | undefined;
+      const url = err?.url ?? "";
+      const message = err?.message ?? "";
+      const text = `${url} ${message}`;
+      const asset = /fonts\.|sprite|glyph|\/tile/i.test(text);
+      const styleFailed = !asset && (url.includes("/styles/") || message.includes("/styles/liberty"));
+      if (styleFailed) {
+        fail();
+        return;
       }
+      logOnce(message || url || "Map error");
+    });
+    map.on("render", () => {
+      if (framed || !styleOk) return;
+      framed = true;
+      window.clearTimeout(timer);
     });
 
     const applyLimits = () => {
       map.resize();
-      const pad = readPad(container);
-      const width = container.clientWidth - pad.left - pad.right;
-      const height = container.clientHeight - pad.top - 36;
-      const minZoom = Math.min(8, fitZoom(width, height));
-      if (Number.isFinite(minZoom)) map.setMinZoom(minZoom);
+      map.setMaxBounds(null);
+      const held = map.getMinZoom();
+      map.setMinZoom(0);
+      const fitted = map.cameraForBounds(
+        [
+          [WORLD_BOUNDS.west, WORLD_BOUNDS.south],
+          [WORLD_BOUNDS.east, WORLD_BOUNDS.north],
+        ],
+        { maxZoom: 22 },
+      );
+      if (!fitted?.center || fitted.zoom === undefined || !Number.isFinite(fitted.zoom)) {
+        map.setMinZoom(held);
+        return;
+      }
+      map.setMinZoom(Math.max(0, fitted.zoom - 0.01));
+      const [lng, lat] = cameraCenter(fitted.center);
+      const frame = viewBounds(container.clientWidth, container.clientHeight, fitted.zoom, lng, lat);
+      const lngPad = Math.max(6, (frame.east - frame.west) * 0.05);
+      const latPad = Math.max(4, (frame.north - frame.south) * 0.05);
       map.setMaxBounds([
-        [WORLD_BOUNDS.west - 10, Math.max(-85, WORLD_BOUNDS.south - 8)],
-        [WORLD_BOUNDS.east + 10, Math.min(85, WORLD_BOUNDS.north + 8)],
+        [frame.west - lngPad, Math.max(-85, frame.south - latPad)],
+        [frame.east + lngPad, Math.min(85, frame.north + latPad)],
       ]);
     };
 
@@ -476,41 +593,55 @@ export function FundworkMap({
       map.setPadding(pad);
     };
 
+    let padKey = "";
+    let refitQueued = false;
+    let refitWorld = () => {};
+
     const resizeObserver = new ResizeObserver((entries) => {
       const boxChanged = entries.some((entry) => entry.target === container);
       applyPad();
       if (boxChanged) applyLimits();
+      refitWorld();
     });
     resizeObserver.observe(container);
-    const frame = container.parentElement;
+    const frame = container.parentElement?.parentElement ?? container.parentElement;
     const mutation = new MutationObserver(() => {
       frame?.querySelectorAll("[data-fw-pad]").forEach((node) => resizeObserver.observe(node));
       applyPad();
+      refitWorld();
     });
     if (frame) {
       mutation.observe(frame, { childList: true, subtree: true });
       frame.querySelectorAll("[data-fw-pad]").forEach((node) => resizeObserver.observe(node));
     }
 
+    let tapMove = 0;
     const travel = (center: [number, number], zoom: number) => {
+      const token = ++tapMove;
       map.stop();
       flying = true;
-      map.once("moveend", () => {
+      const finish = () => {
+        if (token !== tapMove) return;
         flying = false;
-      });
-      if (reducedMotion()) {
-        map.jumpTo({ center, zoom });
-        return;
+        if (!refitQueued) return;
+        refitQueued = false;
+        refitWorld();
+      };
+      if (reducedMotion()) map.jumpTo({ center, zoom });
+      else {
+        const point = map.project(center);
+        const canvas = map.getCanvas();
+        const onScreen = point.x >= 0 && point.y >= 0 && point.x <= canvas.width && point.y <= canvas.height;
+        const close = Math.abs(zoom - map.getZoom()) < 2 && onScreen;
+        if (close) map.easeTo({ center, zoom, duration: EASE_MS });
+        else map.flyTo({ center, zoom, duration: FLY_MS });
       }
-      const point = map.project(center);
-      const canvas = map.getCanvas();
-      const onScreen = point.x >= 0 && point.y >= 0 && point.x <= canvas.width && point.y <= canvas.height;
-      const close = Math.abs(zoom - map.getZoom()) < 2 && onScreen;
-      if (close) map.easeTo({ center, zoom, duration: EASE_MS });
-      else map.flyTo({ center, zoom, duration: FLY_MS });
+      if (!map.isMoving()) finish();
+      else map.once("moveend", finish);
     };
 
     const lookAt = (bounds: MapBounds, maxZoom: number) => {
+      map.setMinZoom(0);
       const camera = map.cameraForBounds(
         [
           [bounds.west, bounds.south],
@@ -519,18 +650,35 @@ export function FundworkMap({
         { maxZoom },
       );
       if (!camera?.center || camera.zoom === undefined) return;
+      const zoom = Math.min(maxZoom, camera.zoom);
+      const world = map.cameraForBounds(
+        [
+          [WORLD_BOUNDS.west, WORLD_BOUNDS.south],
+          [WORLD_BOUNDS.east, WORLD_BOUNDS.north],
+        ],
+        { maxZoom: 22 },
+      );
+      const floor = world?.zoom;
+      map.setMinZoom(floor === undefined || !Number.isFinite(floor) ? 0 : Math.max(0, floor - 0.01));
       const center = camera.center;
       const pair: [number, number] = Array.isArray(center)
         ? [Number(center[0]), Number(center[1])]
         : "lng" in center
           ? [center.lng, center.lat]
           : [center.lon, center.lat];
-      travel(pair, camera.zoom);
+      travel(pair, zoom);
     };
 
     const moveTo = (request: FlyTarget) => {
+      if (request.kind !== "world") worldHold = false;
       if (request.kind === "world") {
-        lookAt(WORLD_BOUNDS, 2.2);
+        lookAt(WORLD_BOUNDS, 22);
+        return;
+      }
+      if (request.kind === "region" || request.kind === "regions") {
+        const ids = request.kind === "region" ? [request.regionId] : request.ids;
+        const box = boundsForRegions(ids);
+        if (box) lookAt(box, 5.6);
         return;
       }
       if (request.kind === "center") {
@@ -547,6 +695,19 @@ export function FundworkMap({
         bounds.north += 0.25;
       }
       lookAt(bounds, request.maxZoom);
+    };
+
+    refitWorld = () => {
+      if (!worldHold || !map.isStyleLoaded()) return;
+      if (flying) {
+        refitQueued = true;
+        return;
+      }
+      const pad = readPad(container);
+      const key = `${pad.top}:${pad.bottom}:${pad.left}:${pad.right}:${container.clientWidth}:${container.clientHeight}`;
+      if (key === padKey) return;
+      padKey = key;
+      moveTo({ kind: "world" });
     };
 
     const markSelected = () => {
@@ -585,18 +746,11 @@ export function FundworkMap({
     };
     syncRef.current = syncData;
 
-    const pointer = () => {
-      map.getCanvas().style.cursor = "pointer";
-    };
-    const plain = () => {
-      map.getCanvas().style.cursor = "";
-    };
-
     map.on("load", () => {
       if (failed) return;
       styleOk = true;
-      settled();
       restyle(map);
+      map.getCanvas().setAttribute("tabindex", "0");
       const before = map.getStyle()?.layers?.find((layer) => layer.type === "symbol")?.id;
       map.addSource("regions", { type: "geojson", data: regions as FeatureCollection });
       map.addLayer(
@@ -640,6 +794,9 @@ export function FundworkMap({
       );
 
       const toneColor = ["match", ["get", "tone"], "work", WORK, OPEN] as const;
+      const shadeColor = ["match", ["to-number", ["get", "shade"]], 2, SHADE[2], 1, SHADE[1], SHADE[0]] as const;
+      const nameSort = ["case", [">", ["to-number", ["get", "open"]], 0], 20, 10] as const;
+      const countSort = 0;
       map.addSource("fw-region-totals", { type: "geojson", data: emptyGeo() });
       map.addSource("fw-country-totals", { type: "geojson", data: emptyGeo() });
       map.addSource("fw-points", { type: "geojson", data: emptyGeo(), promoteId: "id" });
@@ -649,10 +806,10 @@ export function FundworkMap({
         source: "fw-region-totals",
         maxzoom: WORLD_ZOOM,
         paint: {
-          "circle-radius": 18,
-          "circle-color": toneColor as never,
+          "circle-radius": 14,
+          "circle-color": shadeColor as never,
           "circle-stroke-width": 2,
-          "circle-stroke-color": PAPER,
+          "circle-stroke-color": "#0e5c3a",
         },
       });
       map.addLayer({
@@ -661,12 +818,33 @@ export function FundworkMap({
         source: "fw-region-totals",
         maxzoom: WORLD_ZOOM,
         layout: {
-          "text-field": ["to-string", ["get", "count"]],
+          "text-field": ["get", "name"],
           "text-font": ["Noto Sans Regular"],
           "text-size": 14,
-          "text-allow-overlap": true,
+          "text-offset": [0, 1.15],
+          "text-anchor": "top",
+          "text-optional": true,
+          "text-max-width": 12,
+          "symbol-sort-key": nameSort as never,
         },
-        paint: { "text-color": PAPER },
+        paint: { "text-color": INK, "text-halo-color": PAPER, "text-halo-width": 1.2 },
+      });
+      map.addLayer({
+        id: REGION_COUNTS,
+        type: "symbol",
+        source: "fw-region-totals",
+        maxzoom: WORLD_ZOOM,
+        filter: [">", ["to-number", ["get", "open"]], 0],
+        layout: {
+          "text-field": ["to-string", ["get", "open"]],
+          "text-font": ["Noto Sans Regular"],
+          "text-size": 12,
+          "text-offset": [0, 2.45],
+          "text-anchor": "top",
+          "text-optional": true,
+          "symbol-sort-key": countSort as never,
+        },
+        paint: { "text-color": PAPER, "text-halo-color": OPEN, "text-halo-width": 5 },
       });
       map.addLayer({
         id: COUNTRY_CIRCLES,
@@ -675,10 +853,10 @@ export function FundworkMap({
         minzoom: WORLD_ZOOM,
         maxzoom: POINT_ZOOM,
         paint: {
-          "circle-radius": 18,
-          "circle-color": toneColor as never,
+          "circle-radius": 14,
+          "circle-color": shadeColor as never,
           "circle-stroke-width": 2,
-          "circle-stroke-color": PAPER,
+          "circle-stroke-color": "#0e5c3a",
         },
       });
       map.addLayer({
@@ -688,12 +866,34 @@ export function FundworkMap({
         minzoom: WORLD_ZOOM,
         maxzoom: POINT_ZOOM,
         layout: {
-          "text-field": ["to-string", ["get", "count"]],
+          "text-field": ["get", "name"],
           "text-font": ["Noto Sans Regular"],
           "text-size": 14,
-          "text-allow-overlap": true,
+          "text-offset": [0, 1.15],
+          "text-anchor": "top",
+          "text-optional": true,
+          "text-max-width": 12,
+          "symbol-sort-key": nameSort as never,
         },
-        paint: { "text-color": PAPER },
+        paint: { "text-color": INK, "text-halo-color": PAPER, "text-halo-width": 1.2 },
+      });
+      map.addLayer({
+        id: COUNTRY_COUNTS,
+        type: "symbol",
+        source: "fw-country-totals",
+        minzoom: WORLD_ZOOM,
+        maxzoom: POINT_ZOOM,
+        filter: [">", ["to-number", ["get", "open"]], 0],
+        layout: {
+          "text-field": ["to-string", ["get", "open"]],
+          "text-font": ["Noto Sans Regular"],
+          "text-size": 12,
+          "text-offset": [0, 2.45],
+          "text-anchor": "top",
+          "text-optional": true,
+          "symbol-sort-key": countSort as never,
+        },
+        paint: { "text-color": PAPER, "text-halo-color": OPEN, "text-halo-width": 5 },
       });
       map.addLayer({
         id: POINT_CIRCLES,
@@ -738,16 +938,16 @@ export function FundworkMap({
             ["boolean", ["feature-state", "selected"], false],
             "#0e5c3a",
             ["boolean", ["feature-state", "hover"], false],
-            "#1f7a52",
-            "#9ec4b3",
-          ],
+            "#2d8a5e",
+            ["match", ["to-number", ["get", "shade"]], 2, SHADE[2], 1, SHADE[1], SHADE[0]],
+          ] as never,
           "fill-opacity": [
             "case",
             ["boolean", ["feature-state", "selected"], false],
-            0.72,
+            0.82,
             ["boolean", ["feature-state", "hover"], false],
-            0.5,
-            0.38,
+            0.75,
+            0.88,
           ],
         },
       });
@@ -774,13 +974,34 @@ export function FundworkMap({
         source: "fw-admin1-labels",
         layout: {
           visibility: "none",
-          "text-field": ["concat", ["get", "name"], "\n", ["get", "detail"]],
+          "text-field": ["get", "name"],
           "text-font": ["Noto Sans Regular"],
           "text-size": 14,
-          "text-max-width": 14,
+          "text-anchor": "center",
+          "text-offset": [0, -0.7],
+          "text-max-width": 12,
+          "text-padding": 1,
           "text-optional": true,
+          "symbol-sort-key": nameSort as never,
         },
         paint: { "text-color": INK, "text-halo-color": PAPER, "text-halo-width": 1.2 },
+      });
+      map.addLayer({
+        id: AREA_COUNTS,
+        type: "symbol",
+        source: "fw-admin1-labels",
+        filter: [">", ["to-number", ["get", "open"]], 0],
+        layout: {
+          visibility: "none",
+          "text-field": ["to-string", ["get", "open"]],
+          "text-font": ["Noto Sans Regular"],
+          "text-size": 12,
+          "text-anchor": "center",
+          "text-offset": [0, 0.85],
+          "text-optional": true,
+          "symbol-sort-key": countSort as never,
+        },
+        paint: { "text-color": PAPER, "text-halo-color": OPEN, "text-halo-width": 5 },
       });
       map.addLayer({
         id: TOWN_HIT,
@@ -807,15 +1028,34 @@ export function FundworkMap({
         source: "fw-towns",
         layout: {
           visibility: "none",
-          "text-field": ["concat", ["get", "name"], "\n", ["get", "detail"]],
+          "text-field": ["get", "name"],
           "text-font": ["Noto Sans Regular"],
           "text-size": 14,
           "text-offset": [0, 1.15],
           "text-anchor": "top",
           "text-optional": true,
-          "text-max-width": 14,
+          "text-max-width": 12,
+          "text-padding": 1,
+          "symbol-sort-key": nameSort as never,
         },
         paint: { "text-color": INK, "text-halo-color": PAPER, "text-halo-width": 1.2 },
+      });
+      map.addLayer({
+        id: TOWN_COUNTS,
+        type: "symbol",
+        source: "fw-towns",
+        filter: [">", ["to-number", ["get", "open"]], 0],
+        layout: {
+          visibility: "none",
+          "text-field": ["to-string", ["get", "open"]],
+          "text-font": ["Noto Sans Regular"],
+          "text-size": 12,
+          "text-offset": [0, 2.5],
+          "text-anchor": "top",
+          "text-optional": true,
+          "symbol-sort-key": countSort as never,
+        },
+        paint: { "text-color": PAPER, "text-halo-color": OPEN, "text-halo-width": 5 },
       });
 
       let areaDataKey = "";
@@ -855,11 +1095,21 @@ export function FundworkMap({
           markedArea = null;
           markedHover = null;
         }
+        const focus = Boolean(state.regionFocus) && state.drill === "world";
+        const world = state.drill === "world";
+        for (const id of [COUNTRY_CIRCLES, COUNTRY_LABELS, COUNTRY_COUNTS]) {
+          if (!map.getLayer(id)) continue;
+          map.setLayerZoomRange(id, focus ? 0 : WORLD_ZOOM, POINT_ZOOM);
+          showLayer(id, world);
+        }
+        for (const id of [REGION_CIRCLES, REGION_LABELS, REGION_COUNTS]) showLayer(id, world && !focus);
+        showLayer("regions-fill", world);
+        showLayer("regions-line", world);
+        for (const id of [POINT_CIRCLES, POINT_LABELS]) showLayer(id, world || state.drill === "towns");
         for (const id of AREA_LAYERS) showLayer(id, showing && Boolean(state.areas?.features.length));
         for (const id of TOWN_LAYERS) showLayer(id, state.drill === "towns");
-        for (const id of [...POINT_LAYERS, "regions-fill", "regions-line"]) showLayer(id, state.drill === "world");
         const nextTowns = state.drill === "towns" ? state.towns : [];
-        const townKey = nextTowns.map((town) => `${town.id}:${town.detail}`).join("|");
+        const townKey = nextTowns.map((town) => `${town.id}:${town.open}:${town.tip}`).join("|");
         if (townKey !== townDataKey) {
           townDataKey = townKey;
           setGeo(map, "fw-towns", townGeo(nextTowns));
@@ -869,80 +1119,154 @@ export function FundworkMap({
         markedArea = state.selectedAreaId;
         markArea("fw-admin1", markedHover, state.hoverAreaId, "hover");
         markedHover = state.hoverAreaId;
-        const townSelected = state.drill === "towns" ? selectedRef.current : null;
+        const townSelected = state.drill === "towns" ? state.selectedTownId : null;
         markArea("fw-towns", markedTown, townSelected, "selected");
         markedTown = townSelected;
       };
       syncDrill.current = syncAreas;
 
-      const openRegion = (id: string) => {
-        handlers.current.onRegion(id);
-        const camera = REGION_CAMERA[id];
-        if (camera) moveTo({ kind: "center", center: camera.center, zoom: camera.zoom });
+      const hitPad = (event: { originalEvent?: Event }) => {
+        const native = event.originalEvent;
+        if (native && "pointerType" in native && (native as PointerEvent).pointerType === "touch") return 16;
+        if (native && native.type.startsWith("touch")) return 16;
+        return 8;
       };
-      map.on("click", "blocked-fill", (event) => {
-        const name = event.features?.[0]?.properties?.name;
-        if (typeof name === "string") handlers.current.onBlocked(name);
-      });
-      map.on("click", "regions-fill", (event) => {
-        if (map.getZoom() >= WORLD_ZOOM) return;
-        const quiet = map.queryRenderedFeatures(event.point, { layers: ["blocked-fill", REGION_CIRCLES] });
-        if (quiet.length > 0) return;
-        const value = event.features?.[0]?.properties?.regionId;
-        if (typeof value === "string") openRegion(value);
-      });
-      map.on("click", REGION_CIRCLES, (event) => {
-        const value = event.features?.[0]?.properties?.key;
-        if (typeof value === "string") openRegion(value);
-      });
-      map.on("click", REGION_LABELS, (event) => {
-        const value = event.features?.[0]?.properties?.key;
-        if (typeof value === "string") openRegion(value);
-      });
-      map.on("click", COUNTRY_CIRCLES, (event) => openCountry(event.features?.[0]?.properties));
-      map.on("click", COUNTRY_LABELS, (event) => openCountry(event.features?.[0]?.properties));
-      map.on("click", POINT_CIRCLES, (event) => {
-        const id = event.features?.[0]?.properties?.id;
-        if (typeof id === "string") handlers.current.onPoint(id);
-      });
-      map.on("click", POINT_LABELS, (event) => {
-        const id = event.features?.[0]?.properties?.id;
-        if (typeof id === "string") handlers.current.onPoint(id);
-      });
-      const pickArea = (event: { point: { x: number; y: number }; features?: { properties?: { id?: unknown } | null }[] }) => {
-        if (drillRef.current.drill === "towns") {
-          const townHit = map.queryRenderedFeatures([event.point.x, event.point.y], {
-            layers: TOWN_LAYERS.filter((id) => map.getLayer(id)),
-          });
-          if (townHit.length > 0) return;
+      const pickHit = (point: { x: number; y: number }, pad: number): Hit | null => {
+        const layers = [
+          ...POINT_HIT,
+          ...TOWN_PICK,
+          ...AREA_PICK,
+          ...COUNTRY_PICK,
+          ...REGION_BUBBLE,
+          "blocked-fill",
+          "regions-fill",
+          ...BASE_LABELS,
+        ].filter((id) => map.getLayer(id));
+        if (layers.length === 0) return null;
+        const box: [[number, number], [number, number]] = [
+          [point.x - pad, point.y - pad],
+          [point.x + pad, point.y + pad],
+        ];
+        const features = map.queryRenderedFeatures(box, { layers });
+        const first = (group: string[]) => features.find((feature) => group.includes(feature.layer.id));
+        const pointHit = first(POINT_HIT);
+        const pointId = pointHit ? textProp(pointHit, "id") : null;
+        if (pointHit && pointId) return { kind: "point", id: pointId, tip: textProp(pointHit, "name") ?? "" };
+        const townHit = first(TOWN_PICK);
+        const townId = townHit ? textProp(townHit, "id") : null;
+        if (townHit && townId) return { kind: "town", id: townId, tip: textProp(townHit, "tip") ?? "" };
+        const areaHit = first(AREA_PICK);
+        const areaId = areaHit ? textProp(areaHit, "id") : null;
+        if (areaHit && areaId) return { kind: "area", id: areaId, tip: textProp(areaHit, "tip") ?? "" };
+        const countryHit = first(COUNTRY_PICK);
+        const countryId = countryHit ? textProp(countryHit, "key") : null;
+        if (countryHit && countryId) {
+          const west = Number(countryHit.properties?.west);
+          const east = Number(countryHit.properties?.east);
+          const south = Number(countryHit.properties?.south);
+          const north = Number(countryHit.properties?.north);
+          return { kind: "country", id: countryId, tip: textProp(countryHit, "tip") ?? "", west, east, south, north };
         }
-        const id = event.features?.[0]?.properties?.id;
-        if (typeof id === "string") handlers.current.onArea?.(id);
+        const bubble = first(REGION_BUBBLE);
+        const bubbleId = bubble ? textProp(bubble, "key") : null;
+        if (bubble && bubbleId) return { kind: "region", id: bubbleId, tip: textProp(bubble, "tip") ?? "" };
+        const blockedHit = first(["blocked-fill"]);
+        const blockedName = blockedHit ? textProp(blockedHit, "name") : null;
+        if (blockedHit && blockedName) return { kind: "blocked", id: blockedName, tip: blockedName };
+        const fill = first(["regions-fill"]);
+        const fillId = fill ? textProp(fill, "regionId") : null;
+        if (fill && fillId) {
+          const name = textProp(fill, "name") ?? fillId;
+          const items = pointsRef.current.filter((item) => item.regionId === fillId);
+          const projects = items.filter((item) => item.kind === "project").length;
+          const requests = items.filter((item) => item.kind === "request").length;
+          return { kind: "region", id: fillId, tip: placeTip(name, { projects, requests, workers: 0 }) };
+        }
+        if (drillRef.current.drill !== "world") return null;
+        const label = first(BASE_LABELS);
+        const labelName = label ? textProp(label, "name_en") ?? textProp(label, "name") : null;
+        if (label && labelName) return { kind: "basemap", id: labelName, tip: labelName };
+        return null;
       };
-      map.on("click", AREA_FILL, pickArea);
-      map.on("click", AREA_HIT, pickArea);
-      map.on("click", AREA_LABELS, pickArea);
-      const pickTown = (event: { features?: { properties?: { id?: unknown } | null }[] }) => {
-        const id = event.features?.[0]?.properties?.id;
-        if (typeof id === "string") handlers.current.onTown?.(id);
+      const send = (hit: Hit) => {
+        if (hit.kind === "point") handlers.current.onPoint(hit.id);
+        else if (hit.kind === "town") handlers.current.onTown?.(hit.id);
+        else if (hit.kind === "area") handlers.current.onArea?.(hit.id);
+        else if (hit.kind === "country") {
+          if (handlers.current.onCountry) handlers.current.onCountry(hit.id);
+          else if ([hit.west, hit.east, hit.south, hit.north].every((value) => typeof value === "number" && Number.isFinite(value))) {
+            moveTo({
+              kind: "bounds",
+              bounds: { west: hit.west ?? 0, east: hit.east ?? 0, south: hit.south ?? 0, north: hit.north ?? 0 },
+              maxZoom: 8.4,
+            });
+          }
+        } else if (hit.kind === "region") handlers.current.onRegion(hit.id);
+        else if (hit.kind === "blocked") handlers.current.onBlocked(hit.id);
+        else handlers.current.onMapCountry?.(hit.id);
       };
-      map.on("click", TOWN_HIT, pickTown);
-      map.on("click", TOWN_CIRCLES, pickTown);
-      map.on("click", TOWN_LABELS, pickTown);
+      let lastKey = "";
+      let lastAt = 0;
+      const showTip = (text: string, point: { x: number; y: number }) => {
+        const tip = tipRef.current;
+        if (!tip) return;
+        tip.textContent = text;
+        tip.classList.remove("hidden");
+        const width = tip.offsetWidth;
+        const height = tip.offsetHeight;
+        let x = point.x + 14;
+        let y = point.y + 14;
+        if (x + width > container.clientWidth - 8) x = Math.max(8, point.x - width - 14);
+        if (y + height > container.clientHeight - 8) y = Math.max(8, point.y - height - 14);
+        tip.style.left = `${x}px`;
+        tip.style.top = `${y}px`;
+      };
+      const hideTip = () => {
+        tipRef.current?.classList.add("hidden");
+      };
       map.on("click", (event) => {
-        if (!handlers.current.onMapCountry || drillRef.current.drill !== "world") return;
-        const own = [...POINT_LAYERS, "blocked-fill", "regions-fill"].filter((id) => map.getLayer(id));
-        if (map.queryRenderedFeatures(event.point, { layers: own }).length > 0) return;
-        const labels = ["label_country_1", "label_country_2", "label_country_3"].filter((id) => map.getLayer(id));
-        if (labels.length === 0) return;
-        const hit = map.queryRenderedFeatures(event.point, { layers: labels })[0];
-        const name = hit?.properties?.name_en || hit?.properties?.name;
-        if (typeof name === "string" && name.trim()) handlers.current.onMapCountry(name.trim());
+        const hit = pickHit(event.point, hitPad(event));
+        if (flying && hit) return;
+        const key = hit ? `${hit.kind}:${hit.id}` : "empty";
+        const now = performance.now();
+        if (key === lastKey && now - lastAt < 300) return;
+        lastKey = key;
+        lastAt = now;
+        if (!hit) {
+          hideTip();
+          handlers.current.onEmpty?.();
+          return;
+        }
+        send(hit);
       });
-      for (const layerId of ["blocked-fill", "regions-fill", ...POINT_LAYERS, ...AREA_LAYERS, ...TOWN_LAYERS]) {
-        map.on("mouseenter", layerId, pointer);
-        map.on("mouseleave", layerId, plain);
-      }
+      let hoverFrame = 0;
+      let hoverEvent: MapLayerMouseEvent | null = null;
+      map.on("mousemove", (event) => {
+        hoverEvent = event;
+        if (hoverFrame) return;
+        hoverFrame = window.requestAnimationFrame(() => {
+          hoverFrame = 0;
+          const current = hoverEvent;
+          if (!current) return;
+          const touch = hitPad(current) === 16 || !window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+          if (touch) {
+            map.getCanvas().style.cursor = "";
+            hideTip();
+            return;
+          }
+          const hit = pickHit(current.point, 8);
+          map.getCanvas().style.cursor = hit ? "pointer" : "";
+          if (!hit?.tip) {
+            hideTip();
+            return;
+          }
+          showTip(hit.tip, current.point);
+        });
+      });
+      map.on("mouseout", () => {
+        map.getCanvas().style.cursor = "";
+        hideTip();
+      });
 
       map.getCanvas().setAttribute("aria-label", "Map of open projects and requests");
       applyPad();
@@ -954,21 +1278,6 @@ export function FundworkMap({
       pendingFly.current = null;
       moveTo(waiting ?? { kind: "world" });
     });
-
-    function openCountry(properties: GeoJSON.GeoJsonProperties | null | undefined) {
-      if (!properties) return;
-      const id = properties.key;
-      if (typeof id === "string" && handlers.current.onCountry) {
-        handlers.current.onCountry(id);
-        return;
-      }
-      const west = Number(properties.west);
-      const east = Number(properties.east);
-      const south = Number(properties.south);
-      const north = Number(properties.north);
-      if (![west, east, south, north].every((value) => Number.isFinite(value))) return;
-      moveTo({ kind: "bounds", bounds: { west, south, east, north }, maxZoom: 8.4 });
-    }
 
     map.on("moveend", () => {
       const view = { bounds: readBounds(map), zoom: map.getZoom() };
@@ -1002,5 +1311,59 @@ export function FundworkMap({
     else pendingFly.current = fly;
   }, [fly]);
 
-  return <div ref={host} className="fw-map h-full w-full bg-[#d7ebe3]" />;
+  const previewId = previewAt?.id ?? null;
+  const previewLng = previewAt?.lng ?? null;
+  const previewLat = previewAt?.lat ?? null;
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || previewId === null || previewLng === null || previewLat === null) return;
+    let popup: Popup | null = null;
+    let dead = false;
+    const mount = () => {
+      if (dead || !mapRef.current) return;
+      const el = document.createElement("div");
+      el.className = "w-[320px]";
+      popup = new Popup({
+        closeButton: false,
+        closeOnClick: false,
+        closeOnMove: false,
+        anchor: "bottom",
+        offset: [0, -16],
+        maxWidth: "320px",
+        className: "fw-preview",
+      })
+        .setLngLat([previewLng, previewLat])
+        .setDOMContent(el)
+        .addTo(mapRef.current);
+      setPopupSlot(el);
+    };
+    if (map.isStyleLoaded()) mount();
+    else map.once("load", mount);
+    return () => {
+      dead = true;
+      map.off("load", mount);
+      popup?.remove();
+      setPopupSlot(null);
+    };
+  }, [previewId, previewLng, previewLat]);
+
+  return (
+    <div className="relative h-full w-full">
+      <div ref={host} className="fw-map h-full w-full bg-[#d7ebe3]" />
+      <div
+        ref={tipRef}
+        role="tooltip"
+        className="pointer-events-none absolute z-30 hidden max-w-xs rounded-lg bg-card px-2 py-1 text-sm text-foreground shadow ring-1 ring-border"
+      />
+      <div className="pointer-events-none absolute bottom-[calc(var(--fw-sheet,0px)+2.75rem)] left-3 z-10 flex items-center gap-2 rounded-full bg-card/95 px-3 py-1 text-sm shadow ring-1 ring-border">
+        <span className="flex items-center gap-1" aria-hidden="true">
+          <span className="size-3 rounded-sm border border-[#0e5c3a]" style={{ background: SHADE[0] }} />
+          <span className="size-3 rounded-sm border border-[#0e5c3a]" style={{ background: SHADE[1] }} />
+          <span className="size-3 rounded-sm border border-[#0e5c3a]" style={{ background: SHADE[2] }} />
+        </span>
+        More shade, more open.
+      </div>
+      {popupSlot && preview ? createPortal(preview, popupSlot) : null}
+    </div>
+  );
 }

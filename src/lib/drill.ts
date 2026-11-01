@@ -1,5 +1,6 @@
 import { areaMark } from "@/lib/area-rules";
 import { countryRule, countryRules, isListableCountry } from "@/lib/country-rules";
+import { getRegion } from "@/lib/regions";
 import { getCountry, getParish, getParishes } from "@/lib/seed";
 import type { Town } from "@/lib/types";
 
@@ -80,37 +81,68 @@ export function isOutsideCode(id: string): boolean {
   return /^[A-Z]{2}$/.test(id) && !countryRule(id);
 }
 
+export function placeHref(input: {
+  region?: string | null;
+  country?: string | null;
+  area?: string | null;
+  town?: string | null;
+  item?: string | null;
+}): string {
+  const params = new URLSearchParams();
+  if (input.region) params.set("region", input.region);
+  if (input.country) params.set("country", input.country);
+  if (input.area) params.set("area", input.area);
+  if (input.town) params.set("town", input.town);
+  if (input.item) params.set("item", input.item);
+  const query = params.toString();
+  return query ? `/?${query}` : "/";
+}
+
+const PLACE_KEYS = ["region", "country", "area", "town", "item"];
+
+export function samePlace(current: { get(name: string): string | null }, href: string): boolean {
+  const next = new URL(href, "http://localhost").searchParams;
+  return PLACE_KEYS.every((key) => (current.get(key) ?? "") === (next.get(key) ?? ""));
+}
+
 /** A bad query becomes a replace href. Null means the query can stay. */
 export function drillFix(
+  regionId: string | null,
   countryId: string | null,
   areaId: string | null,
   townId: string | null,
   knownAreas: Set<string> | null,
 ): string | null {
+  const region = regionId && getRegion(regionId) ? regionId : null;
+  const badRegion = Boolean(regionId) && !region;
   if (!countryId) {
-    if (areaId || townId) return "/";
+    if (areaId || townId || badRegion) return placeHref({ region });
     return null;
   }
   const rule = countryRule(countryId);
   const outside = !rule && isOutsideCode(countryId);
-  if (!rule && !outside) return "/";
+  if (!rule && !outside) return placeHref({ region });
   if (rule?.status === "blocked" || outside) {
-    if (areaId || townId) return `/?country=${encodeURIComponent(countryId)}`;
+    if (areaId || townId || badRegion) return placeHref({ region, country: countryId });
     return null;
   }
-  if (!isListableCountry(countryId)) return "/";
+  if (!isListableCountry(countryId)) return placeHref({ region });
   if (!areaId) {
-    if (townId) return `/?country=${encodeURIComponent(countryId)}`;
+    if (townId || badRegion) return placeHref({ region, country: countryId });
     return null;
   }
-  if (knownAreas && !knownAreas.has(areaId)) return `/?country=${encodeURIComponent(countryId)}`;
+  if (knownAreas && !knownAreas.has(areaId)) return placeHref({ region, country: countryId });
   if (areaMark(countryId, areaId) === "blocked" && townId) {
-    return `/?country=${encodeURIComponent(countryId)}&area=${encodeURIComponent(areaId)}`;
+    return placeHref({ region, country: countryId, area: areaId });
   }
-  if (!townId) return null;
+  if (!townId) {
+    if (badRegion) return placeHref({ region, country: countryId, area: areaId });
+    return null;
+  }
   const towns = townsInArea(countryId, areaId);
   if (!towns.some((town) => town.id === townId)) {
-    return `/?country=${encodeURIComponent(countryId)}&area=${encodeURIComponent(areaId)}`;
+    return placeHref({ region, country: countryId, area: areaId });
   }
+  if (badRegion) return placeHref({ region, country: countryId, area: areaId, town: townId });
   return null;
 }
